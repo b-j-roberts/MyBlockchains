@@ -596,8 +596,36 @@ func main() {
 
   promSetup()
   // Create a new HTTP server to handle metrics requests
+  // TODO: To jsonrpc
 	http.Handle("/metrics", promhttp.Handler())
-	http.HandleFunc("/rpc", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/help", func(w http.ResponseWriter, r *http.Request) {
+		requests.Inc()
+    w.Write([]byte("The exposed endpoints are : metrics, help, add, block\n"))
+  })
+	http.HandleFunc("/block", func(w http.ResponseWriter, r *http.Request) {
+		requests.Inc()
+		defer requestDuration.Observe(time.Since(time.Now()).Seconds())
+
+    value := r.URL.Query().Get("value")
+    i, err := strconv.Atoi(value)
+    if err != nil {
+      log.Fatal(err)
+    }
+    if i >= len(Blockchain) {
+
+      w.Write([]byte(fmt.Sprintf("Blockchain is of length : %d so cannot index position : %d\n", len(Blockchain), i)))
+    } else {
+      message := fmt.Sprintf("Block %d\n", i)
+      message += fmt.Sprintf("    Block Hash : 0x%08x\n", calculateBlockHeaderHash(Blockchain[i].BlockHeader))
+      message += fmt.Sprintf("    Prev Block Hash : 0x%08x\n", Blockchain[i].BlockHeader.PrevBlockHash)
+      message += fmt.Sprintf("    Timestamp : %s\n", time.Unix(Blockchain[i].BlockHeader.Timestamp, 0))
+      message += fmt.Sprintf("    Difficulty : 0x%08x\n", MaxUint - Blockchain[i].BlockHeader.Difficulty)
+      message += fmt.Sprintf("    Nonce %d\n", Blockchain[i].BlockHeader.Nonce)
+      message += fmt.Sprintf("    Data %d\n", Blockchain[i].TransactionData)
+      w.Write([]byte(message))
+    }
+  })
+	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
 		// Track the number of requests
 		requests.Inc()
 		// Track the duration of the request
