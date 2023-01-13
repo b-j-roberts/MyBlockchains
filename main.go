@@ -17,6 +17,7 @@ import (
   "io"
   "flag"
   "fmt"
+  "net/http"
   "log"
   "os"
   mrand "math/rand"
@@ -40,6 +41,9 @@ import (
 
 
   ma "github.com/multiformats/go-multiaddr"
+
+  "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // TODO: For now a block contains one datapoint, in the future change to multiple transactions
@@ -114,6 +118,7 @@ func mineBlockNonce(blockHeader BlockHeader) int {
     }
     blockHeader.Nonce += 1
   }
+  blocksMined.Inc()
   return blockHeader.Nonce
 }
 
@@ -230,6 +235,7 @@ func makeBasicHost(listenPort int, secio bool, randseed int64) (host.Host, error
 func handleStream(s net.Stream) {
 
   log.Println("Got a new stream!")
+  inboundPeers.Inc()
 
   // Create a buffer stream for non blocking read and write.
   rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
@@ -264,6 +270,8 @@ func readData(rw *bufio.ReadWriter) {
       if len(chain) > len(Blockchain) {
         if verifyBlockchain(chain) {
           Blockchain = chain
+          blockheight.Set(float64(len(Blockchain)))
+
 
           storeChainToFile(Blockchain)
         }
@@ -326,6 +334,7 @@ func writeData(rw *bufio.ReadWriter) {
     if isBlockValid(newBlock, Blockchain[len(Blockchain)-1], len(Blockchain)) {
       mutex.Lock()
       Blockchain = append(Blockchain, newBlock)
+      blockheight.Set(float64(len(Blockchain)))
       mutex.Unlock()
     }
 
@@ -400,6 +409,7 @@ var Unmarshal = func(r io.Reader, v interface{}) error {
 // Use os.IsNotExist() to see if the returned error is due
 // to the file being missing.
 func Load(path string) error {
+  snapshotLoading.Set(1.0)
   lock.Lock()
   defer lock.Unlock()
   f, err := os.Open(path)
@@ -412,10 +422,13 @@ func Load(path string) error {
     return err
   }
 
+  snapshotLoading.Set(2.0)
   if verifyBlockchain(checkChain) {
     Blockchain = checkChain
+    blockheight.Set(float64(len(Blockchain)))
   }
 
+  snapshotLoading.Set(3.0)
   return nil
 }
 
@@ -433,6 +446,50 @@ func loadChainFromFile(snapPath string) {
   }
 }
 
+var (
+	// Create a Prometheus metric to track the number of requests
+	requests = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "requests_total",
+		Help: "Total number of requests",
+	})
+	// Create a Prometheus metric to track the duration of requests
+	requestDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name:    "request_duration_seconds",
+		Help:    "Duration of requests",
+		Buckets: prometheus.LinearBuckets(0.01, 0.05, 20),
+	})
+	// Create a Prometheus metric with block height
+	blockheight = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "block_height",
+		Help: "Blockchain current height",
+	})
+	// Create a Prometheus metric to track number of blocks mined
+	blocksMined = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "blocks_mined",
+		Help: "Total number of blocks mined",
+	})
+	// Create a Prometheus metric with status of loading snapshot
+	snapshotLoading = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "snapshot_loading",
+    Help: "Snapshot loading status : 0 - Pre / No Snapshot, 1 - Loading Snapshot, 2 - Verifying Snapshot, 3 - Done",
+	})
+	// Create a Prometheus metric to track the number of inbound peers
+	inboundPeers = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "inbound_peers",
+    Help: "Inbound Peers to node",
+	})
+)
+
+func promSetup() {
+  // Register the metrics with Prometheus
+	prometheus.MustRegister(requests)
+	prometheus.MustRegister(requestDuration)
+	prometheus.MustRegister(blockheight)
+	prometheus.MustRegister(blocksMined)
+	prometheus.MustRegister(snapshotLoading)
+	prometheus.MustRegister(inboundPeers)
+}
+
 //TODO: Multi peer & learn p2p
 func main() {
 	golog.SetAllLoggers(golog.LevelInfo) // Change to DEBUG for extra info
@@ -445,6 +502,7 @@ func main() {
   // Parse options from the command line
   listenPort := flag.Int("port", 0, "Port to listen for connections")
   peerToCall := flag.String("peer", "", "Peer port / path to dial")
+  rpcPort := flag.String("rpc", "", "RPC port / prom metrics port")
   secio := flag.Bool("secio", false, "enable secio")
   seed := flag.Int64("seed", 0, "Seed for id generation")
   snapPath := flag.String("snap", "", "Load blockchain from snapshot")
@@ -468,6 +526,7 @@ func main() {
     genesisBlock.BlockSize = uint(unsafe.Sizeof(genesisBlock))
 
     Blockchain = append(Blockchain, genesisBlock)
+    blockheight.Set(float64(len(Blockchain)))
 
     printChain(Blockchain)
   }
@@ -488,8 +547,6 @@ func main() {
     // a user-defined protocol name.
     ha.SetStreamHandler("/p2p/1.0.0", handleStream)
 
-    select {} // hang forever
-    /**** This is where the listener code ends ****/
   } else {
     ha.SetStreamHandler("/p2p/1.0.0", handleStream)
 
@@ -535,10 +592,37 @@ func main() {
     go writeData(rw)
     go readData(rw)
 
-    select {} // hang forever
-
   }
 
+  promSetup()
+  // Create a new HTTP server to handle metrics requests
+	http.Handle("/metrics", promhttp.Handler())
+	http.HandleFunc("/rpc", func(w http.ResponseWriter, r *http.Request) {
+		// Track the number of requests
+		requests.Inc()
+		// Track the duration of the request
+		defer requestDuration.Observe(time.Since(time.Now()).Seconds())
+    value := r.URL.Query().Get("value")
+    data, err := strconv.Atoi(value)
+    if err != nil {
+      log.Fatal(err)
+    }
+    newBlock := generateBlock(Blockchain[len(Blockchain)-1], data)
+
+    if isBlockValid(newBlock, Blockchain[len(Blockchain)-1], len(Blockchain)) {
+      mutex.Lock()
+      Blockchain = append(Blockchain, newBlock)
+      blockheight.Set(float64(len(Blockchain)))
+      mutex.Unlock()
+    }
+
+    printChain(Blockchain)
+	})
+
+  log.Printf("Serving RPC at %s", *rpcPort)
+	http.ListenAndServe(":" + *rpcPort, nil)
+
+  select {} // hang forever
 }
 
 //TODO: Test suite
