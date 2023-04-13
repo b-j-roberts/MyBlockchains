@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: naive-cryptocurrency-pow-transaction-app
+spec:
+  serviceName: naive-cryptocurrency-pow-transaction-app-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: naive-cryptocurrency-pow-transaction-app
+  template:
+    metadata:
+      labels:
+        app: naive-cryptocurrency-pow-transaction-app
+    spec:
+      containers:
+      - name: naive-cryptocurrency-pow-transaction-app
+        image: brandonjroberts/naive-transaction-node:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8985
+        - containerPort: 8987
+          #        volumeMounts:
+          #        - name: pow-snapshot
+          #          mountPath: /app/snapshot
+          #  volumeClaimTemplates:
+          #  - metadata:
+          #      name: pow-snapshot
+          #    spec:
+          #      accessModes: [ "ReadWriteOnce" ]
+          #      resources:
+          #        requests:
+          #          storage: 1Gi
+          #          TODO
+          #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: naive-cryptocurrency-pow-transaction-app-service
+spec:
+  selector:
+    app: naive-cryptocurrency-pow-transaction-app
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8987
+    targetPort: 8987
+
+

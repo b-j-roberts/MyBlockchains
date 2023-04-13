@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: naive-cryptocurrency-pow-miner-peer-app
+spec:
+  serviceName: naive-cryptocurrency-pow-miner-peer-app-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: naive-cryptocurrency-pow-miner-peer-app
+  template:
+    metadata:
+      labels:
+        app: naive-cryptocurrency-pow-miner-peer-app
+    spec:
+      containers:
+      - name: naive-cryptocurrency-pow-miner-peer-app
+        image: brandonjroberts/naive-miner-node:latest
+        imagePullPolicy: Always
+        env:
+          - name: PEER_TO_CALL
+            value: "/ip4/10.244.0.26/tcp/8985/p2p/QmagSFHgCSVurETrm6yQbf5zbAbvwjaEjcL41QNKhgqrg4"
+        ports:
+        - containerPort: 8985
+        - containerPort: 8986
+        - containerPort: 8987
+          #        volumeMounts:
+          #        - name: pow-snapshot
+          #          mountPath: /app/snapshot
+          #  volumeClaimTemplates:
+          #  - metadata:
+          #      name: pow-snapshot
+          #    spec:
+          #      accessModes: [ "ReadWriteOnce" ]
+          #      resources:
+          #        requests:
+          #          storage: 1Gi
+          #          TODO
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: naive-cryptocurrency-pow-miner-peer-app-service
+spec:
+  selector:
+    app: naive-cryptocurrency-pow-miner-peer-app
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8987
+    targetPort: 8987
