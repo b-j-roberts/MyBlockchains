@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	mrand "math/rand"
@@ -26,6 +27,45 @@ import (
 	"naive-cryptocurrency-pow/src/mempool"
 	"naive-cryptocurrency-pow/src/metrics"
 )
+
+//TODO: Refactor to loop going thru peers rw buffers and querying them for mempool data?
+
+type Peer struct {
+  PeerID peer.ID
+  PeerAddr ma.Multiaddr
+  Reputation uint
+}
+
+//TODO: To MempoolHost
+type MempoolPeer struct {
+//  PeerID peer.ID
+//  PeerAddr ma.Multiaddr
+  PeerCount int
+  Host host.Host
+  PeerList []Peer
+}
+
+var TheMempoolPeer MempoolPeer
+
+func InitMempool(listenPort int, secio bool, randseed int64, peerFilename string) {
+  TheMempoolPeer.PeerList = make([]Peer, 0)
+  SetupMempoolHost(listenPort, secio, randseed)
+  DialMempoolPeers(peerFilename)
+}
+
+func SetupMempoolHost(listenPort int, secio bool, randseed int64) {
+  // Setup P2P                                                         
+  var err error
+  TheMempoolPeer.Host, err = makeBasicMempoolHost(listenPort, secio, randseed)    
+  if err != nil {                                                 
+    log.Fatal(err)                                                
+  }                                                               
+                                                                  
+  log.Println("listening for connections")    
+  // Set a stream handler on host A. /p2p/1.0.0 is
+  // a user-defined protocol name.            
+  TheMempoolPeer.Host.SetStreamHandler("/p2p/1.0.0", handleMempoolStream)
+}
 
 // makeBasicHost creates a LibP2P host with a random peer ID listening on the
 // given multiaddress. It will use secio if secio is true.
@@ -86,21 +126,29 @@ func handleMempoolStream(s net.Stream) {
   // Create a buffer stream for non blocking read and write.
   rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
 
-  go readMempoolData(rw)
-  go writeMempoolData(rw)
+  //TODO: Dial mempool peer?
+  wg := sync.WaitGroup{}
+  wg.Add(2)
+  go readMempoolData(rw, &wg)
+  go writeMempoolData(rw, &wg)
+  wg.Wait()
 
   // stream 's' will stay open until you close it (or the other side closes it).
 }
+//TODO: Peer object w/ array of peers connected to with info about them for peer discovery and gossiping, should I read from peers that sub to me?
 
-func readMempoolData(rw *bufio.ReadWriter) {
+func readMempoolData(rw *bufio.ReadWriter, wg *sync.WaitGroup) {
+  defer wg.Done()
 
   for {
     str, err := rw.ReadString('\n')
     if err != nil {
-      log.Fatal(err)
+      log.Println("Error reading from buffer")
+      return
     }
 
     if str == "" {
+      log.Println("Empty string received. Closing connection.")
       return
     }
     if str != "\n" {
@@ -126,7 +174,8 @@ func readMempoolData(rw *bufio.ReadWriter) {
   }
 }
 
-func writeMempoolData(rw *bufio.ReadWriter) {
+func writeMempoolData(rw *bufio.ReadWriter, wg *sync.WaitGroup) {
+  defer wg.Done()
 
   go func() {
     for {
@@ -139,8 +188,18 @@ func writeMempoolData(rw *bufio.ReadWriter) {
       mempool.TheMempool.Mutex.Unlock()
 
       mempool.TheMempool.Mutex.Lock()
-      rw.WriteString(fmt.Sprintf("%s\n", string(bytes)))
-      rw.Flush()
+      val, err := rw.WriteString(fmt.Sprintf("%s\n", string(bytes)))
+      if err != nil {
+        log.Println("Error writing to buffer")
+        return
+      }
+      log.Println("Wrote", val, "bytes to buffer")
+      err = rw.Flush()
+      if err != nil {
+        log.Println("Error flushing buffer")
+        return
+      }
+
       mempool.TheMempool.Mutex.Unlock()
 
     }
@@ -148,50 +207,71 @@ func writeMempoolData(rw *bufio.ReadWriter) {
 
 }
 
-func DialMempoolPeer(listenPort int, secio bool, randseed int64, peerFilename string) {
-  // Setup P2P
-  ha, err := makeBasicMempoolHost(listenPort, secio, randseed)
+func DialMempoolPeers(peerFilename string) {
+  f, err := os.Open(peerFilename)
   if err != nil {
     log.Fatal(err)
   }
+  defer f.Close()
 
-  file, err := os.Open(peerFilename)
-  if err != nil {
-    log.Println("No peer file found")
-    log.Fatal(err)
-  }
-  defer file.Close()
-
-  var peerToCall string
-  scanner := bufio.NewScanner(file)
+  peerCount := 0
+  peersToDial := make([]string, 0)
+  scanner := bufio.NewScanner(f)
   for scanner.Scan() {
-    peerToCall = scanner.Text()
+    // Ignore lines with # or // at the beginning
+    if strings.HasPrefix(scanner.Text(), "#") || strings.HasPrefix(scanner.Text(), "//") {
+      continue
+    }
+
+    peerToCall := scanner.Text()
+    peersToDial = append(peersToDial, peerToCall)
+    peerCount++
   }
 
-  if peerToCall == "" {
-    log.Println("listening for connections")
-    // Set a stream handler on host A. /p2p/1.0.0 is
-    // a user-defined protocol name.
-    ha.SetStreamHandler("/p2p/1.0.0", handleMempoolStream)
 
-  } else {
-    ha.SetStreamHandler("/p2p/1.0.0", handleMempoolStream)
+  if peerCount > 0 {
+    log.Println("Dialing", peerCount, "peers")
+    var wg sync.WaitGroup
+    wg.Add(peerCount)
+    for _, peerToCall := range peersToDial {
+      go DialMempoolPeer(peerToCall, &wg)
+    }
+    wg.Wait()
+  }
+
+  if TheMempoolPeer.PeerCount <= 0 {
+    log.Println("WARNING: No peers dialed")
+  }
+}
+
+
+//func DialMempoolPeer(ha *host.Host, peerToCall string) {
+func DialMempoolPeer(peerToCall string, wg *sync.WaitGroup) {
+  defer wg.Done()
+  log.Println("Dialing Mempool Peer", peerToCall)
+
+  //TODO: var newPeer Peer
+  if peerToCall != "" {
+    //TheMempoolPeer.Host.SetStreamHandler("/p2p/1.0.0", handleMempoolStream)
 
     // The following code extracts target's peer ID from the
     // given multiaddress
     ipfsaddr, err := ma.NewMultiaddr(peerToCall)
     if err != nil {
-      log.Fatalln(err)
+      log.Println("Error parsing multiaddress for peer")
+      return
     }
 
     pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
     if err != nil {
-      log.Fatalln(err)
+      log.Println("Error parsing peer ID from multiaddress")
+      return
     }
 
     peerid, err := peer.Decode(pid)
     if err != nil {
-      log.Fatalln(err)
+      log.Println("Error decoding peer ID")
+      return
     }
 
     // Decapsulate the /ipfs/<peerID> part from the target
@@ -202,22 +282,28 @@ func DialMempoolPeer(listenPort int, secio bool, randseed int64, peerFilename st
 
     // We have a peer ID and a targetAddr so we add it to the peerstore
     // so LibP2P knows how to contact it
-    ha.Peerstore().AddAddr(peerid, targetAddr, pstore.PermanentAddrTTL)
+    TheMempoolPeer.Host.Peerstore().AddAddr(peerid, targetAddr, pstore.PermanentAddrTTL)
 
     log.Println("opening stream")
     // make a new stream from host B to host A
     // it should be handled on host A by the handler we set above because
     // we use the same /p2p/1.0.0 protocol
-    s, err := ha.NewStream(context.Background(), peerid, "/p2p/1.0.0")
+    s, err := TheMempoolPeer.Host.NewStream(context.Background(), peerid, "/p2p/1.0.0")
     if err != nil {
-      log.Fatalln(err)
+      log.Println("Error opening stream")
+      return
     }
     // Create a buffered stream so that read and writes are non blocking.
     rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
+    TheMempoolPeer.PeerCount++
 
+    var wgInner sync.WaitGroup
+    wgInner.Add(2)
     // Create a thread to read and write data.
-    go writeMempoolData(rw)
-    go readMempoolData(rw)
+    go writeMempoolData(rw, &wgInner)
+    go readMempoolData(rw, &wgInner)
+    wgInner.Wait()
 
+    TheMempoolPeer.PeerCount--
   }
 }

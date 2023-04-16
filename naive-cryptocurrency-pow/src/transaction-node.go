@@ -24,7 +24,7 @@ func main() {
   //  log.Fatal("You must specify a port to bind the client on. Use the 'port' flag")
   //}
 
-  p2p.DialMempoolPeer(*listenPort, *secio, *seed, *peerFilename)
+  p2p.InitMempool(*listenPort, *secio, *seed, *peerFilename)
   //TODO: Remove read data and only write data on new transactions till found by x peers
   rpc.RpcTransactionSetup(*rpcPort)
 

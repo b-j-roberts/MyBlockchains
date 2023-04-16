@@ -48,7 +48,7 @@ func main() {
   ledger.PrintAccounts(5)
 
   p2p.DialPeer(*listenLedgerPort, *secio, *seed, *peerToCallLedger)
-  p2p.DialMempoolPeer(*listenMempoolPort, *secio, *seed, *mempoolPeerFilename)
+  p2p.InitMempool(*listenMempoolPort, *secio, *seed, *mempoolPeerFilename)
   metrics.PromSetup()
 
   log.Println("RPC port: ", *rpcPort)

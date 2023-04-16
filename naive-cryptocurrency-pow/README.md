@@ -76,66 +76,6 @@ kubectl apply -f kube/<node-type>-node-deploy-sts.yaml
 ```
 
 ### Command line arguments
-Testing:
-Check if all transactions go where they can with all possible verification steps
-Check if all blocks go where they can with all possible verification steps
-TODO: transaction node only reads p2p data on transaction interested in
-Check if node fails based on different kinds of invalid data ( like nonce, transactions, blocks, ... )
-
-mem-peer & mem-port : Start 2 transaction nodes, connect them p2p, send a transaction on one, wait to see it show on all: in all envs (-- local --, -- docker --,-- k8s --) & Other node types ( miner --- & rpc --- ) & cross all node types
-```
-# T1
-## Clear out config/peer-list-mempool.txt
-./bin/transaction-node
-
-# T2
-## Add above peer to config/peer-list-mempool.txt
-./bin/transaction-node --rpc 18987 --port 8988
-
-# T3
-./src/scripts/rpc-transaction.sh -a accounts/account-121212/ -t 1 -am 1000 -f 100 -n 1 -p 18987 -o localhost
-./src/scripts/rpc-transaction.sh -a accounts/account-121212/ -t 1 -am 1000 -f 100 -n 2 -p 8987 -o localhost
-
-
-
-# T1
-docker run -it brandonjroberts/naive-transaction-node
-
-# T2
-docker run -e PEER_TO_CALL="/ip4/172.17.0.2/tcp/8985/p2p/QmSzpK23zd5TDpnks3pn4oXwtUMXAZtGEifE6WSc74pWnS" -it brandonjroberts/naive-transaction-node
-
-# T3
-./src/scripts/rpc-transaction.sh -a accounts/account-121212/ -t 1 -am 1000 -f 100 -n 1 -p 8987 -o 172.17.0.2
-./src/scripts/rpc-transaction.sh -a accounts/account-121212/ -t 1 -am 1000 -f 100 -n 2 -p 8987 -o 172.17.0.3
-
-
-# T1
-kubectl apply -f kube/transaction-node-deploy-sts.yaml
-# k9s get logs for ip / id & add value to kube/transaction-node-deploy-sts-with-peer.yaml at PEER_TO_CALL env
-kubectl apply -f kube/transaction-node-deploy-sts-with-peer.yaml
-
-TODO: account not on node, send less info? - create transaction from go code and then send data
-kubectl port-forward service/naive-cryptocurrency-pow-transaction-app-service 8987:8987
-./src/scripts/rpc-transaction.sh -a accounts/account-121212/ -t 1 -am 1000 -f 100 -n 1 -p 8987 -o localhost
-kubectl port-forward service/naive-cryptocurrency-pow-transaction-peer-app-service 8987:8987
-./src/scripts/rpc-transaction.sh -a accounts/account-121212/ -t 1 -am 1000 -f 100 -n 2 -p 8987 -o localhost
-```
-git
-multipeer mempool
-clear mempool transactions when done / mined
-                      Do the same w/ 3, 4, 5 transaction nodes in all envs & other node types
-blk-peer & blk-port : Do the same as above but w/ miner nodes
-Test the same as above connecting mulitple node types
-
-account-id : create different accounts and share w/ volume in k8s. Ensure same # doesn't give same account
-
-rpc : Try all rpc requests & change to rpc from http?
-secio : figure it out
-seed : Figure it out
-air : test airdrop in all envs and make sure my account is saved somewhere private
-snap : test snapshot in all envs and save volume works
-
-TODO: Test incorrect inputs/try duping system/...
 
 ** Generic Arguments **
 - mem-peer   : (Required) Peer to dial for mempool data #TODO: Change to config file and use same peer for blk & mem?
@@ -161,7 +101,9 @@ TODO: Test incorrect inputs/try duping system/...
 ### Debugging
 
 Here are instructions to debug locally :
-
+```
+gdb
+```
 
 
 ### Scripts
