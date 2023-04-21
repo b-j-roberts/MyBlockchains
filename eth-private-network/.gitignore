@@ -1,5 +1,5 @@
 logs/
 data/
 data2/
-scripts/sendTransaction.json
-scripts/sendGet.sh
+sendTransaction.json
+sendGet.json
