@@ -1,0 +1,11 @@
+{
+    "jsonrpc": "2.0",
+    "method": "eth_sendTransaction",
+    "params": [{
+        "from": "0xc2a9bd81Ef8af24F3baACFc6bF611Cd8d20D0114",
+        "to": "0xc0ffee254729296a45a3885639AC7E10F9d54979",
+        "value": "0x3e8",
+        "gasPrice": "0xa"
+    }],
+    "id": 1
+}
