@@ -1,0 +1,3 @@
+[submodule "naive-blockchain/naive-cryptocurrency-l2/go-ethereum"]
+	path = naive-blockchain/naive-cryptocurrency-l2/go-ethereum
+	url = git@github.com:b-j-roberts/go-ethereum.git
