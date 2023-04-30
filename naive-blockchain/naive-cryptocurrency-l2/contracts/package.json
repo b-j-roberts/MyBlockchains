@@ -9,12 +9,15 @@
   },
   "scripts": {
     "build": "solc --bin --abi -o builds contracts/*.sol",
+    "deploy-private-local": "./scripts/deploy-private-local.sh && node scripts/deploy_private.js",
     "deploy-goerli": "node scripts/deploy_goerli.js",
-    "test-goerli": "mocha tests --timeout 30000"
+    "test-private": "mocha tests/transaction-storage.private.test.js --timeout 30000",
+    "test-goerli": "mocha tests/transaction-storage.goerli.test.js --timeout 30000"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "shelljs": "^0.8.5",
     "truffle-hdwallet-provider": "^1.0.17",
     "web3": "^1.9.0"
   }
