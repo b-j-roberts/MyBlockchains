@@ -1,53 +1,48 @@
-// References :
-// https://github.com/nosequeldeebee/blockchain-tutorial/tree/master/p2p
-// https://github.com/nosequeldeebee/blockchain-tutorial/blob/master/proof-work/main.go
-// https://www.oreilly.com/library/view/mastering-bitcoin/9781491902639/ch07.html
-
 package main
 
 import (
-  "bufio"
-  "bytes"
-  "context"
+	"bufio"
+	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
-  "encoding/binary"
-  "encoding/gob"
-  "encoding/json"
-  "io"
-  "flag"
-  "fmt"
-  "net/http"
-  "log"
-  "os"
-  mrand "math/rand"
-  "strings"
-  "strconv"
-  "sync"
-  "time"
-  valid "github.com/asaskevich/govalidator"
+	"encoding/binary"
+	"encoding/gob"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"log"
+	mrand "math/rand"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 
-  unsafe "unsafe"
+	valid "github.com/asaskevich/govalidator"
 
-  //"github.com/davecgh/go-spew/spew"
+	unsafe "unsafe"
+
+	//"github.com/davecgh/go-spew/spew"
 	golog "github.com/ipfs/go-log"
 
-  libp2p "github.com/libp2p/go-libp2p"
-  crypto "github.com/libp2p/go-libp2p/core/crypto"
-  host "github.com/libp2p/go-libp2p/core/host"
-  net "github.com/libp2p/go-libp2p/core/network"
-  peer "github.com/libp2p/go-libp2p/core/peer"
-  pstore "github.com/libp2p/go-libp2p/core/peerstore"
+	libp2p "github.com/libp2p/go-libp2p"
+	crypto "github.com/libp2p/go-libp2p/core/crypto"
+	host "github.com/libp2p/go-libp2p/core/host"
+	net "github.com/libp2p/go-libp2p/core/network"
+	peer "github.com/libp2p/go-libp2p/core/peer"
+	pstore "github.com/libp2p/go-libp2p/core/peerstore"
 
+	ma "github.com/multiformats/go-multiaddr"
 
-  ma "github.com/multiformats/go-multiaddr"
-
-  "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // TODO: For now a block contains one datapoint, in the future change to multiple transactions
-// TODO: match closer https://www.oreilly.com/library/view/mastering-bitcoin/9781491902639/ch07.html 
+// TODO: match closer https://www.oreilly.com/library/view/mastering-bitcoin/9781491902639/ch07.html
 type BlockHeader struct {
   Version int // TODO: Why version
   PrevBlockHash uint32

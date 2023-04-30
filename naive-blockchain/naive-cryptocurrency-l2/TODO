@@ -1,7 +1,0 @@
-1. Brainstorm Design & Decide on feature set
-  a. zk or optimistic?
-  b. What parts will be centralized vs not for now
-  c. Full control flow for each type of user: Sequencer, verifier, user, ...
-  ...
-
-2. Build?
