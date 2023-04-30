@@ -10,9 +10,12 @@ gasLimit=8000000
 declare -A alloc=()
 alloc[${ADDR1}]="200000000000000"
 alloc[${ADDR2}]="250000000000000"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SCRIPT_DIR=$SCRIPT_DIR/..
+touch $SCRIPT_DIR/genesis.json
 
 # Generate the genesis.json file with the variables
-cat <<EOF > genesis.json
+cat <<EOF > $SCRIPT_DIR/genesis.json
 {
   "config": {
     "chainId": $chainId,
@@ -39,13 +42,13 @@ EOF
 count=0
 for addr in "${!alloc[@]}"; do
     if (($count > 0)); then
-      echo "," >> genesis.json
+      echo "," >> $SCRIPT_DIR/genesis.json
     fi
-    echo -n "    \"$addr\": { \"balance\": \"${alloc[$addr]}\" }" >> genesis.json
+    echo -n "    \"$addr\": { \"balance\": \"${alloc[$addr]}\" }" >> $SCRIPT_DIR/genesis.json
     count=$((count+1))
 done
 
-cat <<EOF >> genesis.json
+cat <<EOF >> $SCRIPT_DIR/genesis.json
   }
 }
 EOF
