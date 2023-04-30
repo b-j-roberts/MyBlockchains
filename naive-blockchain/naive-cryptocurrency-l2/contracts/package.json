@@ -1,0 +1,21 @@
+{
+  "name": "naive-crypto-l2-contracts",
+  "version": "1.0.0",
+  "description": "Naive Crypto L2 Contracts",
+  "main": "index.js",
+  "type": "module",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "build": "solc --bin --abi -o builds contracts/*.sol",
+    "deploy-goerli": "node scripts/deploy_goerli.js",
+    "test-goerli": "mocha tests --timeout 30000"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "truffle-hdwallet-provider": "^1.0.17",
+    "web3": "^1.9.0"
+  }
+}
