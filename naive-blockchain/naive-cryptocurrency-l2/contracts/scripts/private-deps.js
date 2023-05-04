@@ -18,10 +18,6 @@ export const deploy = async (contractName, args, from, gas) => {
 
   //shell.exec("../../../../eth-private-network/scripts/launch-network-overwrite.sh", function(err, stdout, stderr) {
 
-  //const provider = new HDWalletProvider(
-  //  process.env.MNEMONIC,
-  //  'https://goerli.infura.io/v3/e1f81b43fa6e46a9a7ec9c48165732b1'
-  //)
   const web3 = new Web3('http://localhost:8545')
   console.log(`deploying ${contractName}`)
 
@@ -40,6 +36,8 @@ export const deploy = async (contractName, args, from, gas) => {
     })
     .send({
       from: from || accounts[0],
+      gas: 3000000,
+      gasPrice: 100000
       //gas: gas || 1500000,
       //gasPrice: '30000000000000'
     })

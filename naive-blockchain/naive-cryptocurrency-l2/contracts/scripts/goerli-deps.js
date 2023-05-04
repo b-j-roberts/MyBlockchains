@@ -37,6 +37,10 @@ export const deploy = async (contractName, args, from, gas) => {
     })
     .send({
       from: from || accounts[0],
+      gas: 10000000,
+      //gasPrice: 30000000000
+      value: 0,
+      gasPrice: '200000'
       //gas: gas || 1500000,
       //gasPrice: '30000000000000'
     })
