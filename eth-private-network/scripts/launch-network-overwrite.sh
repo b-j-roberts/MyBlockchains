@@ -20,7 +20,7 @@ ACCOUNT1=$(cat $SCRIPT_DIR/data/keystore/* | jq -r '.address' | head -n 1)
 ACCOUNT2=$(cat $SCRIPT_DIR/data2/keystore/* | jq -r '.address' | head -n 1)
 $SCRIPT_DIR/scripts/generate-genesis.sh $ACCOUNT1 $ACCOUNT2
 geth init --datadir $SCRIPT_DIR/data/ $SCRIPT_DIR/genesis.json
-nohup geth --networkid 505 --datadir $SCRIPT_DIR/data/ --nodiscover --http --http.api "eth,net,web3,personal,web3" --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $SCRIPT_DIR/password.txt >> "$GETH_LOG_DIR/geth-1.log" --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit 300000000 2>&1 &
+nohup geth --networkid 505 --datadir $SCRIPT_DIR/data/ --nodiscover --http --http.api "eth,net,web3,personal,web3" --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $SCRIPT_DIR/password.txt --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit 300000000 >> "$GETH_LOG_DIR/geth-1.log" 2>&1 &
 
 
 echo "Waiting for node 1 to start..."
