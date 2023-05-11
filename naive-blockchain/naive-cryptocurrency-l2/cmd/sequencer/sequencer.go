@@ -3,16 +3,14 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
-	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,204 +21,52 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
 
-	contracts "naive-l2/contracts/go"
+	naive_utils "naive-l2/src/utils"
 )
 
-// Don't preserve reorg'd out blocks
-func shouldPreserveFalse(_ *types.Header) bool {
-  return false                                      
-}
-
-type CachingConfig struct {
-  Archive               bool          `koanf:"archive"`
-  BlockCount            uint64        `koanf:"block-count"`
-  BlockAge              time.Duration `koanf:"block-age"`
-  TrieTimeLimit         time.Duration `koanf:"trie-time-limit"`
-  TrieDirtyCache        int           `koanf:"trie-dirty-cache"`
-  TrieCleanCache        int           `koanf:"trie-clean-cache"`
-  SnapshotCache         int           `koanf:"snapshot-cache"`
-  DatabaseCache         int           `koanf:"database-cache"`
-  SnapshotRestoreMaxGas uint64        `koanf:"snapshot-restore-gas-limit"`
-}
-
-// See arbnode/execution/blockchain.go
-var DefaultCachingConfig = CachingConfig{
-  Archive:               false,
-  BlockCount:            128,
-  BlockAge:              30 * time.Minute,
-  TrieTimeLimit:         time.Hour,
-  TrieDirtyCache:        1024,
-  TrieCleanCache:        600,
-  SnapshotCache:         400,
-  DatabaseCache:         2048,
-  SnapshotRestoreMaxGas: 300_000_000_000,
-}
-
-func DefaultCacheConfigFor(stack *node.Node, archive bool) *core.CacheConfig {
-  baseConf := ethconfig.Defaults
-  //if archive {
-  //  baseConf = ethconfig.ArchiveDefaults
-  //}
-
-  return &core.CacheConfig{
-    TrieCleanLimit:        DefaultCachingConfig.TrieCleanCache,
-    TrieCleanJournal:      stack.ResolvePath(baseConf.TrieCleanCacheJournal),
-    TrieCleanRejournal:    baseConf.TrieCleanCacheRejournal,
-    TrieCleanNoPrefetch:   baseConf.NoPrefetch,
-    TrieDirtyLimit:        DefaultCachingConfig.TrieDirtyCache,
-    TrieDirtyDisabled:     DefaultCachingConfig.Archive,
-    TrieTimeLimit:         DefaultCachingConfig.TrieTimeLimit,
-    SnapshotLimit:         DefaultCachingConfig.SnapshotCache,
-    Preimages:             baseConf.Preimages,
-  }
-}
-
-type L1InOut struct {
-  RpcUrl string
-  L1Client *ethclient.Client
-  Contract *contracts.Contracts
-  ContractAddress common.Address
-  node *node.Node
-}
-
-func NewL1InOut(rpcUrl string, node *node.Node) *L1InOut {
-  l1Comms := &L1InOut{
-    RpcUrl: rpcUrl,
-    node: node,
-  }
-
-  rawRpc, err := rpc.Dial(l1Comms.RpcUrl)
-  if err != nil {
-    log.Fatalf("Failed to connect to l1 node: %v", err)
-    return nil
-  }
-
-  l1Comms.L1Client = ethclient.NewClient(rawRpc)
-
-  // Read address from file
-  addressFile, err := os.Open("/home/b-j-roberts/workspace/blockchain/my-chains/naive-blockchain/naive-cryptocurrency-l2/contracts/builds/contract-address.txt") //TODO: Hardcode
-  addressStringBytes := make([]byte, 42) //TODO: Hardcode
-  log.Println("Address length is", 42)
-  addressFile.Read(addressStringBytes)
-  addressString := string(addressStringBytes)
-  log.Println("Address string is", addressString)
-  l1Comms.ContractAddress = common.HexToAddress(addressString)
-
-  if err != nil {
-    log.Fatalf("Failed to open address file: %v", err)
-    return nil
-  }
-  defer addressFile.Close()
-
-  //backends := node.AccountManager().Backends(keystore.KeyStoreType)
-  //if len(backends) == 0 {
-  //  log.Fatalf("No key store backends found")
-  //}
-  //ks := backends[0].(*keystore.KeyStore)
-  //address := ks.Accounts()[0].Address
-        
-  log.Println("Contract Address is", l1Comms.ContractAddress.Hex())
-  
-  l1Comms.Contract, err = contracts.NewContracts(l1Comms.ContractAddress, l1Comms.L1Client)
-  if err != nil {
-    log.Fatalf("Failed to instantiate contract: %v", err)
-    return nil
-  }
-
-  batchCount, err := l1Comms.Contract.GetBatchCount(nil)
-  if err != nil {
-    log.Fatalf("Failed to get batch count: %v", err)
-    return nil
-  }
-
-  log.Println("Batch number is", batchCount)
-
-  return l1Comms
-}
-
-func (l1InOut *L1InOut) PostBatch(transactionByteData []byte, id int64, hash [32]byte) error {
-  log.Println("Posting batch here", id, "with hash", hash)
-  // Read address from json file under .address field
-  var jsonObject map[string]interface{}
-  jsonFile, err := os.Open("/home/b-j-roberts/workspace/blockchain/my-chains/eth-private-network/data/keystore/UTC--2023-05-04T04-33-35.152600358Z--d966e954a01644a89eeb9c70157d5a1c4410f31b") //TODO: Hardcode
-  if err != nil {
-    return fmt.Errorf("failed to open address.json: %v", err)
-  }
-  defer jsonFile.Close()
-
-  jsonParser := json.NewDecoder(jsonFile)
-  if err = jsonParser.Decode(&jsonObject); err != nil {
-    return fmt.Errorf("failed to decode address.json: %v", err)
-  }
-  addressString := jsonObject["address"].(string)
-  log.Println("Address string is", addressString)
-
-  batchCount, err := l1InOut.Contract.GetBatchCount(nil)  
-  if err != nil {  
-    log.Fatalf("Failed to get batch count: %v", err)  
-    return nil  
-  }  
-  log.Println("Batch number is", batchCount)
-
-  SignerFunc := func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
-    log.Println("Signing transaction with address", address.Hex())
-    keystore := keystore.NewKeyStore("/home/b-j-roberts/workspace/blockchain/my-chains/eth-private-network/data/keystore", keystore.StandardScryptN, keystore.StandardScryptP) //TODO: Hardcode
-    //account, err := l1AccManager.Find(accounts.Account{Address: address})
-    //if err != nil {
-    //  return nil, fmt.Errorf("failed to find account: %v", err)
-    //}
-    return keystore.SignTxWithPassphrase(accounts.Account{Address: address}, "password", tx, big.NewInt(505)) //TODO: Hardcode
-  }
-
-  log.Println("Posting batch with id", id, "and hash", hash, "from address", addressString)
-  tx, err := l1InOut.Contract.StoreBatch(&bind.TransactOpts{
-    From: common.HexToAddress(addressString),
-    Value: big.NewInt(0),
-    GasLimit: 3000000, //TODO: Hardcode
-    GasPrice: big.NewInt(200), //TODO: Hardcode
-    Signer: SignerFunc,
-  //  Signer: accounts.NewManage
-  }, big.NewInt(id), hash, transactionByteData)
-  if err != nil {
-    return fmt.Errorf("failed to store batch: %v", err)
-  }
-  log.Println("Batch stored with transaction hash", tx.Hash().Hex())
-
-  batchCount, err = l1InOut.Contract.GetBatchCount(nil)  
-  if err != nil {  
-    log.Fatalf("Failed to get batch count: %v", err)  
-    return nil  
-  }  
-  log.Println("Batch number is", batchCount)
-
-  return nil
-}
-
 type Batcher struct {
+  BatcherConfig *BatcherConfig
+
+  L1Comms *naive_utils.L1Comms
   L2Blockchain *core.BlockChain
   BlockIdx     uint64
-  TxBatch      []*types.Transaction
+
   PostedBlockIdx uint64
   LastPostTime time.Time
 
-  L1Comms *L1InOut
+  TxBatch      []*types.Transaction
   BatchId int64
 }
 
-func NewBatcher(l2Blockchain *core.BlockChain, l1NodeUrl string, node *node.Node) *Batcher {
+type BatcherConfig struct {
+  L1NodeUrl string
+  L1ContractAddress common.Address
+  PosterAddress common.Address
+  BatchSize int
+  MaxBatchTimeMinutes int
+}
+
+
+func NewBatcher(l2Blockchain *core.BlockChain, batcherConfig *BatcherConfig) *Batcher {
+  l1Comms, err := naive_utils.NewL1Comms(batcherConfig.L1NodeUrl, batcherConfig.L1ContractAddress)
+  if err != nil {
+    log.Fatalf("Error creating L1 comms: %s\n", err)
+  }
+
+  //TODO: Load info from L1
   return &Batcher{
+    BatcherConfig: batcherConfig,
+    L1Comms: l1Comms,
     L2Blockchain: l2Blockchain,
     BlockIdx:     0,
-    TxBatch:      make([]*types.Transaction, 0),
     PostedBlockIdx: 0,
     LastPostTime: time.Now(), //TODO
-    L1Comms: NewL1InOut(l1NodeUrl, node),
+    TxBatch:      make([]*types.Transaction, 0),
     BatchId: 0,
   }
 }
@@ -231,36 +77,20 @@ func (batcher *Batcher) PostBatch() error {
   }
 
   log.Printf("Posting batch of %d txs\n", len(batcher.TxBatch))
-  transactionByteData := make([]byte, 0)
+
   //TODO: Compress transaction data
+  transactionByteData := make([]byte, 0)
   for _, tx := range batcher.TxBatch {
-    log.Printf("Posting tx: %s\n", tx.Hash().Hex())
     txBin, err := tx.MarshalBinary()
     if err != nil {
       return err
     }
-    log.Printf("Tx: %s\n", txBin)
     transactionByteData = append(transactionByteData, txBin...)
   }
 
-  //TODO: Post to l1 contract
-  //TODO: Temporarily posting to file
-  f, err := os.OpenFile("/home/b-j-roberts/naive-sequencer-data/batched_txs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) //TODO: Hardcode
-  if err != nil {
-    return err
-  }
-  defer f.Close()
-
-  f.WriteString(fmt.Sprintf("Idx Before Post: %d\n", batcher.PostedBlockIdx))
-  f.WriteString(fmt.Sprintf("Posting Count: %d\n", len(batcher.TxBatch)))
-  f.WriteString(fmt.Sprintf("Idx After Post: %d\n", batcher.BlockIdx))
-  f.Write(transactionByteData)
-  f.WriteString("\n")
-
   byteDataHash := sha256.Sum256(transactionByteData)// TODO: Use blockchain root
 
-  log.Printf("Posting batch with values: %d, %d, %x\n", batcher.BatchId, byteDataHash, transactionByteData)
-  err = batcher.L1Comms.PostBatch(transactionByteData, batcher.BatchId, byteDataHash)
+  err := batcher.L1Comms.PostBatch(transactionByteData, batcher.BatchId, byteDataHash, batcher.BatcherConfig.PosterAddress)
   if err != nil {
     return err
   }
@@ -277,7 +107,9 @@ func (batcher *Batcher) Start() error {
         batcher.TxBatch = append(batcher.TxBatch, tx)
       }
 
-      if len(batcher.TxBatch) > 10 || (time.Since(batcher.LastPostTime) > 1 * time.Minute && len(batcher.TxBatch) > 0) { //TODO: Hardcode
+      if len(batcher.TxBatch) > batcher.BatcherConfig.BatchSize ||
+         (len(batcher.TxBatch) > 0 && batcher.BatcherConfig.MaxBatchTimeMinutes > 0 &&
+          time.Since(batcher.LastPostTime) > time.Duration(batcher.BatcherConfig.MaxBatchTimeMinutes) * time.Minute && len(batcher.TxBatch) > 0) {
         err := batcher.PostBatch()
         if err != nil {
           panic(err)
@@ -289,6 +121,7 @@ func (batcher *Batcher) Start() error {
       }
       batcher.BlockIdx++
     } else {
+      //TODO: Only sleep if caught up
       time.Sleep(100 * time.Millisecond)
     }
   }}
@@ -299,26 +132,15 @@ func (batcher *Batcher) Start() error {
 }
 
 type Node struct {
-  NaiveDb ethdb.Database
+  ChainDb ethdb.Database
   Node    *node.Node
   L2Blockchain *core.BlockChain
   Engine  consensus.Engine
   Eth     *eth.Ethereum
   Batcher *Batcher
-  // TODO: L1Reader, BatchPoster, ...
 }
 
-type NaiveAPI struct {
-  version string
-}
-
-func NewNaiveAPI() *NaiveAPI {
-  return &NaiveAPI{
-    version: "1.0",
-  }
-}
-
-func NewNode(naiveDb ethdb.Database, node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config) (*Node, error) {
+func NewNode(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config, l1ContractAddress common.Address, posterAddress common.Address, l1Host string, l1Port int) (*Node, error) {
   txPool := txpool.NewTxPool(config.TxPool, l2Blockchain.Config(), l2Blockchain)
   naive_eth := eth.NewNaiveEthereum(l2Blockchain, chainDb, node, config, txPool, engine)
   //TODO: Learn more about APIs & which to enable/disable based on public / ...?
@@ -338,33 +160,28 @@ func NewNode(naiveDb ethdb.Database, node *node.Node, chainDb ethdb.Database, l2
   }...)
   node.RegisterAPIs(apis)
 
+  l1Url := fmt.Sprintf("http://%s:%d", l1Host, l1Port)
+
+  batcherConfig := &BatcherConfig{
+    L1NodeUrl: l1Url,
+    L1ContractAddress: l1ContractAddress,
+    PosterAddress: posterAddress,
+    BatchSize: 10,
+    MaxBatchTimeMinutes: 1,
+  }
+
   //TODO: APIs / RPC
   return &Node{
-    NaiveDb: naiveDb,
+    ChainDb: chainDb,
     Node:    node,
     L2Blockchain: l2Blockchain,
     Engine:  engine,
     Eth:     naive_eth,
-    Batcher:   NewBatcher(l2Blockchain, "http://localhost:8545", node), //TODO: Hardcode
+    Batcher:   NewBatcher(l2Blockchain, batcherConfig), //TODO: Hardcode
   }, nil
 }
 
 func (node *Node) Start() error {
-  //unauth, apis := node.Node.GetAPIs2()
-  //log.Println("These are the APIs", unauth, apis)
-  //log.Println("Some Configs", node.Node.IPCEndpoint(), node.Node.HTTPEndpoint())
-
-  // Read address from json file under .address field
-  //address := ""
-  //jsonFile, err := os.Open(node.config.DataDir + j)
-  //if err != nil {
-  //  return fmt.Errorf("failed to open address.json: %v", err)
-  //}
-  //defer jsonFile.Close()
-  //jsonParser := json.NewDecoder(jsonFile)
-  //if err = jsonParser.Decode(&address); err != nil {
-  //  return fmt.Errorf("failed to decode address.json: %v", err)
-  //}
   backends := node.Node.AccountManager().Backends(keystore.KeyStoreType)
   if len(backends) == 0 {
     return fmt.Errorf("no key store backends found")
@@ -397,35 +214,33 @@ func (node *Node) Start() error {
   return nil
 }
 
-func main() { os.Exit(mainImpl()) }
+func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules string, l1Host string, l1Port int,
+                     l1ContractAddress common.Address, posterAddress common.Address) (*Node, error) {
+  // Function used to create Naive Node mimicing eth/backend.go:New for Ethereum Node object
 
-func mainImpl() int {
-  log.Println("Starting sequencer...")
-
-  //TODO: Learn more about default config
-  nodeConfig := node.DefaultConfig
-  nodeConfig.DataDir = "/home/b-j-roberts/naive-sequencer-data" //TODO: Hardcode
-  nodeConfig.P2P.ListenAddr = ""
-  nodeConfig.P2P.NoDial = true
-  nodeConfig.P2P.NoDiscovery = true
-  //TODO: setup command line args?
-  nodeConfig.IPCPath = "naive-sequencer.ipc"// TODO: learn more about ipc
-  nodeConfig.HTTPHost = "localhost"
-  nodeConfig.HTTPPort = 5055 //TODO: Hardcode
-  nodeConfig.HTTPModules = append(nodeConfig.HTTPModules, "personal") //TODO: Hardcode
-  nodeConfig.HTTPModules = append(nodeConfig.HTTPModules, "naive")
-  //nodeConfig.HTTPModules = append(nodeConfig.HTTPModules, "eth")
-
-  // Mimicing eth/backend.go:New
-  node, err := node.New(&nodeConfig)
+  // Setup Geth node/node
+  nodeConfig := NodeConfig(dataDir, httpHost, httpPort, httpModules)
+  node, err := node.New(nodeConfig)
   if err != nil {
-    log.Fatal(err)
+    return nil, fmt.Errorf("failed to create node: %v", err)
   }
-  log.Println("Node created", node.DataDir())
 
+  // Add Keystore to backend for unlocking accounts later on
   am := node.AccountManager()
+  log.Println("KeyStoreDir is", node.KeyStoreDir())
   am.AddBackend(keystore.NewKeyStore(node.KeyStoreDir(), keystore.StandardScryptN, keystore.StandardScryptP))
+  backends := am.Backends(keystore.KeyStoreType)
+  if len(backends) == 0 {
+    return nil, fmt.Errorf("no key store backends found")
+  }
+  ks := backends[0].(*keystore.KeyStore)
 
+  if len(ks.Accounts()) == 0 {
+    return nil, fmt.Errorf("no accounts found in key store")
+  }
+  address := ks.Accounts()[0].Address//TODO: Is this just posterAddress?
+
+  // Setup Database
   //TODO: chainDb more research on args
   // Handles, Persistent Chain Dir, & Ancient from nitro/cmd/conf/database.go
   // Caching from arbnode/execution/blockchain.go DatabaseCache
@@ -433,90 +248,98 @@ func mainImpl() int {
   // Open rawdb from geth/core with ancients freezer & configs from arbitrum chainDb ( Disk based db )
   chainDb, err := node.OpenDatabaseWithFreezer("l2-chain", 2048, 512, "", "naive-l2/chaindb", false)
   if err != nil {
-    log.Fatal(err)
+    return nil, fmt.Errorf("failed to open chain database: %v", err)
   }
-  log.Println("Chain DB created", chainDb)
 
-  file, err := os.Open(nodeConfig.DataDir + "/genesis.json") //TODO: Hardcode
-  if err != nil {
-    utils.Fatalf("Failed to read genesis file: %v", err)
-  }
+  // Setup Genesis
+  file, err := os.Open(nodeConfig.DataDir + "/genesis.json") //TODO: Hardcode                                                                         
+  if err != nil {                                                                  
+    return nil, fmt.Errorf("failed to open genesis file: %v", err)
+  }                                                                                
   defer file.Close()
+
   genesis := new(core.Genesis)
   if err := json.NewDecoder(file).Decode(genesis); err != nil {
-    utils.Fatalf("invalid genesis file: %v", err)
+    return nil, fmt.Errorf("invalid genesis file: %v", err)
   }
-  triedb := trie.NewDatabaseWithConfig(chainDb, &trie.Config{
-    Preimages: true,  
-  })
-  _, hash, err := core.SetupGenesisBlock(chainDb, triedb, genesis)
+  trieDb := trie.NewDatabaseWithConfig(chainDb, &trie.Config{Preimages: true})
+  _, _, err = core.SetupGenesisBlock(chainDb, trieDb, genesis)
   if err != nil {
-    utils.Fatalf("Failed to setup genesis block: %v", err)
+    return nil, fmt.Errorf("failed to setup genesis block: %v", err)
   }
-  log.Println("Genesis block created", hash)
 
-  backends := node.AccountManager().Backends(keystore.KeyStoreType)
-  if len(backends) == 0 {
-    log.Fatal("no key store backends found")
-  }
-  ks := backends[0].(*keystore.KeyStore)
-  address := ks.Accounts()[0].Address
-
-  //TODO: engine look into args
-  //TODO: Genesis state & accounts / genesis.json setup
-  config := ethconfig.Defaults
-  config.Miner.Etherbase = address //TODO: Hardcode
-  config.Miner.GasCeil = 300000000 //TODO: Hardcode
-  ethashConfig := config.Ethash
-  ethashConfig.NotifyFull = config.Miner.NotifyFull
+  // Setup Consensus Engine
+  ethConfig := EthConfig(address)
   cliqueConfig, err := core.LoadCliqueConfig(chainDb, genesis)
   if err != nil {
-    log.Fatal(err)
+    return nil, fmt.Errorf("failed to load clique config: %v", err)
   }
-  log.Println("Ethash config created", ethashConfig)
-  log.Println("Clique config created", cliqueConfig)
-  engine := ethconfig.CreateConsensusEngine(node, &ethashConfig, cliqueConfig, config.Miner.Notify, config.Miner.Noverify, chainDb)
-  log.Println("Engine created", engine)
 
+  engine := ethconfig.CreateConsensusEngine(node, &ethConfig.Ethash, cliqueConfig, ethConfig.Miner.Notify, ethConfig.Miner.Noverify, chainDb)
+
+  // Setup L2 Blockchain
   //TODO: l2blockchain more research on args
-  var l2BlockChain *core.BlockChain
-  // Override the chain config with provided settings.
   var overrides core.ChainOverrides
-  //if config.OverrideShanghai != nil {
-  //  overrides.OverrideShanghai = config.OverrideShanghai
-  //}
-  vmConfig := vm.Config{
-    EnablePreimageRecording: false,
-  }
+  vmConfig := vm.Config{EnablePreimageRecording: false}
   txLookupLimi := uint64(31536000) // 1 year at 1 block per second
-  l2BlockChain, err = core.NewBlockChain(chainDb, DefaultCacheConfigFor(node, false), genesis, &overrides, engine, vmConfig, shouldPreserveFalse, &txLookupLimi)
+  l2BlockChain, err := core.NewBlockChain(chainDb, DefaultCacheConfigFor(node, false), genesis, &overrides, engine, vmConfig, ShouldPreserveFalse, &txLookupLimi)
   if err != nil {
-    log.Fatal(err)
+    return nil, fmt.Errorf("failed to create L2 blockchain: %v", err)
   }
-  log.Println("L2 BlockChain created", l2BlockChain)
 
-  //TODO: naivedb more research on args & what is this for
-  naiveDb, err := node.OpenDatabase("naivedata", 0, 0, "", false)
+  //TODO: naiveDb, err := node.OpenDatabase("naivedata", 0, 0, "", false)
+
+  naiveNode, err := NewNode(node, chainDb, l2BlockChain, engine, ethConfig, l1ContractAddress, posterAddress, l1Host, l1Port)
   if err != nil {
-    log.Fatal(err)
+    return nil, fmt.Errorf("failed to create naive node: %v", err)
   }
-  log.Println("Naive DB created", naiveDb)
 
-  //valNode create & start
+
+  return naiveNode, nil
+}
+
+func main() { os.Exit(mainImpl()) }
+
+func mainImpl() int {
+  log.Println("Starting sequencer...")
+
+  osHomeDir, err := os.UserHomeDir()
+  dataDir := flag.String("datadir", osHomeDir + "/naive-sequencer-data", "data directory for the database and keystore")
+  httpHost := flag.String("httphost", "localhost", "HTTP-RPC server listening interface")
+  httpPort := flag.Int("httpport", 5055, "HTTP-RPC server listening port")
+  httpModules := flag.String("httpmodules", "personal,naive", "Comma separated list of API modules to enable on the HTTP-RPC interface")
+  l1ContractAddress := flag.String("l1contract", "", "Address of the L1 contract")
+  sequencerAddress := flag.String("sequencer", "", "Address of the sequencer on L1")
+  sequencerKeystore := flag.String("sequencerkeystore", "", "Keystore file for the sequencer on L1")
+  l1Host := flag.String("l1host", "localhost", "L1 HTTP-RPC server listening interface")
+  l1Port := flag.Int("l1port", 8545, "L1 HTTP-RPC server listening port")
+  flag.Parse()
+
+  naiveNode, err := CreateNaiveNode(*dataDir, *httpHost, *httpPort, *httpModules, *l1Host, *l1Port, common.HexToAddress(*l1ContractAddress), common.HexToAddress(*sequencerAddress))
+  if err != nil {
+    utils.Fatalf("Failed to create naive sequencer node: %v", err)
+  }
+
+  naiveNode.Batcher.L1Comms.RegisterL2Address(common.HexToAddress(*sequencerAddress), *sequencerKeystore)
+
   ////TODO: close dbs & stop blockchain defers
   fatalErrChan := make(chan error, 10)
 
-  naiveNode, err := NewNode(naiveDb, node, chainDb, l2BlockChain, engine, &config)
+  genesis, err := core.ReadGenesis(naiveNode.ChainDb)
   if err != nil {
     fatalErrChan <- err
   }
-  log.Println("Naive Node created", naiveNode)
+
+  err = naiveNode.Batcher.L1Comms.L2GenesisOnL1(genesis, common.HexToAddress(*sequencerAddress))
+  if err != nil {
+    fatalErrChan <- err
+  }
 
   err = naiveNode.Start()
   if err != nil {
     fatalErrChan <- err
   }
-  log.Println("Naive Node started", naiveNode)
+  log.Println("Naive Sequencer Node started", naiveNode)
 
   sigint := make(chan os.Signal, 1)
   signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
@@ -535,7 +358,6 @@ func mainImpl() int {
   close(sigint)
 
   // node stop&wait
-
 
   return exitCode
 }

@@ -14,7 +14,7 @@ rm -rf $SCRIPT_DIR/data/
 GETH_LOG_DIR="$SCRIPT_DIR/logs/$(date '+%Y-%m-%d_%H:%M:%S')"
 mkdir -p $GETH_LOG_DIR
 geth account new --datadir $SCRIPT_DIR/data/ --password $SCRIPT_DIR/password.txt
-rm -rf data2
+rm -rf $SCRIPT_DIR/data2/
 geth account new --datadir $SCRIPT_DIR/data2/ --password $SCRIPT_DIR/password.txt
 ACCOUNT1=$(cat $SCRIPT_DIR/data/keystore/* | jq -r '.address' | head -n 1)
 ACCOUNT2=$(cat $SCRIPT_DIR/data2/keystore/* | jq -r '.address' | head -n 1)

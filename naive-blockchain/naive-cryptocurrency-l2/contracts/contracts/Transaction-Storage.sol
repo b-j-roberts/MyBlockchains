@@ -1,28 +1,62 @@
 pragma solidity >=0.8.2 <0.9.0;
 
+//TODO: Features to add: Sequencer Only/Indirect?, upgradeable
 contract TransactionStorage {
   uint256 batchCount = 0;
   mapping(uint256 => bytes32) public batchRoots;
+
   uint256 lastConfirmedBatch = 0;
   mapping(uint256 => bool) public confirmedBatches;
+  mapping(uint256 => uint64) public batchRewards;
+  mapping(uint256 => uint256) public batchL1Block;
+
+  event BatchStored(uint256 id, uint256 l1Block, bytes32 root);
+
+  //TODO: Use on deploy
+  function StoreGenesisState(bytes32 root) public {
+    if (batchCount > 0) {
+      revert("Genesis state already stored");
+    }
+
+    batchRoots[0] = root;
+    batchCount = 1;
+    batchL1Block[0] = block.number;
+
+    confirmedBatches[0] = true;
+    batchRewards[0] = 0;
+    batchL1Block[0] = block.number;
+    lastConfirmedBatch = 0;
+  }
 
   function StoreBatch(uint256 id, bytes32 root, bytes calldata batchData) public {
-    if(id < 0 || id > batchCount) {
+    //TODO: rewinding?
+    if(id <= 0 || id > batchCount) {
       revert("Invalid batch id");
     }
     batchRoots[id] = root;
     batchCount = id + 1;
+    batchL1Block[id] = block.number;
+
+    emit BatchStored(id, block.number, root);
   }
 
-  function ConfirmBatch(uint256 id) public {
+  function SubmitProof(uint256 id, bytes calldata proof) public {
     if(id < 0 || id >= batchCount) {
       revert("Invalid batch id");
     }
-    if(id > 0 && !confirmedBatches[id-1]) {
-      revert("Previous batch not confirmed");
+    if(confirmedBatches[id]) {
+      revert("Batch already confirmed");
     }
-    confirmedBatches[id] = true;
-    lastConfirmedBatch = id;
+
+    if(proof.length > 0) {
+      //TODO: COnfirm proof
+
+      confirmedBatches[id] = true;
+      lastConfirmedBatch = id;
+      batchRewards[id] = 100;
+    } else {
+      revert("Invalid proof");
+    }
   }
 
   function GetBatchCount() public view returns (uint256){
@@ -33,11 +67,28 @@ contract TransactionStorage {
       return batchRoots[id];
   }
 
+  function GetBatchPostStateRoot(uint256 id) public view returns (bytes32){
+      return batchRoots[id];
+  }
+
+  function GetBatchPreStateRoot(uint256 id) public view returns (bytes32){
+      require(id > 0, "Invalid batch id");
+      return batchRoots[id-1];
+  }
+
   function GetBatchConfirmed(uint256 id) public view returns (bool){
       return confirmedBatches[id];
   }
 
   function GetLastConfirmedBatch() public view returns (uint256){
       return lastConfirmedBatch;
+  }
+
+  function GetReward(uint256 id) public view returns (uint64){
+      return batchRewards[id];
+  }
+
+  function GetBatchL1Block(uint256 id) public view returns (uint256){
+      return batchL1Block[id];
   }
 }

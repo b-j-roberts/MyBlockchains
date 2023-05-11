@@ -8,6 +8,10 @@ import { deploy } from './goerli-deps.js'
   try {
       const result = await deploy('TransactionStorage', [])
       console.log(result)
+
+      jsonOutput = "{\"address\": \"" + result + "\"}"
+      console.log(jsonOutput)
+
   } catch (e) {
       console.log(e.message)
   }
