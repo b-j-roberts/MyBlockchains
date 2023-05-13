@@ -33,7 +33,7 @@ case $key in -a|--account)
     shift # past argument
     shift # past value
     ;;
-    -o|--port)
+    -o|--host)
     host="$2"
     shift # past argument
     shift # past value
