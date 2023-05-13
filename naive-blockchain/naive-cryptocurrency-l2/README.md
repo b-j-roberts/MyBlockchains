@@ -24,6 +24,8 @@ Runs execution, posts batch tx to l1 contract,
 ### Running locally w/ go
 
 ### Running w/ Docker
+b-j-roberts( ~/workspace/blockchain/my-chains/eth-private-network @ master ) ☯ docker build -t l1-private -f Dockerfile .
+docker run -it brandonjroberts/eth-private-miner:latest
 
 ### Running in k8s
 
@@ -35,6 +37,7 @@ Runs execution, posts batch tx to l1 contract,
 
 ### Contract
 contracts, go, remix, scripts, test, make/build?
+npm install
 
 ### Cmd
 Launch node
@@ -58,12 +61,18 @@ cd ../../eth-private-network/ && make clean && cd ../naive-blockchain/naive-cryp
 
 
 Full Run:
-make all
 ./scripts/start-l1-private-network.sh
+make all
 make deploy-private-l1
 ./scripts/start-sequencer-overwrite.sh
 
 ./scripts/start-prover.sh
+
+./scripts/start-rpc-overwrite.sh
+
+Watch UI / state :
+./scripts/smart-contract-watch.sh
+cd ~/workspace/blockchain/tools/explorer && npm start
 
 send txs
 cat ~/naive-sequencer-data/genesis.json

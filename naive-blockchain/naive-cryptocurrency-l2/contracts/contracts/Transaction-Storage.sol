@@ -9,8 +9,10 @@ contract TransactionStorage {
   mapping(uint256 => bool) public confirmedBatches;
   mapping(uint256 => uint64) public batchRewards;
   mapping(uint256 => uint256) public batchL1Block;
+  mapping(uint256 => uint256) public proofL1Block;
 
   event BatchStored(uint256 id, uint256 l1Block, bytes32 root);
+  event BatchConfirmed(uint256 id, uint256 l1Block, bytes32 root);
 
   //TODO: Use on deploy
   function StoreGenesisState(bytes32 root) public {
@@ -57,6 +59,8 @@ contract TransactionStorage {
     } else {
       revert("Invalid proof");
     }
+
+    emit BatchConfirmed(id, block.number, batchRoots[id]);
   }
 
   function GetBatchCount() public view returns (uint256){
@@ -90,5 +94,9 @@ contract TransactionStorage {
 
   function GetBatchL1Block(uint256 id) public view returns (uint256){
       return batchL1Block[id];
+  }
+
+  function GetProofL1Block(uint256 id) public view returns (uint256){
+      return proofL1Block[id];
   }
 }

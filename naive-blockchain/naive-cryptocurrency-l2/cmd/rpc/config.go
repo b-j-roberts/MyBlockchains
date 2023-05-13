@@ -63,13 +63,13 @@ func DefaultCacheConfigFor(stack *node.Node, archive bool) *core.CacheConfig {
 
 func NodeConfig(dataDir string, httpHost string, httpPort int, httpModules string) *node.Config {
   //TODO: Learn more about node config + default config
-  nodeConfig := node.DefaultConfig                          
-  nodeConfig.DataDir = dataDir                             
-  //nodeConfig.P2P.ListenAddr = ""                            
-  //nodeConfig.P2P.NoDial = true                              
+  nodeConfig := node.DefaultConfig
+  nodeConfig.DataDir = dataDir
+  //nodeConfig.P2P.ListenAddr = ""
+  //nodeConfig.P2P.NoDial = true
   //nodeConfig.P2P.NoDiscovery = true
-  nodeConfig.P2P.ListenAddr = ":30313"
-  nodeConfig.IPCPath = "naive-sequencer.ipc"// TODO: learn more about ipc
+  nodeConfig.P2P.ListenAddr = ":30316"
+  nodeConfig.IPCPath = "naive-rpc.ipc"// TODO: learn more about ipc
   nodeConfig.HTTPHost = httpHost
   nodeConfig.HTTPPort = httpPort
   nodeConfig.HTTPCors = []string{"*"}
@@ -83,8 +83,6 @@ func NodeConfig(dataDir string, httpHost string, httpPort int, httpModules strin
 func EthConfig(address common.Address) *ethconfig.Config {
   //TODO: Learn more about eth config + default config
   config := ethconfig.Defaults
-  config.Miner.Etherbase = address
-  config.Miner.GasCeil = 300000000 // 10x default
   config.Ethash.NotifyFull = config.Miner.NotifyFull
 
   return &config

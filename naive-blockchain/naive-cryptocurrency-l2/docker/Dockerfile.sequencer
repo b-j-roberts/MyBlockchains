@@ -1,0 +1,14 @@
+# Use golang:1.19 as the base image
+FROM golang:1.19
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the Go code file to the container
+COPY ../Makefile .
+COPY ../src/ src/
+COPY go.mod .
+COPY go.sum .
+
+# Copy contracts
+COPY ../contracts/ contracts/
