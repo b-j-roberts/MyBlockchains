@@ -4,3 +4,4 @@ data2/
 scripts/sendTransaction.json
 scripts/sendGet.json
 genesis.json
+build/

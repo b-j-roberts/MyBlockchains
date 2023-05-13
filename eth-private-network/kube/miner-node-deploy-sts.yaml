@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: eth-private-miner-app
+spec:
+  serviceName: eth-private-miner-app-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eth-private-miner-app
+  template:
+    metadata:
+      labels:
+        app: eth-private-miner-app
+    spec:
+      containers:
+      - name: eth-private-miner-app
+        image: brandonjroberts/eth-private-miner:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8545
+        - containerPort: 8551
+        - containerPort: 30303
+        volumeMounts:
+        - name: data
+          mountPath: /l1-miner-data/
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eth-private-miner-app-service
+spec:
+  selector:
+    app: eth-private-miner-app
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8545
+    targetPort: 8545
+  - name: peer
+    protocol: TCP
+    port: 30303
+    targetPort: 30303
+  - name: peer-udp
+    protocol: UDP
+    port: 30303
+    targetPort: 30303

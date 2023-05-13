@@ -7,15 +7,10 @@
 HOST="localhost"                                           
 PORT="8545"                                                
                                                            
-TXN_COUNT=100000                                           
-THREAD_COUNT=1500
-
 display_help() {
-  echo "Usage: load-test-gets.sh [Options]"
+  echo "Usage: send-transaction.sh [option...]"
   echo
   echo "-h, --help            Display help"
-  echo "-t, --txn-count       Number of transactions to send"
-  echo "-c, --thread-count    Number of threads to use"
   echo "-H, --host            Host to connect to"
   echo "-p, --port            Port to connect to"
   echo
@@ -26,12 +21,6 @@ while getopts ":ht:c:H:p:" opt; do
     h|help)
       display_help
       exit 0
-      ;;
-    t|txn-count)
-      TXN_COUNT=$OPTARG
-      ;;
-    c|thread-count)
-      THREAD_COUNT=$OPTARG
       ;;
     H|host)
       HOST=$OPTARG
@@ -78,8 +67,6 @@ rm -f $TMP_SEND_TX
 touch $TMP_SEND_TX
 echo $JSOM > $TMP_SEND_TX
 
-cat $TMP_SEND_TX
-
-ab -c $THREAD_COUNT -n $TXN_COUNT -p $TMP_SEND_TX -T application/json http://$HOST:$PORT/
+curl -H "Content-Type: application/json" -X POST --data @$TMP_SEND_TX http://$HOST:$PORT/
 
 rm -f $TMP_SEND_TX

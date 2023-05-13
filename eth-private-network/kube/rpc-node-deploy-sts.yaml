@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: eth-private-rpc-app
+spec:
+  serviceName: eth-private-rpc-app-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eth-private-rpc-app
+  template:
+    metadata:
+      labels:
+        app: eth-private-rpc-app
+    spec:
+      containers:
+      - name: eth-private-rpc-app
+        image: brandonjroberts/eth-private-rpc:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8548
+        - containerPort: 8550
+        - containerPort: 30306
+        volumeMounts:
+        - name: data
+          mountPath: /l1-rpc-data/
+        - name: genesis-volume
+          mountPath: /genesis.json
+          subPath: genesis.json
+      volumes:
+      - name: genesis-volume
+        configMap:
+          name: genesisconfigmap
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eth-private-rpc-app-service
+spec:
+  selector:
+    app: eth-private-rpc-app
+  ports:
+  - name: rpc
+    protocol: TCP
+    port: 8548
+    targetPort: 8548
+  - name: peer
+    protocol: TCP
+    port: 30306
+    targetPort: 30306
+  - name: peer-udp
+    protocol: UDP
+    port: 30306
+    targetPort: 30306
