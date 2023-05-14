@@ -1,3 +1,4 @@
+#TODO: Check what is needed for prover
 FROM golang:1.20-alpine as go-builder
 
 RUN apk add --no-cache gcc musl-dev linux-headers git
@@ -41,18 +42,18 @@ COPY src/ /naive-l2/src
 COPY cmd/ /naive-l2/cmd
 COPY Makefile /naive-l2/Makefile
 
-RUN cd /naive-l2 && make sequencer
+RUN cd /naive-l2 && make prover
 
 # Pull Geth into a second stage deploy alpine container
 FROM alpine:latest
 
 RUN apk add --no-cache ca-certificates bash jq
 COPY --from=go-builder /go-ethereum/build/bin/geth /app/go-ethereum/build/bin/geth
-COPY --from=go-builder2 /naive-l2/build/sequencer /app/build/sequencer
+COPY --from=go-builder2 /naive-l2/build/prover /app/build/prover
 COPY --from=solc-builder /naive-l2/contracts/builds/ /app/contracts/builds/
 
 #TODO: Other ports
-EXPOSE 5055
+#EXPOSE 5055
 
 WORKDIR /app
 
@@ -60,4 +61,4 @@ COPY scripts/ scripts/
 
 ENV L1_CONTRACT_ADDRESS=
 
-ENTRYPOINT ["./scripts/start-sequencer.sh", "-d", "/sequencer-data", "-k", "/l1-data/keystore/"]
+ENTRYPOINT ["./scripts/start-prover.sh", "-k", "/l1-data/keystore/"]

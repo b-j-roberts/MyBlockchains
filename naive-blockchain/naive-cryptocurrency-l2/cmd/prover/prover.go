@@ -243,33 +243,22 @@ func (p *Prover) VerifyBatchValid(batchNumber int) error {
 func main() { os.Exit(mainImp()) }
 
 func mainImp() int {
-  l1ContractAddressFile := flag.String("l1-contract-address-file", "", "Path to file containing L1 contract address")
+  l1ContractAddress := flag.String("l1-contract-address", "", "Main L1 contract address")
   l1Host := flag.String("l1-host", "http://localhost", "L1 host")
   l1Port := flag.String("l1-port", "8545", "L1 port")
-  proverL1AddressFile := flag.String("prover-address-file", "", "Path to file containing prover address")
+  proverL1Address := flag.String("prover-address", "", "prover address")
   proverL1Keystore := flag.String("prover-keystore", "", "Path to prover keystore")
   flag.Parse()
 
-  l1ContractAddress, err := utils.AddressFromFile(*l1ContractAddressFile)
-  if err != nil {
-    log.Fatalf("Failed to read address from file: %v", err)
-  }
-
   l1Url := *l1Host + ":" + *l1Port
-  l1Comms, err := utils.NewL1Comms(l1Url , l1ContractAddress)
+  l1Comms, err := utils.NewL1Comms(l1Url , common.HexToAddress(*l1ContractAddress))
   if err != nil {
     log.Fatalf("Failed to create L1 comms: %v", err)
   }
 
-  proverL1Address, err := utils.AddressFromFile(*proverL1AddressFile)
-  if err != nil {
-    log.Fatalf("Failed to read address from file: %v", err)
-  }
+  prover := NewProver(l1Comms, common.HexToAddress(*proverL1Address))
 
-  prover := NewProver(l1Comms, proverL1Address)
-
-  prover.L1Comms.RegisterL2Address(proverL1Address, *proverL1Keystore)
-
+  prover.L1Comms.RegisterL2Address(common.HexToAddress(*proverL1Address), *proverL1Keystore)
 
   fatalErrChan := make(chan error, 10)
   err = prover.Start()

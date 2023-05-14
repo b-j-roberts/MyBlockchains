@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "solc --bin --abi -o builds contracts/*.sol",
-    "deploy-private-local": "./scripts/deploy-private-local.sh && node scripts/deploy_private.js",
+    "deploy-private-local": "node scripts/deploy_private.js",
     "deploy-goerli": "node scripts/deploy_goerli.js",
     "test-private": "mocha tests/transaction-storage.private.test.js --timeout 30000",
     "test-goerli": "mocha tests/transaction-storage.goerli.test.js --timeout 30000",

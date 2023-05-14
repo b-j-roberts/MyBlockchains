@@ -52,6 +52,10 @@ Starting, Account gen, ....
 
 
 
+TODO:  --txpool.globalslots
+
+
+
 
 
 Full clean:
@@ -78,3 +82,26 @@ send txs
 cat ~/naive-sequencer-data/genesis.json
 geth attach ~/naive-sequencer-data/naive-sequencer.ipc
 eth.sendTransaction({from: "0x1afed87524e19ccae70f34517c328bac5f636e41", to: "06eba974246f46d6b8421fd5e0b1b5cafbeb0710", value: 100000})
+
+
+
+
+make launch-miner-local
+make clean
+make all
+make deploy-private-l1
+# COPY ADDR
+L1_CONTRACT_ADDRESS=<addr> make run-sequencer
+make watch-smart-contract
+L1_CONTRACT_ADDRESS=<addr> make run-prover
+
+
+make docker-build
+make docker-run-miner
+make docker-build
+make contracts
+make deploy-private-l1
+# COPY ADDR
+L1_CONTRACT_ADDRESS=<addr> make docker-run-sequencer
+make watch-smart-contract
+L1_CONTRACT_ADDRESS=<addr> make docker-run-prover

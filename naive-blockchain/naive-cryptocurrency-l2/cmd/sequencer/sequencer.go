@@ -322,6 +322,7 @@ func mainImpl() int {
   l1Port := flag.Int("l1port", 8545, "L1 HTTP-RPC server listening port")
   flag.Parse()
 
+  log.Println("Connecting to L1 contract at", *l1Host, *l1Port, "with address", *l1ContractAddress)
   naiveNode, err := CreateNaiveNode(*dataDir, *httpHost, *httpPort, *httpModules, *l1Host, *l1Port, common.HexToAddress(*l1ContractAddress), common.HexToAddress(*sequencerAddress))
   if err != nil {
     utils.Fatalf("Failed to create naive sequencer node: %v", err)

@@ -21,6 +21,7 @@ type L1Comms struct {
 }
 
 func NewL1Comms(rpcUrl string, l1ContractAddress common.Address) (*L1Comms, error) {
+  log.Println("Creating l1 comms w/ contract address : ", l1ContractAddress.Hex())
   rawRpc, err := rpc.Dial(rpcUrl)
   if err != nil {
     log.Fatalf("Failed to connect to RPC: %v", err)
