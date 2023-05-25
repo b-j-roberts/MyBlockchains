@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Logs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .header a {
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            background-color: #4caf50;
+            color: #fff;
+        }
+
+        .header a:hover {
+            background-color: #45a049;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+
+        .log-section {
+            height: 250px;
+            border: 1px solid #ccc;
+            overflow-y: scroll;
+            padding: 10px;
+        }
+
+        .log-section p {
+            margin: 0;
+            font-family: monospace;
+        }
+    </style>
+    <script>
+        window.onload = function() {
+            // Scroll the log sections to the bottom
+            var sections = document.getElementsByClassName("log-section");
+            for (var i = 0; i < sections.length; i++) {
+                var section = sections[i];
+                section.scrollTop = section.scrollHeight;
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="header">
+        <h1>Logs</h1>
+        <div>
+            <a href="/">Home</a>
+            <a href="/logs">Logs</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Geth L1 Miner</h2>
+        <div class="log-section" id="section1">
+          {{GETH_L1_MINER_LOGS}}
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Geth L1 RPC</h2>
+        <div class="log-section" id="section2">
+          {{GETH_L1_RPC_LOGS}}
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Geth L2 Sequencer</h2>
+        <div class="log-section" id="section3">
+          {{GETH_L2_SEQUENCER_LOGS}}
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Prover</h2>
+        <div class="log-section" id="section4">
+          {{PROVER_LOGS}}
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Smart Contract Metrics Exporter</h2>
+        <div class="log-section" id="section5">
+          {{SC_METRICS_EXPORTER_LOGS}}
+        </div>
+    </div>
+</body>
+</html>

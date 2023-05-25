@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Command Execution</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .header a {
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            background-color: #4caf50;
+            color: #fff;
+        }
+
+        .header a:hover {
+            background-color: #45a049;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+
+        .subsection {
+            margin-bottom: 10px;
+        }
+
+        h2, h3 {
+            margin-top: 0;
+        }
+
+        button {
+            display: block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 4px;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Command Execution</h1>
+        <div>
+            <a href="/">Home</a>
+            <a href="/logs">Logs</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Build Commands</h2>
+
+        <div class="subsection">
+            <h3>Local Setup</h3>
+            <button onclick="executeCommand('local-build')">Local Build</button>
+            <button onclick="executeCommand('local-build-clean')">Local Build Clean</button>
+        </div>
+
+        <div class="subsection">
+            <h3>Docker Setup</h3>
+            <button onclick="executeCommand('docker-build')">Docker Build</button>
+        </div>
+
+        <div class="subsection">
+            <h3>Kubernetes Setup</h3>
+            <button onclick="executeCommand('kubernetes-build')">Kubernetes Build</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Deploy Commands</h2>
+
+        <div class="subsection">
+            <h3>Local Setup</h3>
+            <button onclick="executeCommand('deploy-l1-contract-local')">Deploy L1 Contract (Local)</button>
+        </div>
+
+        <div class="subsection">
+            <h3>Docker Setup</h3>
+            <button onclick="executeCommand('deploy-l1-contract-docker')">Deploy L1 Contract (Docker)</button>
+        </div>
+
+        <div class="subsection">
+            <h3>Kubernetes Setup</h3>
+            <button onclick="executeCommand('deploy-l1-contract-kubernetes')">Deploy L1 Contract (Kubernetes)</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Launch Commands</h2>
+
+        <div class="subsection">
+            <h3>Local Setup</h3>
+            <button onclick="executeCommand('launch-local-l1-miner')">Launch Local L1 Miner</button>
+            <button onclick="executeCommand('launch-local-rpc')">Launch Local RPC</button>
+            <button onclick="executeCommand('launch-local-smart-contract-metric-exporter')">Launch Local Smart Contract Metric Exporter</button>
+            <button onclick="executeCommand('launch-local-l2-sequencer')">Launch Local L2 Sequencer</button>
+            <button onclick="executeCommand('launch-local-prover')">Launch Local Prover</button>
+        </div>
+
+        <div class="subsection">
+            <h3>Docker Setup</h3>
+            <button onclick="executeCommand('launch-docker-l1-miner')">Launch Docker L1 Miner</button>
+            <button onclick="executeCommand('launch-docker-rpc')">Launch Docker RPC</button>
+            <button onclick="executeCommand('launch-docker-smart-contract-metric-exporter')">Launch Docker Smart Contract Metric Exporter</button>
+            <button onclick="executeCommand('launch-docker-l2-sequencer')">Launch Docker L2 Sequencer</button>
+            <button onclick="executeCommand('launch-docker-prover')">Launch Docker Prover</button>
+        </div>
+
+        <div class="subsection">
+            <h3>Kubernetes Setup</h3>
+            <button onclick="executeCommand('launch-kubernetes-l1-miner')">Launch Kubernetes L1 Miner</button>
+            <button onclick="executeCommand('launch-kubernetes-rpc')">Launch Kubernetes RPC</button>
+            <button onclick="executeCommand('launch-kubernetes-smart-contract-metric-exporter')">Launch Kubernetes Smart Contract Metric Exporter</button>
+            <button onclick="executeCommand('launch-kubernetes-l2-sequencer')">Launch Kubernetes L2 Sequencer</button>
+            <button onclick="executeCommand('launch-kubernetes-prover')">Launch Kubernetes Prover</button>
+        </div>
+    </div>
+
+    <script>
+        function executeCommand(command) {
+            // Replace with your logic to execute the command
+            console.log("Executing command: " + command);
+        }
+    </script>
+</body>
+</html>
+

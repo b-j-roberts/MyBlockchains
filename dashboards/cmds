@@ -1,0 +1,14 @@
+systemctl start prometheus.service
+systemctl stop prometheus.service
+systemctl status prometheus.service
+systemctl restart prometheus.service
+edit : sudo vim /etc/prometheus/prometheus.yml
+reset all : rm -rf /var/lib/prometheus/ && mkdir -p /var/lib/prometheus/ && chown -R prometheus:prometheus /var/lib/prometheus/
+
+
+above but w/ grafana (grafana-server)
+journalctl -u prometheus
+
+sudo systemctl restart snap.docker.dockerd.service
+sudo vim /var/snap/docker/2883/config/daemon.json
+
