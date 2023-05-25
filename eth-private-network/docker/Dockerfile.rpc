@@ -19,9 +19,10 @@ FROM alpine:latest
 
 RUN apk add --no-cache ca-certificates bash jq
 COPY --from=builder /go-ethereum/build/bin/geth /usr/local/bin/
+COPY --from=builder /go-ethereum/build/bin/geth /go-ethereum/go-ethereum/build/bin/
 
 # Expose the ports we're interested in ( Ports setup on different addresses to allow --network host )
-EXPOSE 8548 8550 30306 30306/udp
+EXPOSE 8548 8550 30306 30306/udp 6061
 
 WORKDIR /go-ethereum
 

@@ -117,4 +117,5 @@ if [ $STATE_RESET -eq 1 ]; then
   geth init --datadir $DATA_DIR $GENESIS_FILE
 fi
 
-geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "http://localhost:8000" --port $PEER_PORT
+${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "http://localhost:8000" --port $PEER_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6060
+#geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "https://remix.ethereum.org"
