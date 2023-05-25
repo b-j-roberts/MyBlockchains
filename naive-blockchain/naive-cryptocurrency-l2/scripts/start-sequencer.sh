@@ -23,6 +23,7 @@ display_help() {
   echo "  -g, --gaslimit             Gas limit per block (default: 300000000)"
 
   echo "  -x, --clear                Clear state before starting"
+  echo "  -o, --output               Output file -- If outfile selected, run task as daemon ( default: console )"
   echo
   echo "Example: $0 -d ~/naive-sequencer-data"
 }
@@ -34,7 +35,7 @@ clear_data() {
 }
 
 # Parse command line arguments
-while getopts ":hd:k:A:c:p:g:x" opt; do
+while getopts ":hd:k:A:c:p:g:xo:" opt; do
   case ${opt} in
     h|--help )
       display_help
@@ -61,6 +62,9 @@ while getopts ":hd:k:A:c:p:g:x" opt; do
     x|--clear )
       clear_data
       STATE_RESET=1
+      ;;
+    o|--output )
+      OUTPUT_FILE=$OPTARG
       ;;
     \? )
       echo "Invalid Option: -$OPTARG" 1>&2
@@ -139,4 +143,9 @@ fi
 SEQUENCER_L1_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/sequencer-l1-address.txt" | jq -r '.address')
 
 echo "Starting sequencer with L1 contract address: ${L1_CONTRACT_ADDRESS} & L1 sequencer address: ${SEQUENCER_L1_ADDRESS}"
-$WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics --metrics.expensive
+
+if [ -z $OUTPUT_FILE ]; then
+  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics --metrics.expensive
+else
+  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics --metrics.expensive > $OUTPUT_FILE 2>&1 &
+fi

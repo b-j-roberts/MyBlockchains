@@ -10,22 +10,26 @@ display_help() {
 
   echo "   -A, --l1-contract-address  l1 contract address (Required)"
   echo "   -k, --keystore             keystore directory for l1 prover address (Required)"
+  echo "   -o, --output               Output file -- If outfile selected, run task as daemon ( default: console )"
 
   echo
   #TODO: Examples for all
 }
 
-while getopts ":hA:k:" opt; do
+while getopts ":hA:k:o:" opt; do
   case ${opt} in
-    h )
+    h|--help )
       display_help
       exit 0
       ;;
-    A )
+    A|--l1-contract-address )
       L1_CONTRACT_ADDRESS=$OPTARG
       ;;
-    k )
+    k|--keystore )
       keystore=$OPTARG
+      ;;
+    o|--output )
+      OUTPUT_FILE=$OPTARG
       ;;
     \? )
       echo "Invalid Option: -$OPTARG" 1>&2
@@ -62,4 +66,8 @@ fi
 
 proverAddress=$(cat ${keystore}/* | jq -r '.address')
 
-$WORK_DIR/build/prover --l1-contract-address ${L1_CONTRACT_ADDRESS} --prover-address ${proverAddress} --prover-keystore $keystore
+if [ -z "$OUTPUT_FILE" ]; then
+  $WORK_DIR/build/prover --l1-contract-address ${L1_CONTRACT_ADDRESS} --prover-address ${proverAddress} --prover-keystore $keystore
+else
+  $WORK_DIR/build/prover --l1-contract-address ${L1_CONTRACT_ADDRESS} --prover-address ${proverAddress} --prover-keystore $keystore > $OUTPUT_FILE 2>&1 &
+fi

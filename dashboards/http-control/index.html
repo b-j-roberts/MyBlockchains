@@ -2,6 +2,19 @@
 <html>
 <head>
     <title>Command Execution</title>
+    <script>
+			function executeCommand(url) {
+        console.log("Executing command: " + url);
+				var xhr = new XMLHttpRequest();
+				xhr.open("GET", url, true);
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === 4 && xhr.status === 200) {
+						console.log("Command executed successfully.");
+					}
+				};
+				xhr.send();
+			}
+		</script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,6 +23,10 @@
 
         h1 {
             text-align: center;
+        }
+
+        h2 {
+          font-size: 28px;
         }
 
         .header {
@@ -26,8 +43,7 @@
             color: #fff;
         }
 
-        .header a:hover {
-            background-color: #45a049;
+        .header a:hover { background-color: #45a049;
         }
 
         .section {
@@ -42,6 +58,10 @@
 
         h2, h3 {
             margin-top: 0;
+        }
+        
+        h3 {
+          font-size: 24px;
         }
 
         button {
@@ -59,6 +79,23 @@
         button:hover {
             background-color: #45a049;
         }
+
+        .button-section {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 10px;
+        }
+          
+        .button-section * {
+            margin-right: 10px;
+        }
+        
+        .button-section button {
+          width: 200px;
+        }
+
     </style>
 </head>
 <body>
@@ -75,13 +112,17 @@
 
         <div class="subsection">
             <h3>Local Setup</h3>
-            <button onclick="executeCommand('local-build')">Local Build</button>
-            <button onclick="executeCommand('local-build-clean')">Local Build Clean</button>
+            <button onclick="executeCommand('l2-build-local')">L2 Build Local</button>
+            <!-- TODO: Show latest build time & red / ... if up to date -->
+            <button onclick="executeCommand('clean-all')">Clean All Local</button>
         </div>
 
         <div class="subsection">
             <h3>Docker Setup</h3>
-            <button onclick="executeCommand('docker-build')">Docker Build</button>
+            <button onclick="executeCommand('geth-l1-docker-build')">Geth L1 Docker Build</button>
+            <button onclick="executeCommand('geth-l1-docker-push')">Geth L1 Docker Push</button>
+            <button onclick="executeCommand('l2-docker-build')">L2 Docker Build</button>
+            <button onclick="executeCommand('l2-docker-push')">L2 Docker Push</button>
         </div>
 
         <div class="subsection">
@@ -91,21 +132,39 @@
     </div>
 
     <div class="section">
-        <h2>Deploy Commands</h2>
+        <h2>Usage Commands</h2>
 
         <div class="subsection">
-            <h3>Local Setup</h3>
-            <button onclick="executeCommand('deploy-l1-contract-local')">Deploy L1 Contract (Local)</button>
+            <h3>L1 Usage</h3>
+              <div class="button-section">
+                <button onclick="executeCommand('connect-geth-l1-nodes-local')">Connect L1 Nodes Local</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=53" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=294" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=9" width="200" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=299" width="200" height="200" frameborder="0"></iframe>
+                </div>
+
+              <div class="button-section">
+                <button onclick="executeCommand('connect-geth-l1-nodes-docker')">Connect L1 Nodes Docker</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=53" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=294" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=9" width="200" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=299" width="200" height="200" frameborder="0"></iframe>
+                </div>
         </div>
 
         <div class="subsection">
-            <h3>Docker Setup</h3>
-            <button onclick="executeCommand('deploy-l1-contract-docker')">Deploy L1 Contract (Docker)</button>
+            <h3>L2 Usage</h3>
+            <div class="button-section">
+                <button onclick="executeCommand('deploy-l1-contract')">Deploy L2 Contract to L1</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=142" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&from=1685042260570&to=1685044060570&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&theme=dark&panelId=143" width="300" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&from=1685042260570&to=1685044060570&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&theme=dark&panelId=144" width="300" height="200" frameborder="0"></iframe>
+            </div>
         </div>
 
         <div class="subsection">
-            <h3>Kubernetes Setup</h3>
-            <button onclick="executeCommand('deploy-l1-contract-kubernetes')">Deploy L1 Contract (Kubernetes)</button>
+            <h3>Others</h3>
         </div>
     </div>
 
@@ -113,39 +172,85 @@
         <h2>Launch Commands</h2>
 
         <div class="subsection">
-            <h3>Local Setup</h3>
-            <button onclick="executeCommand('launch-local-l1-miner')">Launch Local L1 Miner</button>
-            <button onclick="executeCommand('launch-local-rpc')">Launch Local RPC</button>
-            <button onclick="executeCommand('launch-local-smart-contract-metric-exporter')">Launch Local Smart Contract Metric Exporter</button>
-            <button onclick="executeCommand('launch-local-l2-sequencer')">Launch Local L2 Sequencer</button>
-            <button onclick="executeCommand('launch-local-prover')">Launch Local Prover</button>
+            <h3>Local Run</h3>
+            <div class="button-section">
+                <button onclick="executeCommand('geth-l1-launch-miner-local')">Launch Local Geth L1 Miner</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=53" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=8" width="250" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=6" width="350" height="200" frameborder="0"></iframe>
+            </div> 
+
+            <div class="button-section">
+                <button onclick="executeCommand('geth-l1-launch-rpc-local')">Launch Local Geth L1 RPC</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=294" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=296" width="250" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=297" width="350" height="200" frameborder="0"></iframe>
+            </div>
+
+            <div class="button-section">
+                <button onclick="executeCommand('smart-contract-metrics-exporter-local')">Launch Local Smart Contract Metric Exporter</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=142" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&from=1685042260570&to=1685044060570&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&theme=dark&panelId=143" width="300" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&from=1685042260570&to=1685044060570&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&theme=dark&panelId=144" width="300" height="200" frameborder="0"></iframe>
+            </div>
+
+            <div class="button-section">
+                <button onclick="executeCommand('geth-l2-launch-sequencer-local')">Launch Local L2 Sequencer</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=308" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=310" width="250" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=311" width="350" height="200" frameborder="0"></iframe>
+            </div>
+
+            <div class="button-section">
+                <button onclick="executeCommand('l2-launch-prover-local')">Launch Local Prover</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=290" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=287" width="300" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=288" width="300" height="200" frameborder="0"></iframe>
+            </div>
         </div>
 
         <div class="subsection">
-            <h3>Docker Setup</h3>
-            <button onclick="executeCommand('launch-docker-l1-miner')">Launch Docker L1 Miner</button>
-            <button onclick="executeCommand('launch-docker-rpc')">Launch Docker RPC</button>
-            <button onclick="executeCommand('launch-docker-smart-contract-metric-exporter')">Launch Docker Smart Contract Metric Exporter</button>
-            <button onclick="executeCommand('launch-docker-l2-sequencer')">Launch Docker L2 Sequencer</button>
-            <button onclick="executeCommand('launch-docker-prover')">Launch Docker Prover</button>
+            <h3>Docker Run</h3>
+            <div class="button-section">
+                <button onclick="executeCommand('geth-l1-miner-docker-run')">Launch Docker Geth L1 Miner</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=53" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=8" width="250" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=6" width="350" height="200" frameborder="0"></iframe>
+            </div>
+
+            <div class="button-section">
+                <button onclick="executeCommand('geth-l1-rpc-docker-run')">Launch Docker Geth L1 Rpc</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=294" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=296" width="250" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=297" width="350" height="200" frameborder="0"></iframe>
+            </div>
+
+            <div class="button-section">
+                <button onclick="executeCommand('smart-contract-metrics-exporter-docker-run')">Smart Contract Metrics Exporter Docker Run</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=142" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&from=1685042260570&to=1685044060570&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&theme=dark&panelId=143" width="300" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&from=1685042260570&to=1685044060570&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&theme=dark&panelId=144" width="300" height="200" frameborder="0"></iframe>
+            </div>
+
+            <div class="button-section">
+                <button onclick="executeCommand('geth-l2-sequencer-docker-run')">Launch Docker Geth L2 Sequencer</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=308" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=310" width="250" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=311" width="350" height="200" frameborder="0"></iframe>
+            </div>
+
+            <div class="button-section">
+                <button onclick="executeCommand('l2-prover-docker-run')">Launch Docker L2 Prover</button>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=290" width="100" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=287" width="300" height="200" frameborder="0"></iframe>
+                <iframe src="http://localhost:3000/d-solo/b647efb8-4a43-4e07-81de-7cd2ef1a636a/local-geth-monitoring?orgId=1&var-geth_l1_miner_job=geth-l1-miner&var-Chains=All&refresh=30s&panelId=288" width="300" height="200" frameborder="0"></iframe>
+            </div>
         </div>
 
         <div class="subsection">
-            <h3>Kubernetes Setup</h3>
-            <button onclick="executeCommand('launch-kubernetes-l1-miner')">Launch Kubernetes L1 Miner</button>
-            <button onclick="executeCommand('launch-kubernetes-rpc')">Launch Kubernetes RPC</button>
-            <button onclick="executeCommand('launch-kubernetes-smart-contract-metric-exporter')">Launch Kubernetes Smart Contract Metric Exporter</button>
-            <button onclick="executeCommand('launch-kubernetes-l2-sequencer')">Launch Kubernetes L2 Sequencer</button>
-            <button onclick="executeCommand('launch-kubernetes-prover')">Launch Kubernetes Prover</button>
+            <h3>Kubernetes Run</h3>
         </div>
     </div>
-
-    <script>
-        function executeCommand(command) {
-            // Replace with your logic to execute the command
-            console.log("Executing command: " + command);
-        }
-    </script>
 </body>
 </html>
 

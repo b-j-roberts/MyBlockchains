@@ -25,6 +25,7 @@ display_help() {
 
   echo "   -m, --peer-port            Peer port ( default: 30303 )"
   echo "   -r, --rpc-port             RPC port ( default: 8545 )"
+  echo "   -o, --output               Output file -- If outfile selected, run task as daemon ( default: console )"
   echo
   echo "Example: ./scripts/launch-miner.sh -d ~/l1-miner-data -x"
 }
@@ -35,7 +36,7 @@ clear_data() {
 }
 
 # Parse command line arguments
-while getopts ":hd:xc:p:g:m:r:" opt; do
+while getopts ":hd:xc:p:g:m:r:o:" opt; do
   case ${opt} in
     d|--data )
       DATA_DIR=$OPTARG
@@ -62,6 +63,9 @@ while getopts ":hd:xc:p:g:m:r:" opt; do
       ;;
     r|--rpc-port )
       HTTP_PORT=$OPTARG
+      ;;
+    o|--output )
+      OUTPUT_FILE=$OPTARG
       ;;
     \? )
       echo "Invalid Option: -$OPTARG" 1>&2
@@ -117,5 +121,11 @@ if [ $STATE_RESET -eq 1 ]; then
   geth init --datadir $DATA_DIR $GENESIS_FILE
 fi
 
-${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "http://localhost:8000" --port $PEER_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6060
+if [ -z $OUTPUT_FILE ]; then
+  echo "No output file specified, logging to console"
+  ${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "http://localhost:8000" --port $PEER_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6060
+else
+  echo "Logging to $OUTPUT_FILE"
+  ${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "http://localhost:8000" --port $PEER_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6060 > $OUTPUT_FILE 2>&1 &
+fi
 #geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "https://remix.ethereum.org"
