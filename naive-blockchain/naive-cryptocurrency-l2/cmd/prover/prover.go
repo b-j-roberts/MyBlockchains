@@ -7,16 +7,48 @@ import (
 	"flag"
 	"log"
 	"math/big"
+	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"naive-l2/src/utils"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+  TotalProofs = prometheus.NewCounter(prometheus.CounterOpts{
+    Name: "prover_total_proofs",
+    Help: "The total number of proofs submitted",
+  })
+  TotalProofsVerified = prometheus.NewCounter(prometheus.CounterOpts{
+    Name: "prover_total_proofs_verified",
+    Help: "The total number of proofs verified onchain ( Finalized proved batches )",
+  })
+  TotalRewards = prometheus.NewCounter(prometheus.CounterOpts{
+    Name: "prover_total_rewards",
+    Help: "The total number of rewards received",
+  })
+  LastProvedBatch = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "prover_last_proved_batch",
+    Help: "The last batch that was proved",
+  })
+  L1BlockHeight = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_block_height",
+    Help: "L1 block height at time of metric collection",
+  })
+)
+
+func SetupMetrics() {
+  prometheus.MustRegister(TotalProofs)
+  prometheus.MustRegister(TotalProofsVerified)
+  prometheus.MustRegister(TotalRewards)
+  prometheus.MustRegister(LastProvedBatch)
+  prometheus.MustRegister(L1BlockHeight)
+}
 
 
 type Prover struct {
@@ -27,6 +59,8 @@ type Prover struct {
   TotalProofs uint64
   TotalProofsVerifiedOnchain uint64
   TotalRewards uint64
+
+  ProofsSubmitted []uint64
 }
 
 func NewProver(l1Comms *utils.L1Comms, proverL1Address common.Address) *Prover {
@@ -37,6 +71,7 @@ func NewProver(l1Comms *utils.L1Comms, proverL1Address common.Address) *Prover {
     TotalProofs: 0,
     TotalProofsVerifiedOnchain: 0,
     TotalRewards: 0,
+    ProofsSubmitted: []uint64{},
   }
 
   return prover
@@ -156,6 +191,11 @@ func (p *Prover) SubmitProof(proof []byte, batchNumber uint64) error {
   p.L1Comms.SubmitProof(proof, int(batchNumber), p.ProverL1Address)
   p.TotalProofs += 1
   p.LastProvedBatch = batchNumber
+  TotalProofs.Add(1)
+  LastProvedBatch.Set(float64(p.LastProvedBatch))
+
+  //TODO: No way to link batch to this exact prover yet
+  p.ProofsSubmitted = append(p.ProofsSubmitted, batchNumber)
 
   log.Println("Proof Submitted for batch %d!", batchNumber)
   return nil
@@ -164,10 +204,24 @@ func (p *Prover) SubmitProof(proof []byte, batchNumber uint64) error {
 func (p *Prover) Start() error {
   log.Println("Starting Prover...")
 
+  go func() {
   for {
     lastBatchConfirmed, err := p.L1Comms.L1Contract.GetLastConfirmedBatch(nil)
     if err != nil {
       log.Fatalf("Failed to get last confirmed batch: %v", err)
+    }
+
+    l1BlockHeight, err := p.L1Comms.L1Client.BlockNumber(context.Background())
+    if err != nil {
+      log.Fatalf("Failed to get L1 block height: %v", err)
+    }
+    L1BlockHeight.Set(float64(l1BlockHeight))
+
+    if len(p.ProofsSubmitted) > int(p.TotalProofsVerifiedOnchain) {
+      err = p.VerifyBatchValid(p.ProofsSubmitted[p.TotalProofsVerifiedOnchain])
+      if err != nil {
+        log.Fatalf("Failed to verify batch: %v", err)
+      }
     }
 
     if lastBatchConfirmed.Int64() + 1 == int64(p.LastProvedBatch) {
@@ -208,12 +262,13 @@ func (p *Prover) Start() error {
       continue
     }
   }
+  }()
 
   return nil
 }
 
 //TODO: This is a mock function for development reasons, keep track of proofs verified onchain & store vales
-func (p *Prover) VerifyBatchValid(batchNumber int) error {
+func (p *Prover) VerifyBatchValid(batchNumber uint64) error {
   log.Println("Verifying Proof submitted on L1...")
 
   isConfirmed, err := p.L1Comms.L1Contract.GetBatchConfirmed(nil, big.NewInt(int64(batchNumber)))
@@ -225,6 +280,7 @@ func (p *Prover) VerifyBatchValid(batchNumber int) error {
   if isConfirmed {
     log.Println("Proof verified on L1!")
     p.TotalProofsVerifiedOnchain += 1
+    TotalProofsVerified.Add(1)
 
     reward, err := p.L1Comms.L1Contract.GetReward(nil, big.NewInt(int64(batchNumber)))
     if err != nil {
@@ -233,6 +289,7 @@ func (p *Prover) VerifyBatchValid(batchNumber int) error {
     }
 
     p.TotalRewards += reward
+    TotalRewards.Add(float64(reward))
   } else {
     log.Println("Proof not verified on L1!")
   }
@@ -256,6 +313,8 @@ func mainImp() int {
     log.Fatalf("Failed to create L1 comms: %v", err)
   }
 
+  SetupMetrics()
+
   prover := NewProver(l1Comms, common.HexToAddress(*proverL1Address))
 
   prover.L1Comms.RegisterL2Address(common.HexToAddress(*proverL1Address), *proverL1Keystore)
@@ -266,20 +325,23 @@ func mainImp() int {
     fatalErrChan <- err
   }
 
-  sigint := make(chan os.Signal, 1)
-  signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+  log.Println("Starting Prometheus metrics server on port 6162...")
+  http.Handle("/metrics", promhttp.Handler())
+  http.ListenAndServe(":6162", nil)
+  //sigint := make(chan os.Signal, 1)
+  //signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 
   exitCode := 0
-  select {
-  case err := <-fatalErrChan:
-    log.Println("shutting down due to fatal error:", err)
-    defer log.Println("shut down")
-    exitCode = 1
-  case <-sigint:
-    log.Println("shutting down due to interrupt")
-  }
+  //select {
+  //case err := <-fatalErrChan:
+  //  log.Println("shutting down due to fatal error:", err)
+  //  defer log.Println("shut down")
+  //  exitCode = 1
+  //case <-sigint:
+  //  log.Println("shutting down due to interrupt")
+  //}
 
-  close(sigint)
+  //close(sigint)
 
   return exitCode
 }

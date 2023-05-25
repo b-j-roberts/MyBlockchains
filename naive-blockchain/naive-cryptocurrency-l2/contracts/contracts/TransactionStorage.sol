@@ -56,14 +56,17 @@ contract TransactionStorage {
       confirmedBatches[id] = true;
       lastConfirmedBatch = id;
       batchRewards[id] = 100;
+      proofL1Block[id] = block.number;
     } else {
       revert("Invalid proof");
     }
 
+
     emit BatchConfirmed(id, block.number, batchRoots[id]);
   }
 
-  function GetBatchCount() public view returns (uint256){
+  //TODO: public -> external
+  function GetBatchCount() public view returns (uint256) {
       return batchCount;
   }
 

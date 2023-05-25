@@ -11,12 +11,15 @@ ADD go-ethereum/ /go-ethereum
 RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/geth
 RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/abigen
 
-FROM ethereum/solc:stable-alpine as solc-builder
+#FROM ethereum/solc:0.8.18-alpine as solc-builder
+FROM node:20.2 as solc-builder
 
 COPY --from=go-builder /go-ethereum/build/bin/abigen /usr/local/bin/abigen
 
+RUN npm install -g solc@0.8.18
+
 # add dependencies to compile contracts with npm
-RUN apk add --no-cache nodejs npm make
+#RUN apk add --no-cache make
 
 COPY contracts/ /naive-l2/contracts
 #TODO: Make sure removed w/ dockerignore RUN rm -rf /naive-l2/contracts/node_modules

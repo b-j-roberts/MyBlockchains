@@ -102,6 +102,12 @@ make docker-build
 make contracts
 make deploy-private-l1
 # COPY ADDR
+L1_CONTRACT_ADDRESS=<addr> make run-smart-contract-metrics
 L1_CONTRACT_ADDRESS=<addr> make docker-run-sequencer
 make watch-smart-contract
 L1_CONTRACT_ADDRESS=<addr> make docker-run-prover
+
+
+# Since eth stuff not enabled on rpc ( add option )
+geth attach --exec 'eth.sendTransaction({from: "46b823cd45ba0eb493ddcdf4591799994535c1bc", to: "06eba974246f46d6b8421fd5e0b1b5cafbeb0710", value: 100000})' ~/naive-sequencer-data/naive-sequencer.ipc
+docker exec -it naive-sequencer /app/go-ethereum/build/bin/geth attach --exec 'eth.sendTransaction({from: "0x693A08cC02422548624B8161Ae581DE27AfA8B4b", to: "06eba974246f46d6b8421fd5e0b1b5cafbeb0710", value: 100000})' /sequencer-data/naive-sequencer.ipc

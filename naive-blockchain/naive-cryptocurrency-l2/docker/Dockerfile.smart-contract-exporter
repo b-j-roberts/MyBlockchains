@@ -41,18 +41,17 @@ COPY src/ /naive-l2/src
 COPY cmd/ /naive-l2/cmd
 COPY Makefile /naive-l2/Makefile
 
-RUN cd /naive-l2 && make prover
+RUN cd /naive-l2 && make smart-contract-metrics
 
 # Pull Geth into a second stage deploy alpine container
 FROM alpine:latest
 
 RUN apk add --no-cache ca-certificates bash jq
 COPY --from=go-builder /go-ethereum/build/bin/geth /app/go-ethereum/build/bin/geth
-COPY --from=go-builder2 /naive-l2/build/prover /app/build/prover
+COPY --from=go-builder2 /naive-l2/build/smart-contract-metrics /app/build/smart-contract-metrics
 COPY --from=solc-builder /naive-l2/contracts/builds/ /app/contracts/builds/
 
-#TODO: Other ports
-EXPOSE 6162
+EXPOSE 6169
 
 WORKDIR /app
 
@@ -60,4 +59,4 @@ COPY scripts/ scripts/
 
 ENV L1_CONTRACT_ADDRESS=
 
-ENTRYPOINT ["./scripts/start-prover.sh", "-k", "/l1-data/keystore/"]
+ENTRYPOINT ["./scripts/start-smart-contract-metrics-exporter.sh"]

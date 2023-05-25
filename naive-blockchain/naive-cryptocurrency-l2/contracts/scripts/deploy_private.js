@@ -9,8 +9,9 @@ import fs from 'fs'
   try {
       const result = await deploy('TransactionStorage', [])
       console.log(result)
+      console.log("Deployed contract to : ", result.address)
 
-      var jsonOutput = "{\"address\": \"" + result + "\"}"
+      var jsonOutput = "{\"address\": \"" + result.address + "\"}"
       
       // Write the contract address to a file
       fs.writeFileSync('./builds/contract-address.txt', jsonOutput)

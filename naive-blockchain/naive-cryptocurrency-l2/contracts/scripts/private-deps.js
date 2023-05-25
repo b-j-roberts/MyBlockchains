@@ -16,35 +16,26 @@ const { Contract, ContractSendMethod, Options } = web3_contract
 export const deploy = async (contractName, args, from, gas) => {
   console.log('deploying', contractName, 'with args', args, 'from', from, 'gas', gas)
 
-  //shell.exec("../../../../eth-private-network/scripts/launch-network-overwrite.sh", function(err, stdout, stderr) {
-
   const web3 = new Web3('http://localhost:8545')
   console.log(`deploying ${contractName}`)
 
-  const contractABI = JSON.parse(fs.readFileSync(`builds/${contractName}.abi`))
-  const contractBytecode = fs.readFileSync(`builds/${contractName}.bin`).toString()
+  const abiPath = `./builds/contracts_${contractName}_sol_${contractName}.abi`
+  const abi = JSON.parse(fs.readFileSync(abiPath, 'utf8'))
+  const bytecodePath = `./builds/contracts_${contractName}_sol_${contractName}.bin`
+  const bytecode = fs.readFileSync(bytecodePath, 'utf8')
 
-  const contract = new web3.eth.Contract(contractABI)
+  const contract = new web3.eth.Contract(abi)
+  const accounts = await web3.eth.getAccounts()
 
-  try {
-   const accounts = await web3.eth.getAccounts()
-   console.log('accounts', accounts)
-  
-   const newContractInstance = await contract.deploy({
-      data: contractBytecode,
-      arguments: args
-    })
-    .send({
-      from: from || accounts[0],
-      gas: 3000000,
-      gasPrice: 100000
-      //gas: gas || 1500000,
-      //gasPrice: '30000000000000'
-    })
+  const contractSend = contract.deploy({
+    data: bytecode,
+    arguments: args
+  })
 
-    console.log(`deployed ${contractName} at ${newContractInstance.options.address}`)
-    return newContractInstance.options.address
-  } catch (err) {
-    console.log(err)
-  }
+  const newContractInstance = await contractSend.send({
+    from: from || accounts[0],
+    gas: gas || 15000000,
+  })
+
+  return newContractInstance.options
 }

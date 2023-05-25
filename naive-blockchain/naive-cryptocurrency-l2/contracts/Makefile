@@ -3,7 +3,7 @@ build:
 	npm run go-gen
 
 deploy-private:
-	npm run deploy-private-local
+	npm run deploy-private
 
 deploy-goerli:
 	npm run deploy-goerli

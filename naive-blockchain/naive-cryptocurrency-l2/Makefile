@@ -1,6 +1,6 @@
-.PHONY: all contracts sequencer prover rpc verifier clean
+.PHONY: all contracts sequencer prover rpc verifier clean smart-contract-metrics
 
-all: contracts sequencer prover rpc verifier
+all: contracts sequencer prover rpc verifier smart-contract-metrics
 
 contracts:
 	cd contracts && make
@@ -17,6 +17,9 @@ rpc:
 verifier:
 	go build -o build/verifier ./cmd/verifier
 
+smart-contract-metrics:
+	go build -o build/smart-contract-metrics ./cmd/smart-contract-metrics
+
 deploy-private-l1:
 	cd contracts && make deploy-private
 
@@ -28,6 +31,7 @@ docker-build:
 	make clean
 	docker build -f docker/Dockerfile.sequencer . -t brandonjroberts/naive-l2-sequencer:latest
 	docker build -f docker/Dockerfile.prover . -t brandonjroberts/naive-l2-prover:latest
+	docker build -f docker/Dockerfile.smart-contract-exporter . -t brandonjroberts/naive-l2-smart-contract-exporter:latest
 
 docker-push:
 	docker push brandonjroberts/naive-l2-sequencer:latest
@@ -53,11 +57,19 @@ docker-run-prover:
 		brandonjroberts/naive-l2-prover:latest
 	rm -rf ~/tmp/l1-docker-data-for-prover/
 
+docker-run-smart-contract-metrics:
+	echo "Running smart contract metrics exporter w/ " ${L1_CONTRACT_ADDRESS}
+	docker run -it --network host --rm --name naive-smart-contract-metrics-exporter -e L1_CONTRACT_ADDRESS=${L1_CONTRACT_ADDRESS} \
+		brandonjroberts/naive-l2-smart-contract-exporter:latest
+
 run-sequencer:
 	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -x -k ~/l1-miner-data/keystore/
 
 run-prover:
 	./scripts/start-prover.sh -k ~/l1-miner-data/keystore/
+
+run-smart-contract-metrics:
+	./scripts/start-smart-contract-metrics-exporter.sh
 
 watch-smart-contract:
 	./scripts/smart-contract-watch.sh -a $(shell cat contracts/builds/contract-address.txt | jq -r .address)

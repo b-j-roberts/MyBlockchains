@@ -22,6 +22,8 @@ import (
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/metrics/exp"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
@@ -218,12 +220,34 @@ func (node *Node) Start() error {
     return fmt.Errorf("failed to start eth: %v", err)
   }
 
+  err = StartMetrics()
+  if err != nil {
+    return fmt.Errorf("failed to start metrics: %v", err)
+  }
+
+  return nil
+}
+
+func SetupMetrics() {
+  //TODO: Enable
+  metrics.Enabled = true
+  metrics.EnabledExpensive = true
+  exp.Exp(metrics.DefaultRegistry)
+  address := fmt.Sprintf("%s:%d", "localhost", 6160)
+  log.Println("Metrics address is", address)
+  exp.Setup(address)
+}
+
+func StartMetrics() error {
+  go metrics.CollectProcessMetrics(3 * time.Second)
+
   return nil
 }
 
 func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules string, l1Host string, l1Port int,
                      l1ContractAddress common.Address, posterAddress common.Address) (*Node, error) {
   // Function used to create Naive Node mimicing eth/backend.go:New for Ethereum Node object
+  SetupMetrics()
 
   // Setup Geth node/node
   nodeConfig := NodeConfig(dataDir, httpHost, httpPort, httpModules)
@@ -253,7 +277,7 @@ func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules 
   // Caching from arbnode/execution/blockchain.go DatabaseCache
   // Namespace is prefix for metrics
   // Open rawdb from geth/core with ancients freezer & configs from arbitrum chainDb ( Disk based db )
-  chainDb, err := node.OpenDatabaseWithFreezer("l2-chain", 2048, 512, "", "naive-l2/chaindb", false)
+  chainDb, err := node.OpenDatabaseWithFreezer("l2-chain", 2048, 512, "", "naive_l2/chaindb", false)
   if err != nil {
     return nil, fmt.Errorf("failed to open chain database: %v", err)
   }
@@ -320,7 +344,11 @@ func mainImpl() int {
   sequencerKeystore := flag.String("sequencerkeystore", "", "Keystore file for the sequencer on L1")
   l1Host := flag.String("l1host", "localhost", "L1 HTTP-RPC server listening interface")
   l1Port := flag.Int("l1port", 8545, "L1 HTTP-RPC server listening port")
+  metricsFlag := flag.Bool("metrics", false, "Enable metrics")
+  metricsExpensiveFlag := flag.Bool("metrics.expensive", false, "Enable expensive metrics")
   flag.Parse()
+
+  log.Println("Metrics status:", *metricsFlag, *metricsExpensiveFlag)
 
   log.Println("Connecting to L1 contract at", *l1Host, *l1Port, "with address", *l1ContractAddress)
   naiveNode, err := CreateNaiveNode(*dataDir, *httpHost, *httpPort, *httpModules, *l1Host, *l1Port, common.HexToAddress(*l1ContractAddress), common.HexToAddress(*sequencerAddress))
