@@ -28,7 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
 
-	naive_utils "naive-l2/src/utils"
+	naive_utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 )
 
 type Batcher struct {
@@ -142,9 +142,17 @@ type Node struct {
   Batcher *Batcher
 }
 
-func NewNode(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config, l1ContractAddress common.Address, posterAddress common.Address, l1Host string, l1Port int) (*Node, error) {
+func NewNode(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config, l1ContractAddress common.Address, l1BridgeAddress common.Address, posterAddress common.Address, l1Host string, l1Port int) (*Node, error) {
   txPool := txpool.NewTxPool(config.TxPool, l2Blockchain.Config(), l2Blockchain)
-  naive_eth := eth.NewNaiveEthereum(l2Blockchain, chainDb, node, config, txPool, engine)
+  l1BridgeConfig := &eth.L1BridgeConfig{
+    L1BridgeAddress: l1BridgeAddress,
+    L1BridgeUrl: fmt.Sprintf("http://%s:%d", l1Host, l1Port),
+    SequencerAddr: posterAddress,
+  }
+
+  naive_utils.SetSequencer(l1BridgeConfig.SequencerAddr)
+
+  naive_eth := eth.NewNaiveEthereum(l2Blockchain, chainDb, node, config, txPool, engine, l1BridgeConfig)
   //TODO: Learn more about APIs & which to enable/disable based on public / ...?
   apis := eth.GetNaiveEthAPIs(naive_eth)
   apis = append(apis, engine.APIs(l2Blockchain)...)
@@ -245,7 +253,7 @@ func StartMetrics() error {
 }
 
 func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules string, l1Host string, l1Port int,
-                     l1ContractAddress common.Address, posterAddress common.Address) (*Node, error) {
+                     l1ContractAddress common.Address, l1BridgeContractAddress string, posterAddress common.Address) (*Node, error) {
   // Function used to create Naive Node mimicing eth/backend.go:New for Ethereum Node object
   SetupMetrics()
 
@@ -302,6 +310,8 @@ func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules 
   // Setup Consensus Engine
   ethConfig := EthConfig(address)
   cliqueConfig, err := core.LoadCliqueConfig(chainDb, genesis)
+  cliqueConfig.L1Url = fmt.Sprintf("http://%s:%d", l1Host, l1Port)
+  cliqueConfig.L1BridgeAddress = l1BridgeContractAddress
   if err != nil {
     return nil, fmt.Errorf("failed to load clique config: %v", err)
   }
@@ -320,7 +330,7 @@ func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules 
 
   //TODO: naiveDb, err := node.OpenDatabase("naivedata", 0, 0, "", false)
 
-  naiveNode, err := NewNode(node, chainDb, l2BlockChain, engine, ethConfig, l1ContractAddress, posterAddress, l1Host, l1Port)
+  naiveNode, err := NewNode(node, chainDb, l2BlockChain, engine, ethConfig, l1ContractAddress, common.HexToAddress(l1BridgeContractAddress), posterAddress, l1Host, l1Port)
   if err != nil {
     return nil, fmt.Errorf("failed to create naive node: %v", err)
   }
@@ -340,6 +350,7 @@ func mainImpl() int {
   httpPort := flag.Int("httpport", 5055, "HTTP-RPC server listening port")
   httpModules := flag.String("httpmodules", "personal,naive", "Comma separated list of API modules to enable on the HTTP-RPC interface")
   l1ContractAddress := flag.String("l1contract", "", "Address of the L1 contract")
+  l1BridgeContractAddress := flag.String("l1bridgecontract", "", "Address of the L1 bridge contract")
   sequencerAddress := flag.String("sequencer", "", "Address of the sequencer on L1")
   sequencerKeystore := flag.String("sequencerkeystore", "", "Keystore file for the sequencer on L1")
   l1Host := flag.String("l1host", "localhost", "L1 HTTP-RPC server listening interface")
@@ -351,7 +362,7 @@ func mainImpl() int {
   log.Println("Metrics status:", *metricsFlag, *metricsExpensiveFlag)
 
   log.Println("Connecting to L1 contract at", *l1Host, *l1Port, "with address", *l1ContractAddress)
-  naiveNode, err := CreateNaiveNode(*dataDir, *httpHost, *httpPort, *httpModules, *l1Host, *l1Port, common.HexToAddress(*l1ContractAddress), common.HexToAddress(*sequencerAddress))
+  naiveNode, err := CreateNaiveNode(*dataDir, *httpHost, *httpPort, *httpModules, *l1Host, *l1Port, common.HexToAddress(*l1ContractAddress), *l1BridgeContractAddress, common.HexToAddress(*sequencerAddress))
   if err != nil {
     utils.Fatalf("Failed to create naive sequencer node: %v", err)
   }

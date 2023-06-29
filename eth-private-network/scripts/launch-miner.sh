@@ -110,7 +110,7 @@ if [ $STATE_RESET -eq 1 ]; then
   ACCOUNT_PASS=${ACCOUNT_PASS:-password}
   touch $PASSWORD_FILE
   echo $ACCOUNT_PASS > $PASSWORD_FILE
-  geth account new --datadir $DATA_DIR --password $PASSWORD_FILE
+  ${WORK_DIR}/go-ethereum/build/bin/geth account new --datadir $DATA_DIR --password $PASSWORD_FILE
 fi
 ACCOUNT1=$(cat $DATA_DIR/keystore/* | jq -r '.address' | head -n 1)
 
@@ -118,7 +118,7 @@ if [ $STATE_RESET -eq 1 ]; then
   # Create Geth Genesis & Init Chain
   GENESIS_FILE=$DATA_DIR/genesis.json
   $WORK_DIR/scripts/generate-genesis.sh -a $ACCOUNT1 -b 10000000000000000000 -o $GENESIS_FILE -p $PERIOD -c $CHAIN_ID -g $GAS_LIMIT
-  geth init --datadir $DATA_DIR $GENESIS_FILE
+  ${WORK_DIR}/go-ethereum/build/bin/geth init --datadir $DATA_DIR $GENESIS_FILE
 fi
 
 if [ -z $OUTPUT_FILE ]; then

@@ -57,6 +57,7 @@ docker-run-prover:
 		brandonjroberts/naive-l2-prover:latest
 	rm -rf ~/tmp/l1-docker-data-for-prover/
 
+#TODO: Bridge address
 docker-run-smart-contract-metrics:
 	echo "Running smart contract metrics exporter w/ " ${L1_CONTRACT_ADDRESS}
 	docker run -it --network host --rm --name naive-smart-contract-metrics-exporter -e L1_CONTRACT_ADDRESS=${L1_CONTRACT_ADDRESS} \
@@ -73,6 +74,12 @@ run-smart-contract-metrics:
 
 watch-smart-contract:
 	./scripts/smart-contract-watch.sh -a $(shell cat contracts/builds/contract-address.txt | jq -r .address)
+
+bridge-eth-to-l2:
+	go run ./scripts/bridge-eth-to-l2.go --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --bridgeAddress $(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) --rpc http://localhost:8545 --value 100000 --keystore ~/l1-miner-data/keystore/
+
+bridge-eth-to-l1:
+	./scripts/bridge-eth-to-l1.sh -i ~/naive-sequencer-data/naive-sequencer.ipc -v 10000 -t 0x0000000000000000000000000000000000000505
 
 # Define the default rule
 .DEFAULT_GOAL := all

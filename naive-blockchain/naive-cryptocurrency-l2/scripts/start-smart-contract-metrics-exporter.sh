@@ -9,13 +9,14 @@ display_help() {
   echo "   -h, --help                 show help"
 
   echo "   -A, --l1-contract-address  l1 contract address (Required)"
+  echo "   -B, --l1-bridge-address    l1 bridge address (Required)"
   echo "   -o, --output               Output file -- If outfile selected, run task as daemon ( default: console )"
 
   echo
   #TODO: Examples for all
 }
 
-while getopts ":hA:k:" opt; do
+while getopts ":hA:k:B:" opt; do
   case ${opt} in
     h|--help )
       display_help
@@ -23,6 +24,9 @@ while getopts ":hA:k:" opt; do
       ;;
     A|--l1-contract-address )
       L1_CONTRACT_ADDRESS=$OPTARG
+      ;;
+    B|--l1-bridge-address )
+      L1_BRIDGE_ADDRESS=$OPTARG
       ;;
     o|--output )
       OUTPUT_FILE=$OPTARG
@@ -55,8 +59,19 @@ if [ -z "${L1_CONTRACT_ADDRESS}" ]; then
   fi
 fi
 
+if [ -z "${L1_BRIDGE_ADDRESS}" ]; then
+  # Try and copy over address from build
+  L1_BRIDGE_ADDRESS=$(cat $WORK_DIR/contracts/builds/l1-bridge-address.txt | jq -r '.address')
+
+  if [ -z "${L1_BRIDGE_ADDRESS}" ]; then
+    echo "Missing required argument: -B" 1>&2
+    display_help
+    exit 1
+  fi
+fi
+
 if [ -z "${OUTPUT_FILE}" ]; then
-  $WORK_DIR/build/smart-contract-metrics --l1-contract-address ${L1_CONTRACT_ADDRESS}
+  $WORK_DIR/build/smart-contract-metrics --l1-contract-address ${L1_CONTRACT_ADDRESS} --l1-bridge-address ${L1_BRIDGE_ADDRESS}
 else
-  $WORK_DIR/build/smart-contract-metrics --l1-contract-address ${L1_CONTRACT_ADDRESS} > ${OUTPUT_FILE} 2>&1 &
+  $WORK_DIR/build/smart-contract-metrics --l1-contract-address ${L1_CONTRACT_ADDRESS} --l1-bridge-address ${L1_BRIDGE_ADDRESS} > ${OUTPUT_FILE} 2>&1 &
 fi

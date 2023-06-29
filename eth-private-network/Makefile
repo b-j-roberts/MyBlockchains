@@ -1,3 +1,6 @@
+build:
+	cd go-ethereum && make geth
+
 docker-build:
 	docker build -f docker/Dockerfile.miner . -t brandonjroberts/eth-private-miner:latest
 	docker build -f docker/Dockerfile.rpc . -t brandonjroberts/eth-private-rpc:latest
@@ -64,5 +67,6 @@ kube-reset-all:
 
 clean:
 	rm -rf build/
+	cd go-ethereum && make clean
 
 #TODO: connect-kube, kubectl port-forward service/eth-private-miner-app-service 8545 30303

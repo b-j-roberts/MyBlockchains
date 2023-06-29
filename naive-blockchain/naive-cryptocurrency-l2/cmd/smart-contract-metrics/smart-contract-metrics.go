@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"naive-l2/src/utils"
+	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
@@ -48,15 +48,21 @@ var (
     Name: "latest_confirmed_batch_proof_l1_block",
     Help: "L1 block height of transaction storing latest confirmed batch proof",
   })
+  BridgeBalance = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "bridge_balance",
+    Help: "Bridge balance",
+  })
 )
 
 type SmartContractMetricExporter struct {
   L1Comms *utils.L1Comms
+  L1BridgeComms *utils.L1BridgeComms
 }
 
-func NewSmartContractMetricExporter(l1Comms *utils.L1Comms) *SmartContractMetricExporter {
+func NewSmartContractMetricExporter(l1Comms *utils.L1Comms, l1BridgeComms *utils.L1BridgeComms) *SmartContractMetricExporter {
   smartContractMetricExporter := &SmartContractMetricExporter{
     L1Comms: l1Comms,
+    L1BridgeComms: l1BridgeComms,
   }
 
   return smartContractMetricExporter
@@ -70,6 +76,7 @@ func SetupMetrics() {
   prometheus.MustRegister(LatestBatchProofL1Block)
   prometheus.MustRegister(LatestConfirmedBatchL1Block)
   prometheus.MustRegister(LatestConfirmedBatchProofL1Block)
+  prometheus.MustRegister(BridgeBalance)
 }
 
 func (p *SmartContractMetricExporter) Start() error {
@@ -121,6 +128,12 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       LatestConfirmedBatchProofL1Block.Set(float64(latestConfirmedBatchProofL1Block.Int64()))
 
+      bridgeBalance, err := p.L1BridgeComms.L1BridgeContract.GetBridgeBalance(nil)
+      if err != nil {
+        log.Fatalf("Failed to get bridge balance: %v", err)
+      }
+      BridgeBalance.Set(float64(bridgeBalance.Int64()))
+
       // Sleep for 3 seconds
       time.Sleep(3 * time.Second)
     }
@@ -133,6 +146,7 @@ func main() { os.Exit(mainImp()) }
 
 func mainImp() int {
   l1ContractAddress := flag.String("l1-contract-address", "", "Main L1 contract address")
+  l1BridgeAddress := flag.String("l1-bridge-address", "", "Main L1 contract address")
   l1Host := flag.String("l1-host", "http://localhost", "L1 host")
   l1Port := flag.String("l1-port", "8545", "L1 port")
   flag.Parse()
@@ -143,9 +157,14 @@ func mainImp() int {
     log.Fatalf("Failed to create L1 comms: %v", err)
   }
 
+  l1BridgeComms, err := utils.NewL1BridgeComms(l1Url, common.HexToAddress(*l1BridgeAddress))
+  if err != nil {
+    log.Fatalf("Failed to create L1 bridge comms: %v", err)
+  }
+
   SetupMetrics()
 
-  smartContractMetricExporter := NewSmartContractMetricExporter(l1Comms)
+  smartContractMetricExporter := NewSmartContractMetricExporter(l1Comms, l1BridgeComms)
 
   fatalErrChan := make(chan error, 10)
   err = smartContractMetricExporter.Start()

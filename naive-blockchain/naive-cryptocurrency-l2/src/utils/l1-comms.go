@@ -3,7 +3,8 @@ package utils
 import (
 	"log"
 	"math/big"
-	contracts "naive-l2/contracts/go"
+
+	txstore "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/txstore"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -16,7 +17,7 @@ type L1Comms struct {
   RpcUrl string
   L1Client *ethclient.Client
 
-  L1Contract *contracts.Contracts
+  L1Contract *txstore.Txstore
   L1ContractAddress common.Address
 }
 
@@ -30,7 +31,7 @@ func NewL1Comms(rpcUrl string, l1ContractAddress common.Address) (*L1Comms, erro
   }
   l1Client := ethclient.NewClient(rawRpc)
 
-  l1Contract, err := contracts.NewContracts(l1ContractAddress, l1Client)
+  l1Contract, err := txstore.NewTxstore(l1ContractAddress, l1Client)
   if err != nil {
     return nil, err
   }

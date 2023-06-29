@@ -9,12 +9,17 @@ import fs from 'fs'
   try {
       const result = await deploy('TransactionStorage', [])
       console.log(result)
-      console.log("Deployed contract to : ", result.address)
-
+      console.log("Deployed TransactionStorage contract to : ", result.address)
       var jsonOutput = "{\"address\": \"" + result.address + "\"}"
-      
       // Write the contract address to a file
-      fs.writeFileSync('./builds/contract-address.txt', jsonOutput)
+      fs.writeFileSync('./builds/contract-address.txt', jsonOutput)//TODO: contract-address -> transaction storage
+
+      const result2 = await deploy('L1Bridge', [])
+      console.log(result2)
+      console.log("Deployed L1Bridge contract to : ", result2.address)
+      var jsonOutput2 = "{\"address\": \"" + result2.address + "\"}"
+      // Write the contract address to a file
+      fs.writeFileSync('./builds/l1-bridge-address.txt', jsonOutput2)
   } catch (e) {
       console.log(e.message)
   }

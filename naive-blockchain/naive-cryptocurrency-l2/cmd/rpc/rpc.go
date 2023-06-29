@@ -33,7 +33,7 @@ type Node struct {
 
 func NewNode(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config) (*Node, error) {
   txPool := txpool.NewTxPool(config.TxPool, l2Blockchain.Config(), l2Blockchain)
-  naive_eth := eth.NewNaiveEthereum(l2Blockchain, chainDb, node, config, txPool, engine)
+  naive_eth := eth.NewNaiveEthereum(l2Blockchain, chainDb, node, config, txPool, engine, nil)
   //TODO: Learn more about APIs & which to enable/disable based on public / ...?
   apis := eth.GetNaiveEthAPIs(naive_eth)
   apis = append(apis, engine.APIs(l2Blockchain)...)

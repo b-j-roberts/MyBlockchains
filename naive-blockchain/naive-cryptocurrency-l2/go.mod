@@ -1,4 +1,4 @@
-module naive-l2
+module github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2
 
 go 1.19
 

@@ -11,7 +11,7 @@ import (
 	"os"
 	"time"
 
-	"naive-l2/src/utils"
+	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"

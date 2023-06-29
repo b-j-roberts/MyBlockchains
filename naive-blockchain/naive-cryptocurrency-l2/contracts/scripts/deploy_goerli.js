@@ -12,6 +12,7 @@ import { deploy } from './goerli-deps.js'
       jsonOutput = "{\"address\": \"" + result + "\"}"
       console.log(jsonOutput)
 
+    //TODO: bridge
   } catch (e) {
       console.log(e.message)
   }

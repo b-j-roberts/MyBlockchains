@@ -13,7 +13,7 @@
     "deploy-goerli": "node scripts/deploy_goerli.js",
     "test-private": "mocha tests/transaction-storage.private.test.js --timeout 30000",
     "test-goerli": "mocha tests/transaction-storage.goerli.test.js --timeout 30000",
-    "go-gen": "rm -rf go/ && mkdir -p go/ && abigen --bin=builds/contracts_TransactionStorage_sol_TransactionStorage.bin --abi=builds/contracts_TransactionStorage_sol_TransactionStorage.abi --pkg=contracts --out=go/transaction-storage.go"
+    "go-gen": "./scripts/go-gen.sh"
   },
   "author": "",
   "license": "ISC",
