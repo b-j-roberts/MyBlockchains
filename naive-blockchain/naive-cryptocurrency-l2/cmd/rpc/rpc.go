@@ -11,84 +11,16 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
+
+	l2core "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/core"
 )
 
-type Node struct {
-  ChainDb ethdb.Database
-  Node    *node.Node
-  L2Blockchain *core.BlockChain
-  Engine  consensus.Engine
-  Eth     *eth.Ethereum
-}
-
-func NewNode(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config) (*Node, error) {
-  txPool := txpool.NewTxPool(config.TxPool, l2Blockchain.Config(), l2Blockchain)
-  naive_eth := eth.NewNaiveEthereum(l2Blockchain, chainDb, node, config, txPool, engine, nil)
-  //TODO: Learn more about APIs & which to enable/disable based on public / ...?
-  apis := eth.GetNaiveEthAPIs(naive_eth)
-  apis = append(apis, engine.APIs(l2Blockchain)...)
-  apis = append(apis, []rpc.API{
-    {
-      Namespace: "eth",
-      Service:   eth.NewEthereumAPI(naive_eth),
-    }, {
-      Namespace: "admin",
-      Service:   eth.NewAdminAPI(naive_eth),
-    }, {
-      Namespace: "debug",
-      Service:   eth.NewDebugAPI(naive_eth),
-    },
-  }...)
-  node.RegisterAPIs(apis)
-  node.RegisterProtocols(naive_eth.Protocols())
-  node.RegisterLifecycle(naive_eth)
-
-  //TODO: APIs / RPC
-  return &Node{
-    ChainDb: chainDb,
-    Node:    node,
-    L2Blockchain: l2Blockchain,
-    Engine:  engine,
-    Eth:     naive_eth,
-  }, nil
-}
-
-func (node *Node) Start() error {
-  backends := node.Node.AccountManager().Backends(keystore.KeyStoreType)
-  if len(backends) == 0 {
-    return fmt.Errorf("no key store backends found")
-  }
-  ks := backends[0].(*keystore.KeyStore)
-  address := ks.Accounts()[0].Address.Hex()
-  log.Println("Address is", address)
-
-  account, err := utils.MakeAddress(ks, address)
-  err = ks.Unlock(account, "password") //TODO: Hardcode
-  if err != nil {
-    return fmt.Errorf("failed to unlock account: %v", err)
-  } else {
-    log.Println("Unlocked account", ks.Accounts()[0].Address.Hex())
-  }
-
-  err = node.Node.Start()
-  if err != nil {
-    return fmt.Errorf("failed to start node stack: %v", err)
-  }
-
-  return nil
-}
-
-func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules string) (*Node, error) {
+func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules string) (*l2core.Node, error) {
   // Function used to create Naive Node mimicing eth/backend.go:New for Ethereum Node object
 
   // Setup Geth node/node
@@ -162,7 +94,7 @@ func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules 
 
   //TODO: naiveDb, err := node.OpenDatabase("naivedata", 0, 0, "", false)
 
-  naiveNode, err := NewNode(node, chainDb, l2BlockChain, engine, ethConfig)
+  naiveNode, err := l2core.NewNode(node, chainDb, l2BlockChain, engine, ethConfig, nil) //TODO: nil when or when bridge not needed?
   if err != nil {
     return nil, fmt.Errorf("failed to create naive node: %v", err)
   }
@@ -178,6 +110,7 @@ func mainImpl() int {
 
   osHomeDir, err := os.UserHomeDir()
   dataDir := flag.String("datadir", osHomeDir + "/naive-rpc-data", "data directory for the database and keystore")
+  //TODO: to url not host port
   httpHost := flag.String("httphost", "localhost", "HTTP-RPC server listening interface")
   httpPort := flag.Int("httpport", 5056, "HTTP-RPC server listening port")
   httpModules := flag.String("httpmodules", "personal,naive", "Comma separated list of API modules to enable on the HTTP-RPC interface")

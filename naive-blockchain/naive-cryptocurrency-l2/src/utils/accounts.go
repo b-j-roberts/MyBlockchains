@@ -34,7 +34,7 @@ func AddressFromFile(path string) (common.Address, error) {
 // Store address -> KeyStoreDir map
 var addressKeyStoreDirMap = make(map[common.Address]string)
 
-func StoreKeyStoreDir(address common.Address, dir string) {
+func RegisterAccount(address common.Address, dir string) {
   addressKeyStoreDirMap[address] = dir
 }
 

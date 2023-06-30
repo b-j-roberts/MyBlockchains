@@ -4,10 +4,9 @@ package main
 
 import (
 	"flag"
-	"math/big"
 	"os"
 
-	naive_utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
+	l2utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -34,17 +33,14 @@ func mainImpl() int {
     return 1
   }
 
-  l1BridgeComms, err := naive_utils.NewL1BridgeComms(*rpc, common.HexToAddress(*bridgeAddress))
+  l1BridgeComms, err := l2utils.NewL1Comms(*rpc, common.HexToAddress("0x0"), common.HexToAddress(*bridgeAddress))
   if err != nil {
     panic(err)
   }
 
-  err = l1BridgeComms.RegisterL1Address(common.HexToAddress(*address), *keystore)
-  if err != nil {
-    panic(err)
-  }
-  
-  err = l1BridgeComms.BridgeEthToL2(common.HexToAddress(*address), big.NewInt(int64(*value)))
+  l2utils.RegisterAccount(common.HexToAddress(*address), *keystore)
+
+  err = l1BridgeComms.BridgeEthToL2(common.HexToAddress(*address), *value)
   if err != nil {
     panic(err)
   }

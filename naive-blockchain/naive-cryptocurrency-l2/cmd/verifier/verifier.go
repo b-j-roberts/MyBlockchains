@@ -60,7 +60,7 @@ func unpackProofCalldata(tx *types.Transaction) (id *big.Int, proof []byte, err 
 func (v *Verifier) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [32]byte) {
   log.Println("Getting Batch Proof Params...")
 
-  batchL1Block, err := v.L1Comms.L1Contract.GetBatchL1Block(nil, big.NewInt(int64(batchNumber)))
+  batchL1Block, err := v.L1Comms.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get batch L1 block: %v", err)
     return nil, [32]byte{}, [32]byte{}
@@ -83,8 +83,8 @@ func (v *Verifier) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [3
 
     for _, receipt_log := range receipt.Logs {
       eventSignature := []byte("BatchStored(uint256, uint256, byte32)")
-      if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) && common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.L1ContractAddress {
-        batchStored, err := v.L1Comms.L1Contract.ParseBatchStored(*receipt_log)
+      if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) && common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.TxStorageContractAddress {
+        batchStored, err := v.L1Comms.TxStorageContract.ParseBatchStored(*receipt_log)
         if err != nil {
           log.Fatalf("Failed to unpack log: %v", err)
           return nil, [32]byte{}, [32]byte{}
@@ -104,13 +104,13 @@ func (v *Verifier) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [3
     }
   }
 
-  batchPreStateRoot, err := v.L1Comms.L1Contract.GetBatchPreStateRoot(nil, big.NewInt(int64(batchNumber)))
+  batchPreStateRoot, err := v.L1Comms.TxStorageContract.GetBatchPreStateRoot(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get batch pre state root: %v", err)
     return nil, [32]byte{}, [32]byte{}
   }
 
-  batchPostStateRoot, err := v.L1Comms.L1Contract.GetBatchPostStateRoot(nil, big.NewInt(int64(batchNumber)))
+  batchPostStateRoot, err := v.L1Comms.TxStorageContract.GetBatchPostStateRoot(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get batch post state root: %v", err)
     return nil, [32]byte{}, [32]byte{}
@@ -125,7 +125,7 @@ func (v *Verifier) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [3
 func (v *Verifier) GetProof(batchNumber uint64) []byte {
   log.Println("Getting Proof...")
 
-  proofL1Block, err := v.L1Comms.L1Contract.GetProofL1Block(nil, big.NewInt(int64(batchNumber)))
+  proofL1Block, err := v.L1Comms.TxStorageContract.GetProofL1Block(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get proof: %v", err)
     return nil
@@ -146,8 +146,8 @@ func (v *Verifier) GetProof(batchNumber uint64) []byte {
 
     for _, receipt_log := range receipt.Logs {
       eventSignature := []byte("BatchConfirmed(uint256, uint256, byte32)")
-      if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) && common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.L1ContractAddress {
-        batchConfirmed, err := v.L1Comms.L1Contract.ParseBatchConfirmed(*receipt_log)
+      if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) && common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.TxStorageContractAddress {
+        batchConfirmed, err := v.L1Comms.TxStorageContract.ParseBatchConfirmed(*receipt_log)
         if err != nil {
           log.Fatalf("Failed to unpack log: %v", err)
           return nil
@@ -207,7 +207,7 @@ func mainImp() int {
   }
 
   l1Url := *l1Host + ":" + *l1Port
-  l1Comms, err := utils.NewL1Comms(l1Url , l1ContractAddress)
+  l1Comms, err := utils.NewL1Comms(l1Url , l1ContractAddress, common.HexToAddress("0x0"))
   if err != nil {
     log.Fatalf("Failed to create L1 comms: %v", err)
   }

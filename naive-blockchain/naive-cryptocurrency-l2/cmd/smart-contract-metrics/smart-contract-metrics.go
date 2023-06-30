@@ -56,13 +56,11 @@ var (
 
 type SmartContractMetricExporter struct {
   L1Comms *utils.L1Comms
-  L1BridgeComms *utils.L1BridgeComms
 }
 
-func NewSmartContractMetricExporter(l1Comms *utils.L1Comms, l1BridgeComms *utils.L1BridgeComms) *SmartContractMetricExporter {
+func NewSmartContractMetricExporter(l1Comms *utils.L1Comms) *SmartContractMetricExporter {
   smartContractMetricExporter := &SmartContractMetricExporter{
     L1Comms: l1Comms,
-    L1BridgeComms: l1BridgeComms,
   }
 
   return smartContractMetricExporter
@@ -84,15 +82,15 @@ func (p *SmartContractMetricExporter) Start() error {
 
   go func() {
     for {
-      log.Println("Updating smart contract metrics from ", p.L1Comms.L1ContractAddress.String())
+      log.Println("Updating smart contract metrics from ", p.L1Comms.TxStorageContractAddress.String())
       // Update metric values
-      batchCount, err := p.L1Comms.L1Contract.GetBatchCount(nil)
+      batchCount, err := p.L1Comms.TxStorageContract.GetBatchCount(nil)
       if err != nil {
         log.Fatalf("Failed to get batch count: %v", err)
       }
       BatchCount.Set(float64(batchCount.Int64()))
 
-      lastConfirmedBatch, err := p.L1Comms.L1Contract.GetLastConfirmedBatch(nil)
+      lastConfirmedBatch, err := p.L1Comms.TxStorageContract.GetLastConfirmedBatch(nil)
       if err != nil {
         log.Fatalf("Failed to get last confirmed batch: %v", err)
       }
@@ -104,31 +102,31 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L1BlockHeight.Set(float64(l1BlockHeight))
 
-      latestBatchL1Block, err := p.L1Comms.L1Contract.GetBatchL1Block(nil, big.NewInt(int64(batchCount.Int64() - 1)))
+      latestBatchL1Block, err := p.L1Comms.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(batchCount.Int64() - 1)))
       if err != nil {
         log.Fatalf("Failed to get latest batch L1 block: %v", err)
       }
       LatestBatchL1Block.Set(float64(latestBatchL1Block.Int64()))
 
-      latestBatchProofL1Block, err := p.L1Comms.L1Contract.GetProofL1Block(nil, big.NewInt(int64(batchCount.Int64() - 1)))
+      latestBatchProofL1Block, err := p.L1Comms.TxStorageContract.GetProofL1Block(nil, big.NewInt(int64(batchCount.Int64() - 1)))
       if err != nil {
         log.Fatalf("Failed to get latest batch proof L1 block: %v", err)
       }
       LatestBatchProofL1Block.Set(float64(latestBatchProofL1Block.Int64()))
 
-      latestConfirmedBatchL1Block, err := p.L1Comms.L1Contract.GetBatchL1Block(nil, big.NewInt(int64(lastConfirmedBatch.Int64())))
+      latestConfirmedBatchL1Block, err := p.L1Comms.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(lastConfirmedBatch.Int64())))
       if err != nil {
         log.Fatalf("Failed to get latest confirmed batch L1 block: %v", err)
       }
       LatestConfirmedBatchL1Block.Set(float64(latestConfirmedBatchL1Block.Int64()))
 
-      latestConfirmedBatchProofL1Block, err := p.L1Comms.L1Contract.GetProofL1Block(nil, big.NewInt(int64(lastConfirmedBatch.Int64())))
+      latestConfirmedBatchProofL1Block, err := p.L1Comms.TxStorageContract.GetProofL1Block(nil, big.NewInt(int64(lastConfirmedBatch.Int64())))
       if err != nil {
         log.Fatalf("Failed to get latest confirmed batch proof L1 block: %v", err)
       }
       LatestConfirmedBatchProofL1Block.Set(float64(latestConfirmedBatchProofL1Block.Int64()))
 
-      bridgeBalance, err := p.L1BridgeComms.L1BridgeContract.GetBridgeBalance(nil)
+      bridgeBalance, err := p.L1Comms.BridgeContract.GetBridgeBalance(nil)
       if err != nil {
         log.Fatalf("Failed to get bridge balance: %v", err)
       }
@@ -152,19 +150,14 @@ func mainImp() int {
   flag.Parse()
 
   l1Url := *l1Host + ":" + *l1Port
-  l1Comms, err := utils.NewL1Comms(l1Url , common.HexToAddress(*l1ContractAddress))
+  l1Comms, err := utils.NewL1Comms(l1Url , common.HexToAddress(*l1ContractAddress), common.HexToAddress(*l1BridgeAddress))
   if err != nil {
     log.Fatalf("Failed to create L1 comms: %v", err)
   }
 
-  l1BridgeComms, err := utils.NewL1BridgeComms(l1Url, common.HexToAddress(*l1BridgeAddress))
-  if err != nil {
-    log.Fatalf("Failed to create L1 bridge comms: %v", err)
-  }
-
   SetupMetrics()
 
-  smartContractMetricExporter := NewSmartContractMetricExporter(l1Comms, l1BridgeComms)
+  smartContractMetricExporter := NewSmartContractMetricExporter(l1Comms)
 
   fatalErrChan := make(chan error, 10)
   err = smartContractMetricExporter.Start()
