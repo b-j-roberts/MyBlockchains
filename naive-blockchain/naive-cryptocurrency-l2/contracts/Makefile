@@ -3,10 +3,10 @@ build:
 	npm run go-gen
 
 deploy-private:
-	npm run deploy-private
+	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-private
 
 deploy-goerli:
-	npm run deploy-goerli
+	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-goerli
 
 test-private:
 	npm run test-private

@@ -26,7 +26,6 @@ import (
 )
 
 func SetupMetrics() {
-  //TODO: Enable
   metrics.Enabled = true
   metrics.EnabledExpensive = true
   exp.Exp(metrics.DefaultRegistry)
@@ -41,10 +40,12 @@ func StartMetrics() error {
   return nil
 }
 
-func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules string, l1Host string, l1Port int,
-                     l1ContractAddress common.Address, l1BridgeContractAddress string, posterAddress common.Address) (*l2core.Sequencer, error) {
+func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPort int, httpModules string, l1Host string, l1Port int, l1ChainID int, miningThreads int,
+                     l1ContractAddress common.Address, l1BridgeContractAddress string, posterAddress common.Address, metricsEnabled bool) (*l2core.Sequencer, error) {
   // Function used to create Naive Node mimicing eth/backend.go:New for Ethereum Node object
-  SetupMetrics()
+  if metricsEnabled {
+    SetupMetrics()
+  }
 
   // Setup Geth node/node
   nodeConfig := NodeConfig(dataDir, httpHost, httpPort, httpModules)
@@ -80,7 +81,7 @@ func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules 
   }
 
   // Setup Genesis
-  file, err := os.Open(nodeConfig.DataDir + "/genesis.json") //TODO: Hardcode                                                                         
+  file, err := os.Open(genesisFile)
   if err != nil {                                                                  
     return nil, fmt.Errorf("failed to open genesis file: %v", err)
   }                                                                                
@@ -119,7 +120,7 @@ func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules 
 
   //TODO: naiveDb, err := node.OpenDatabase("naivedata", 0, 0, "", false)
 
-  naiveNode, err := l2core.NewSequencer(node, chainDb, l2BlockChain, engine, ethConfig, l1ContractAddress, common.HexToAddress(l1BridgeContractAddress), posterAddress, l1Host, l1Port)
+  naiveNode, err := l2core.NewSequencer(node, chainDb, l2BlockChain, engine, ethConfig, l1ContractAddress, common.HexToAddress(l1BridgeContractAddress), posterAddress, l1Host, l1Port, l1ChainID, miningThreads)
   if err != nil {
     return nil, fmt.Errorf("failed to create naive node: %v", err)
   }
@@ -132,8 +133,8 @@ func main() { os.Exit(mainImpl()) }
 
 func mainImpl() int {
   log.Println("Starting sequencer...")
-
-  osHomeDir, err := os.UserHomeDir()
+osHomeDir, err := os.UserHomeDir()
+  genesisFile := flag.String("genesis", osHomeDir + "/naive-sequencer-data/genesis.json", "genesis file for the L2 blockchain")
   dataDir := flag.String("datadir", osHomeDir + "/naive-sequencer-data", "data directory for the database and keystore")
   httpHost := flag.String("httphost", "localhost", "HTTP-RPC server listening interface")
   httpPort := flag.Int("httpport", 5055, "HTTP-RPC server listening port")
@@ -144,14 +145,13 @@ func mainImpl() int {
   sequencerKeystore := flag.String("sequencerkeystore", "", "Keystore file for the sequencer on L1")
   l1Host := flag.String("l1host", "localhost", "L1 HTTP-RPC server listening interface")
   l1Port := flag.Int("l1port", 8545, "L1 HTTP-RPC server listening port")
+  l1ChainID := flag.Int("l1chainid", 505, "L1 chain ID")
+  miningThreads := flag.Int("miningthreads", 4, "Number of threads to use for mining")
   metricsFlag := flag.Bool("metrics", false, "Enable metrics")
-  metricsExpensiveFlag := flag.Bool("metrics.expensive", false, "Enable expensive metrics")
   flag.Parse()
 
-  log.Println("Metrics status:", *metricsFlag, *metricsExpensiveFlag)
-
   log.Println("Connecting to L1 contract at", *l1Host, *l1Port, "with address", *l1ContractAddress)
-  naiveNode, err := CreateNaiveNode(*dataDir, *httpHost, *httpPort, *httpModules, *l1Host, *l1Port, common.HexToAddress(*l1ContractAddress), *l1BridgeContractAddress, common.HexToAddress(*sequencerAddress))
+  naiveNode, err := CreateNaiveNode(*genesisFile, *dataDir, *httpHost, *httpPort, *httpModules, *l1Host, *l1Port, *l1ChainID, *miningThreads, common.HexToAddress(*l1ContractAddress), *l1BridgeContractAddress, common.HexToAddress(*sequencerAddress), *metricsFlag)
   if err != nil {
     utils.Fatalf("Failed to create naive sequencer node: %v", err)
   }
@@ -178,9 +178,11 @@ func mainImpl() int {
   }
   log.Println("Naive Sequencer Node started", naiveNode)
 
-  err = StartMetrics()
-  if err != nil {                                                                          
-     fatalErrChan <- fmt.Errorf("failed to start metrics: %v", err)                                  
+  if *metricsFlag {
+    err = StartMetrics()
+    if err != nil {                                                                          
+       fatalErrChan <- fmt.Errorf("failed to start metrics: %v", err)                                  
+    }
   }
 
   sigint := make(chan os.Signal, 1)

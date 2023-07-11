@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"log"
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -30,6 +31,7 @@ type Batcher struct {
 type BatcherConfig struct {
   L1NodeUrl string
   L1ContractAddress common.Address
+  L1ChainId int
   PosterAddress common.Address
   BatchSize int
   MaxBatchTimeMinutes int
@@ -37,7 +39,10 @@ type BatcherConfig struct {
     
    
 func NewBatcher(l2Blockchain *core.BlockChain, batcherConfig *BatcherConfig) *Batcher {
-  l1Comms, err := l2utils.NewL1Comms(batcherConfig.L1NodeUrl, batcherConfig.L1ContractAddress, common.HexToAddress("0x0"))
+  l1Comms, err := l2utils.NewL1Comms(batcherConfig.L1NodeUrl, batcherConfig.L1ContractAddress, common.HexToAddress("0x0"), big.NewInt(int64(batcherConfig.L1ChainId)), l2utils.L1TransactionConfig{
+    GasLimit: 3000000,
+    GasPrice: big.NewInt(200),
+  })
   if err != nil {
     log.Fatalf("Error creating L1 comms: %s\n", err)
   }
@@ -62,7 +67,6 @@ func (batcher *Batcher) PostBatch() error {
     
   log.Printf("Posting batch of %d txs\n", len(batcher.TxBatch))
 
-  //TODO: Compress transaction data
   transactionByteData := make([]byte, 0)
   for _, tx := range batcher.TxBatch {
     txBin, err := tx.MarshalBinary()
@@ -71,10 +75,20 @@ func (batcher *Batcher) PostBatch() error {
     }
     transactionByteData = append(transactionByteData, txBin...)
   }
+  // Compress transaction data
+  compressedTransactionByteData, err := l2utils.CompressTransactionData(transactionByteData)
+  if err != nil {
+    return err
+  }
 
-  byteDataHash := sha256.Sum256(transactionByteData)// TODO: Use blockchain root
+  var byteDataHash [32]byte
+  byteDataHash = sha256.Sum256(transactionByteData)
+  log.Printf("Batch %d: %x\n", batcher.BatchId, byteDataHash)
 
-  err := batcher.L1Comms.PostBatch(transactionByteData, batcher.BatchId, byteDataHash, batcher.BatcherConfig.PosterAddress)
+  blockchainRootHash := batcher.L2Blockchain.GetBlockByNumber(batcher.BlockIdx).Root()
+  log.Printf("Blockchain root: %x\n", blockchainRootHash)
+
+  err = batcher.L1Comms.PostBatch(compressedTransactionByteData, batcher.BatchId, blockchainRootHash, batcher.BatcherConfig.PosterAddress)
   if err != nil {
     return err
   }

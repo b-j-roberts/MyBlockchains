@@ -20,7 +20,7 @@ import (
 	l2core "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/core"
 )
 
-func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules string) (*l2core.Node, error) {
+func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPort int, httpModules string) (*l2core.Node, error) {
   // Function used to create Naive Node mimicing eth/backend.go:New for Ethereum Node object
 
   // Setup Geth node/node
@@ -57,7 +57,7 @@ func CreateNaiveNode(dataDir string, httpHost string, httpPort int, httpModules 
   }
 
   // Setup Genesis
-  file, err := os.Open(nodeConfig.DataDir + "/genesis.json") //TODO: Hardcode                                                                         
+  file, err := os.Open(genesisFile)
   if err != nil {                                                                  
     return nil, fmt.Errorf("failed to open genesis file: %v", err)
   }                                                                                
@@ -109,6 +109,7 @@ func mainImpl() int {
   log.Println("Starting rpc...")
 
   osHomeDir, err := os.UserHomeDir()
+  genesisFile := flag.String("genesis", osHomeDir + "/naive-rpc-data/genesis.json", "genesis for the blockchain")
   dataDir := flag.String("datadir", osHomeDir + "/naive-rpc-data", "data directory for the database and keystore")
   //TODO: to url not host port
   httpHost := flag.String("httphost", "localhost", "HTTP-RPC server listening interface")
@@ -116,7 +117,7 @@ func mainImpl() int {
   httpModules := flag.String("httpmodules", "personal,naive", "Comma separated list of API modules to enable on the HTTP-RPC interface")
   flag.Parse()
 
-  naiveNode, err := CreateNaiveNode(*dataDir, *httpHost, *httpPort, *httpModules)
+  naiveNode, err := CreateNaiveNode(*genesisFile, *dataDir, *httpHost, *httpPort, *httpModules)
   if err != nil {
     utils.Fatalf("Failed to create naive rpc node: %v", err)
   }

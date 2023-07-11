@@ -1,4 +1,3 @@
-#TODO: Check what is needed for prover
 FROM golang:1.20-alpine as go-builder
 
 RUN apk add --no-cache gcc musl-dev linux-headers git

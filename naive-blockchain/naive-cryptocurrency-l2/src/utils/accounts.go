@@ -2,13 +2,9 @@ package utils
 
 import (
 	"encoding/json"
-	"math/big"
 	"os"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 var sequencerAddress common.Address
@@ -46,12 +42,4 @@ func SetSequencer(address common.Address) {
 func GetSequencer() common.Address {
   // Get sequencer address
   return sequencerAddress
-}
-
-func KeystoreSignTx(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
-  // Sign transaction using keystore file
-  // keystore := keystore.NewKeyStore("/home/b-j-roberts/workspace/blockchain/my-chains/eth-private-network/data/keystore", keystore.StandardScryptN, keystore.StandardScryptP)
-  // Create default keystore
-  keystore := keystore.NewKeyStore(addressKeyStoreDirMap[address], keystore.StandardScryptN, keystore.StandardScryptP)
-  return keystore.SignTxWithPassphrase(accounts.Account{Address: address}, "password", tx, big.NewInt(505)) //TODO: Hardcode
 }

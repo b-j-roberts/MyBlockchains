@@ -54,7 +54,6 @@ COPY --from=go-builder /go-ethereum/build/bin/geth /app/go-ethereum/build/bin/ge
 COPY --from=go-builder2 /naive-l2/build/sequencer /app/build/sequencer
 COPY --from=solc-builder /naive-l2/contracts/builds/ /app/contracts/builds/
 
-#TODO: Other ports
 EXPOSE 5055
 
 WORKDIR /app

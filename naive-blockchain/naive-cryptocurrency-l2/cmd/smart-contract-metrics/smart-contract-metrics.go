@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
+	l2utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
@@ -55,10 +55,10 @@ var (
 )
 
 type SmartContractMetricExporter struct {
-  L1Comms *utils.L1Comms
+  L1Comms *l2utils.L1Comms
 }
 
-func NewSmartContractMetricExporter(l1Comms *utils.L1Comms) *SmartContractMetricExporter {
+func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms) *SmartContractMetricExporter {
   smartContractMetricExporter := &SmartContractMetricExporter{
     L1Comms: l1Comms,
   }
@@ -147,10 +147,14 @@ func mainImp() int {
   l1BridgeAddress := flag.String("l1-bridge-address", "", "Main L1 contract address")
   l1Host := flag.String("l1-host", "http://localhost", "L1 host")
   l1Port := flag.String("l1-port", "8545", "L1 port")
+  l1ChainId := flag.Int("l1-chainid", 505, "L1 chain ID")
   flag.Parse()
 
   l1Url := *l1Host + ":" + *l1Port
-  l1Comms, err := utils.NewL1Comms(l1Url , common.HexToAddress(*l1ContractAddress), common.HexToAddress(*l1BridgeAddress))
+  l1Comms, err := l2utils.NewL1Comms(l1Url , common.HexToAddress(*l1ContractAddress), common.HexToAddress(*l1BridgeAddress), big.NewInt(int64(*l1ChainId)), l2utils.L1TransactionConfig{
+    GasLimit: 3000000,
+    GasPrice: big.NewInt(200),
+  })
   if err != nil {
     log.Fatalf("Failed to create L1 comms: %v", err)
   }

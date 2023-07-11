@@ -1,12 +1,23 @@
 pragma solidity >=0.8.2 <0.9.0;
 
-//TODO: Features to add: Sequencer Only, Indirect, upgradable, etc.
+//TODO: Features to add: upgradable, etc.
 contract L1Bridge {
   uint256 ethDepositNonce;
 
   event EthDeposited(uint256 nonce, address addr, uint256 amount);
 
-  function DepositEth() public payable {
+  address public sequencer;
+
+  modifier onlySequencer() {
+    require(msg.sender == sequencer, "Only sequencer can call this function.");
+    _;
+  }
+
+  constructor(address _sequencer) {
+    sequencer = _sequencer;
+  }
+
+  function DepositEth() external payable {
     ethDepositNonce++;
     emit EthDeposited(ethDepositNonce, msg.sender, msg.value);
   }
@@ -29,7 +40,7 @@ contract L1Bridge {
     address payable addr,
     uint256 amount
  //   bytes memory sig
-  ) public {
+  ) external onlySequencer {
   //  require(nonce == ethDepositNonce, "Invalid nonce");
     ethDepositNonce++;
     addr.send(amount);

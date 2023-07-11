@@ -73,7 +73,7 @@ run-smart-contract-metrics:
 	./scripts/start-smart-contract-metrics-exporter.sh
 
 watch-smart-contract:
-	./scripts/smart-contract-watch.sh -a $(shell cat contracts/builds/contract-address.txt | jq -r .address)
+	./scripts/smart-contract-watch.sh -a $(shell cat contracts/builds/tx-storage-address.txt | jq -r .address)
 
 bridge-eth-to-l2:
 	go run ./scripts/bridge-eth-to-l2.go --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --bridgeAddress $(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) --rpc http://localhost:8545 --value 100000 --keystore ~/l1-miner-data/keystore/

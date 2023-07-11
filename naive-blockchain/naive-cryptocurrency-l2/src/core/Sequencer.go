@@ -17,9 +17,11 @@ import (
 type Sequencer struct {
   L2Node  *Node
   Batcher *Batcher
+
+  MiningThreads int
 }
 
-func NewSequencer(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config, l1ContractAddress common.Address, l1BridgeAddress common.Address, posterAddress common.Address, l1Host string, l1Port int) (*Sequencer, error) {
+func NewSequencer(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config, l1ContractAddress common.Address, l1BridgeAddress common.Address, posterAddress common.Address, l1Host string, l1Port int, l1ChainId int, miningThreads int) (*Sequencer, error) {
 
   l1BridgeConfig := &eth.L1BridgeConfig{
     L1BridgeAddress: l1BridgeAddress,
@@ -38,6 +40,7 @@ func NewSequencer(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.Bl
   batcherConfig := &BatcherConfig{
     L1NodeUrl: l1Url,
     L1ContractAddress: l1ContractAddress,
+    L1ChainId: l1ChainId,
     PosterAddress: posterAddress,
     BatchSize: 10,
     MaxBatchTimeMinutes: 1,
@@ -46,7 +49,8 @@ func NewSequencer(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.Bl
   //TODO: APIs / RPC
   return &Sequencer{
     L2Node:   l2Node,
-    Batcher:   NewBatcher(l2Blockchain, batcherConfig), //TODO: Hardcode
+    Batcher:   NewBatcher(l2Blockchain, batcherConfig),
+    MiningThreads: miningThreads,
   }, nil
 }
 
@@ -55,7 +59,7 @@ func (sequencer *Sequencer) Start() error {
     return fmt.Errorf("failed to start l2 node: %v", err)
   }
 
-  if err := sequencer.L2Node.Eth.APIBackend.StartMining(4); err != nil { //TODO: Hardcode
+  if err := sequencer.L2Node.Eth.APIBackend.StartMining(sequencer.MiningThreads); err != nil {
     return fmt.Errorf("failed to start mining: %v", err)
   }
 

@@ -16,7 +16,7 @@ display_help() {
 
   echo "  -d, --datadir              Data directory (Required)"
   echo "  -k, --keystore             Keystore directory for l1 address (Required)"
-  echo "  -A, --l1-contract-address  L1 contract address (Required)"
+  echo "  -A, --l1-tx-storage-address  L1 contract address (Required)"
   echo "  -B, --l1-bridge-address    L1 Bridge contract address (Required)"
 
   echo "  -c, --chainid              Chain ID (default: 515)"
@@ -57,7 +57,7 @@ while getopts ":hd:k:A:c:p:g:xo:" opt; do
     k|--keystore )
       L1_KEYSTORE=$OPTARG
       ;;
-    A|--l1-contract-address )
+    A|--l1-tx-storage-address )
       L1_CONTRACT_ADDRESS=$OPTARG
       ;;
     B|--l1-bridge-address )
@@ -109,16 +109,16 @@ fi
 
 if [ -z "${L1_CONTRACT_ADDRESS}" ]; then
   # Copy over the contract address
-  cp ${WORK_DIR}/contracts/builds/contract-address.txt ${NAIVE_SEQUENCER_DATA}/l1-contract-address.txt
+  cp ${WORK_DIR}/contracts/builds/tx-storage-address.txt ${NAIVE_SEQUENCER_DATA}/l1-tx-storage-address.txt
 
-  if [ ! -f "${NAIVE_SEQUENCER_DATA}/l1-contract-address.txt" ]; then
-    echo "Missing required argument: --l1-contract-address" 1>&2
+  if [ ! -f "${NAIVE_SEQUENCER_DATA}/l1-tx-storage-address.txt" ]; then
+    echo "Missing required argument: --l1-tx-storage-address" 1>&2
     display_help
     exit 1
   fi
 
   # Start the sequencer
-  L1_CONTRACT_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/l1-contract-address.txt" | jq -r '.address')
+  L1_CONTRACT_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/l1-tx-storage-address.txt" | jq -r '.address')
 fi
 
 if [ -z "${L1_BRIDGE_ADDRESS}" ]; then
@@ -163,7 +163,7 @@ SEQUENCER_L1_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/sequencer-l1-address.txt" | 
 echo "Starting sequencer with L1 contract address: ${L1_CONTRACT_ADDRESS} & L1 sequencer address: ${SEQUENCER_L1_ADDRESS}"
 
 if [ -z $OUTPUT_FILE ]; then
-  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics --metrics.expensive
+  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics
 else
-  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics --metrics.expensive > $OUTPUT_FILE 2>&1 &
+  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics > $OUTPUT_FILE 2>&1 &
 fi

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 
@@ -18,12 +19,16 @@ func main() { os.Exit(mainImpl()) }
 //TODO: One over for error handling & logging
 func mainImpl() int {
   l1Url := flag.String("l1-url", "http://localhost:8545", "L1 Url") // TODO: Better descriptions
+  l1ChainId := flag.Int("l1-chainid", 505, "L1 Chain ID")
   l1TxStorageAddress := flag.String("l1-txstorage-address", "", "Main L1 contract address")
   proverL1Address := flag.String("prover-address", "", "prover address")
   proverL1Keystore := flag.String("prover-keystore", "", "Path to prover keystore")
   flag.Parse()
 
-  l1Comms, err := l2utils.NewL1Comms(*l1Url , common.HexToAddress(*l1TxStorageAddress), common.HexToAddress("0x0"))
+  l1Comms, err := l2utils.NewL1Comms(*l1Url , common.HexToAddress(*l1TxStorageAddress), common.HexToAddress("0x0"), big.NewInt(int64(*l1ChainId)), l2utils.L1TransactionConfig{
+    GasLimit: 3000000,
+    GasPrice: big.NewInt(200),
+  })
   if err != nil {
     log.Fatalf("Failed to create L1 comms: %v", err)
     return 1

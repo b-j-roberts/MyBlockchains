@@ -1,6 +1,6 @@
 pragma solidity >=0.8.2 <0.9.0;
 
-//TODO: Features to add: Sequencer Only/Indirect?, upgradeable
+//TODO: Features to add: upgradeable
 contract TransactionStorage {
   uint256 batchCount = 0;
   mapping(uint256 => bytes32) public batchRoots;
@@ -14,8 +14,18 @@ contract TransactionStorage {
   event BatchStored(uint256 id, uint256 l1Block, bytes32 root);
   event BatchConfirmed(uint256 id, uint256 l1Block, bytes32 root);
 
-  //TODO: Use on deploy
-  function StoreGenesisState(bytes32 root) public {
+  address public sequencer;
+
+  modifier onlySequencer() {
+    require(msg.sender == sequencer, "Only sequencer can call this function.");
+    _;
+  }
+
+  constructor(address _sequencer) {
+    sequencer = _sequencer;
+  }
+
+  function StoreGenesisState(bytes32 root) external onlySequencer {
     if (batchCount > 0) {
       revert("Genesis state already stored");
     }
@@ -30,7 +40,7 @@ contract TransactionStorage {
     lastConfirmedBatch = 0;
   }
 
-  function StoreBatch(uint256 id, bytes32 root, bytes calldata batchData) public {
+  function StoreBatch(uint256 id, bytes32 root, bytes calldata batchData) external onlySequencer {
     //TODO: rewinding?
     if(id <= 0 || id > batchCount) {
       revert("Invalid batch id");
@@ -42,7 +52,7 @@ contract TransactionStorage {
     emit BatchStored(id, block.number, root);
   }
 
-  function SubmitProof(uint256 id, bytes calldata proof) public {
+  function SubmitProof(uint256 id, bytes calldata proof) external {
     if(id < 0 || id >= batchCount) {
       revert("Invalid batch id");
     }
@@ -52,7 +62,6 @@ contract TransactionStorage {
 
     if(proof.length > 0) {
       //TODO: COnfirm proof
-
       confirmedBatches[id] = true;
       lastConfirmedBatch = id;
       batchRewards[id] = 100;
@@ -65,7 +74,6 @@ contract TransactionStorage {
     emit BatchConfirmed(id, block.number, batchRoots[id]);
   }
 
-  //TODO: public -> external
   function GetBatchCount() public view returns (uint256) {
       return batchCount;
   }
