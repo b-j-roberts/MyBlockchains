@@ -67,7 +67,7 @@ fi
 proverAddress=$(cat ${keystore}/* | jq -r '.address')
 
 if [ -z "$OUTPUT_FILE" ]; then
-  $WORK_DIR/build/prover --l1-contract-address ${L1_CONTRACT_ADDRESS} --prover-address ${proverAddress} --prover-keystore $keystore
+  $WORK_DIR/build/prover --l1-txstorage-address ${L1_CONTRACT_ADDRESS} --prover-address ${proverAddress} --prover-keystore $keystore
 else
-  $WORK_DIR/build/prover --l1-contract-address ${L1_CONTRACT_ADDRESS} --prover-address ${proverAddress} --prover-keystore $keystore > $OUTPUT_FILE 2>&1 &
+  $WORK_DIR/build/prover --l1-txstorage-address ${L1_CONTRACT_ADDRESS} --prover-address ${proverAddress} --prover-keystore $keystore > $OUTPUT_FILE 2>&1 &
 fi

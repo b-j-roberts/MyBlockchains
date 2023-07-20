@@ -11,8 +11,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/trie"
@@ -20,8 +22,13 @@ import (
 	l2core "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/core"
 )
 
-func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPort int, httpModules string) (*l2core.Node, error) {
+func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPort int, httpModules string, addr common.Address, l1BridgeAddress common.Address) (*l2core.Node, error) {
   // Function used to create Naive Node mimicing eth/backend.go:New for Ethereum Node object
+  l1BridgeConfig := &eth.L1BridgeConfig{
+    L1BridgeAddress: l1BridgeAddress,
+    L1BridgeUrl: fmt.Sprintf("http://%s:%d", httpHost, httpPort),
+    SequencerAddr: addr,
+  }
 
   // Setup Geth node/node
   nodeConfig := NodeConfig(dataDir, httpHost, httpPort, httpModules)
@@ -94,7 +101,7 @@ func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPo
 
   //TODO: naiveDb, err := node.OpenDatabase("naivedata", 0, 0, "", false)
 
-  naiveNode, err := l2core.NewNode(node, chainDb, l2BlockChain, engine, ethConfig, nil) //TODO: nil when or when bridge not needed?
+  naiveNode, err := l2core.NewNode(node, chainDb, l2BlockChain, engine, ethConfig, l1BridgeConfig) //TODO: nil when or when bridge not needed?
   if err != nil {
     return nil, fmt.Errorf("failed to create naive node: %v", err)
   }
@@ -115,9 +122,13 @@ func mainImpl() int {
   httpHost := flag.String("httphost", "localhost", "HTTP-RPC server listening interface")
   httpPort := flag.Int("httpport", 5056, "HTTP-RPC server listening port")
   httpModules := flag.String("httpmodules", "personal,naive", "Comma separated list of API modules to enable on the HTTP-RPC interface")
+  addr := flag.String("addr", "", "Address of the rpc node")
+
+  //TODO: are these needed?
+  l1BridgeContractAddress := flag.String("l1bridgecontract", "", "Address of the L1 bridge contract")
   flag.Parse()
 
-  naiveNode, err := CreateNaiveNode(*genesisFile, *dataDir, *httpHost, *httpPort, *httpModules)
+  naiveNode, err := CreateNaiveNode(*genesisFile, *dataDir, *httpHost, *httpPort, *httpModules, common.HexToAddress(*addr), common.HexToAddress(*l1BridgeContractAddress))
   if err != nil {
     utils.Fatalf("Failed to create naive rpc node: %v", err)
   }

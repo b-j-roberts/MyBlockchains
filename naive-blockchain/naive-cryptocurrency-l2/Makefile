@@ -23,6 +23,10 @@ smart-contract-metrics:
 deploy-private-l1:
 	cd contracts && make deploy-private
 
+deploy-contracts-l2:
+	cd contracts && make deploy-l2
+	cp contracts/builds/l2-bridge-address.txt ~/naive-sequencer-data/l2-bridge-address.txt
+
 clean:
 	rm -rf build/
 	cd contracts && make clean
@@ -66,8 +70,17 @@ docker-run-smart-contract-metrics:
 run-sequencer:
 	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -x -k ~/l1-miner-data/keystore/
 
+run-sequencer-noclean:
+	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -k ~/l1-miner-data/keystore/
+
+run-rpc:
+	./scripts/start-rpc.sh -d ~/naive-rpc-data/ -x -k ~/l1-miner-data/keystore/ -o ~/naive-rpc-data/rpc.log
+
+run-rpc-noclean:
+	./scripts/start-rpc.sh -d ~/naive-rpc-data/ -k ~/l1-miner-data/keystore/ -o ~/naive-rpc-data/rpc.log
+
 run-prover:
-	./scripts/start-prover.sh -k ~/l1-miner-data/keystore/
+	./scripts/start-prover.sh -k ~/l1-miner-data/keystore/ -A $(shell cat contracts/builds/tx-storage-address.txt | jq -r .address)
 
 run-smart-contract-metrics:
 	./scripts/start-smart-contract-metrics-exporter.sh
@@ -75,11 +88,16 @@ run-smart-contract-metrics:
 watch-smart-contract:
 	./scripts/smart-contract-watch.sh -a $(shell cat contracts/builds/tx-storage-address.txt | jq -r .address)
 
+watch-l2-bridge-contract:
+	./scripts/smart-contract-watch.sh -a $(shell cat contracts/builds/l2-bridge-address.txt | jq -r .address) -p 5055 -d /home/brandon/workspace/blockchain/tools/smart-contract-watch
+
 bridge-eth-to-l2:
-	go run ./scripts/bridge-eth-to-l2.go --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --bridgeAddress $(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) --rpc http://localhost:8545 --value 100000 --keystore ~/l1-miner-data/keystore/
+	go run ./scripts/bridge-eth.go --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --bridgeAddress $(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) --rpc http://localhost:8545 --value 1000000000000000 --keystore ~/l1-miner-data/keystore/
 
 bridge-eth-to-l1:
-	./scripts/bridge-eth-to-l1.sh -i ~/naive-sequencer-data/naive-sequencer.ipc -v 10000 -t 0x0000000000000000000000000000000000000505
+	#go run ./scripts/bridge-eth.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000 --bridgeAddress $(shell cat contracts/builds/l2-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --chainId 515 --to-l1 true
+	go run ./scripts/bridge-eth.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --bridgeAddress $(shell cat contracts/builds/l2-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --chainId 515 --to-l1 true
+	#./scripts/bridge-eth-to-l1.sh -i ~/naive-sequencer-data/naive-sequencer.ipc -v 1000000000000 -t 0x0000000000000000000000000000000000000505
 
 # Define the default rule
 .DEFAULT_GOAL := all

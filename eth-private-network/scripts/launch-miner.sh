@@ -103,16 +103,16 @@ fi
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 WORK_DIR=$SCRIPT_DIR/..
+
 PASSWORD_FILE=$DATA_DIR/password.txt
 
 if [ $STATE_RESET -eq 1 ]; then
-  # Create Geth Account for POA agent
-  ACCOUNT_PASS=${ACCOUNT_PASS:-password}
-  touch $PASSWORD_FILE
-  echo $ACCOUNT_PASS > $PASSWORD_FILE
-  ${WORK_DIR}/go-ethereum/build/bin/geth account new --datadir $DATA_DIR --password $PASSWORD_FILE
+  #TODO: SHould i generate accounts here? & not store password file
+  cp -r ${HOME}/.eth-accounts/ $DATA_DIR/keystore
+  mv $DATA_DIR/keystore/password.txt $PASSWORD_FILE
 fi
 ACCOUNT1=$(cat $DATA_DIR/keystore/* | jq -r '.address' | head -n 1)
+echo "Using account: $ACCOUNT1"
 
 if [ $STATE_RESET -eq 1 ]; then
   # Create Geth Genesis & Init Chain

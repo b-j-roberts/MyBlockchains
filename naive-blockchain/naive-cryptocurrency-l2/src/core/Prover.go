@@ -103,6 +103,7 @@ func (p *Prover) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [32]
 
 
   var batchData []byte
+  //TODO: This functionality to function
   for _, tx := range block.Transactions() {
     receipt, err := p.L1Comms.L1Client.TransactionReceipt(context.Background(), tx.Hash())
     if err != nil {
@@ -110,6 +111,7 @@ func (p *Prover) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [32]
       return nil, [32]byte{}, [32]byte{}
     }
 
+    //TODO: This functionality to function
     for _, receipt_log := range receipt.Logs {
       eventSignature := []byte("BatchStored(uint256, uint256, byte32)")
       if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) && common.HexToAddress(receipt_log.Address.Hex()) == p.L1Comms.TxStorageContractAddress {
@@ -196,7 +198,7 @@ func (p *Prover) SubmitProof(proof []byte, batchNumber uint64) error {
   return nil
 }
 
-  func (p *Prover) Start() error {
+func (p *Prover) Start() error {
   log.Println("Starting Prover...")
 
   go func() {

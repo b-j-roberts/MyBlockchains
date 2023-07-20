@@ -3,6 +3,7 @@ pragma solidity >=0.8.2 <0.9.0;
 //TODO: Features to add: upgradable, etc.
 contract L1Bridge {
   uint256 ethDepositNonce;
+  uint256 ethWithdrawNonce;
 
   event EthDeposited(uint256 nonce, address addr, uint256 amount);
 
@@ -26,6 +27,10 @@ contract L1Bridge {
     return ethDepositNonce;
   }
 
+  function GetEthWithdrawNonce() public view returns (uint256) {
+    return ethWithdrawNonce;
+  }
+
   // TODO: Sig is a signature of the following data:
   // keccak256(abi.encodePacked(nonce, addr, amount))
   // where nonce is the nonce of the deposit tx
@@ -42,7 +47,7 @@ contract L1Bridge {
  //   bytes memory sig
   ) external onlySequencer {
   //  require(nonce == ethDepositNonce, "Invalid nonce");
-    ethDepositNonce++;
+    ethWithdrawNonce++;
     addr.send(amount);
   }
 

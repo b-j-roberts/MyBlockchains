@@ -41,7 +41,7 @@ func StartMetrics() error {
 }
 
 func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPort int, httpModules string, l1Host string, l1Port int, l1ChainID int, miningThreads int,
-                     l1ContractAddress common.Address, l1BridgeContractAddress string, posterAddress common.Address, metricsEnabled bool) (*l2core.Sequencer, error) {
+                     l1ContractAddress common.Address, l1BridgeContractAddress string, l2BridgeContractAddress string, posterAddress common.Address, metricsEnabled bool) (*l2core.Sequencer, error) {
   // Function used to create Naive Node mimicing eth/backend.go:New for Ethereum Node object
   if metricsEnabled {
     SetupMetrics()
@@ -100,8 +100,7 @@ func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPo
   // Setup Consensus Engine
   ethConfig := EthConfig(address)
   cliqueConfig, err := core.LoadCliqueConfig(chainDb, genesis)
-  cliqueConfig.L1Url = fmt.Sprintf("http://%s:%d", l1Host, l1Port)
-  cliqueConfig.L1BridgeAddress = l1BridgeContractAddress
+  cliqueConfig.L2BridgeAddress = l2BridgeContractAddress
   if err != nil {
     return nil, fmt.Errorf("failed to load clique config: %v", err)
   }
@@ -141,6 +140,7 @@ osHomeDir, err := os.UserHomeDir()
   httpModules := flag.String("httpmodules", "personal,naive", "Comma separated list of API modules to enable on the HTTP-RPC interface")
   l1ContractAddress := flag.String("l1contract", "", "Address of the L1 contract")
   l1BridgeContractAddress := flag.String("l1bridgecontract", "", "Address of the L1 bridge contract")
+  l2BridgeContractAddress := flag.String("l2bridgecontract", "", "Address of the L2 bridge contract")
   sequencerAddress := flag.String("sequencer", "", "Address of the sequencer on L1")
   sequencerKeystore := flag.String("sequencerkeystore", "", "Keystore file for the sequencer on L1")
   l1Host := flag.String("l1host", "localhost", "L1 HTTP-RPC server listening interface")
@@ -151,10 +151,11 @@ osHomeDir, err := os.UserHomeDir()
   flag.Parse()
 
   log.Println("Connecting to L1 contract at", *l1Host, *l1Port, "with address", *l1ContractAddress)
-  naiveNode, err := CreateNaiveNode(*genesisFile, *dataDir, *httpHost, *httpPort, *httpModules, *l1Host, *l1Port, *l1ChainID, *miningThreads, common.HexToAddress(*l1ContractAddress), *l1BridgeContractAddress, common.HexToAddress(*sequencerAddress), *metricsFlag)
+  naiveNode, err := CreateNaiveNode(*genesisFile, *dataDir, *httpHost, *httpPort, *httpModules, *l1Host, *l1Port, *l1ChainID, *miningThreads, common.HexToAddress(*l1ContractAddress), *l1BridgeContractAddress, *l2BridgeContractAddress, common.HexToAddress(*sequencerAddress), *metricsFlag)
   if err != nil {
     utils.Fatalf("Failed to create naive sequencer node: %v", err)
   }
+  defer naiveNode.Stop()
 
   l2utils.RegisterAccount(common.HexToAddress(*sequencerAddress), *sequencerKeystore)
 

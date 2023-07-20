@@ -80,3 +80,9 @@ func (node *Node) Start() error {
 
   return nil
 }
+
+func (node *Node) Stop() error {
+  node.L2Blockchain.Stop()
+
+  return nil
+}

@@ -36,7 +36,7 @@ clear_data() {
 }
 
 # Parse command line arguments
-while getopts ":hd:k:A:c:p:g:xo:" opt; do
+while getopts ":hd:k:A:B:c:p:g:xo:" opt; do
   case ${opt} in
     h|--help )
       display_help
@@ -138,20 +138,19 @@ PASSWORD_FILE="${NAIVE_SEQUENCER_DATA}/password.txt"
 
 if [ $STATE_RESET -eq 1 ]; then
   # Create account for Sequencer
-  ACCOUNT_PASS=${ACCOUNT_PASS:-password}
-  touch ${PASSWORD_FILE}
-  echo ${ACCOUNT_PASS} > ${PASSWORD_FILE}
-  $WORK_DIR/go-ethereum/build/bin/geth account new --datadir ${NAIVE_SEQUENCER_DATA} --password ${PASSWORD_FILE}
+  cp -r ${HOME}/.eth-accounts/ ${NAIVE_SEQUENCER_DATA}/keystore/
+  mv ${NAIVE_SEQUENCER_DATA}/keystore/password.txt ${PASSWORD_FILE}
 fi
 ACCOUNT1=$(cat ${NAIVE_SEQUENCER_DATA}/keystore/* | jq -r '.address' | head -n 1)
+echo "Using account: ${ACCOUNT1}"
 
 if [ $STATE_RESET -eq 1 ]; then
   # Create L2 Genesis & Init Chain
   GENESIS_FILE="${NAIVE_SEQUENCER_DATA}/genesis.json"
 
   echo "Creating L2 Genesis file: ${GENESIS_FILE} with account: ${ACCOUNT1} & balance: 10000000000000000000 wei (10 ETH)"
-  #$WORK_DIR/scripts/generate-genesis.sh -a ${ACCOUNT1} -b 10000000000000000000 -o ${GENESIS_FILE} -p ${PERIOD} -g ${GAS_LIMIT} -c ${CHAIN_ID}
-  $WORK_DIR/scripts/generate-genesis-empty.sh -a ${ACCOUNT1} -o ${GENESIS_FILE} -p ${PERIOD} -g ${GAS_LIMIT} -c ${CHAIN_ID}
+  $WORK_DIR/scripts/generate-genesis.sh -a ${ACCOUNT1} -b 10000000000000000000 -o ${GENESIS_FILE} -p ${PERIOD} -g ${GAS_LIMIT} -c ${CHAIN_ID}
+  #$WORK_DIR/scripts/generate-genesis-empty.sh -a ${ACCOUNT1} -o ${GENESIS_FILE} -p ${PERIOD} -g ${GAS_LIMIT} -c ${CHAIN_ID}
   $WORK_DIR/go-ethereum/build/bin/geth init --datadir ${NAIVE_SEQUENCER_DATA} ${GENESIS_FILE}
 
   # Copy over the sequencer l1 address

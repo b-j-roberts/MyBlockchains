@@ -12,6 +12,8 @@ import (
 	l2utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -48,19 +50,43 @@ var (
     Name: "latest_confirmed_batch_proof_l1_block",
     Help: "L1 block height of transaction storing latest confirmed batch proof",
   })
-  BridgeBalance = prometheus.NewGauge(prometheus.GaugeOpts{
+
+
+  L1BridgeBalance = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "bridge_balance",
     Help: "Bridge balance",
+  })
+  L1DepositNonce = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "deposit_nonce",
+    Help: "Deposit nonce",
+  })
+  L1WithdrawalNonce = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "withdrawal_nonce",
+    Help: "Withdrawal nonce",
+  })
+  L2DepositNonce = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l2_deposit_nonce",
+    Help: "L2 deposit nonce",
+  })
+  L2WithdrawalNonce = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l2_withdrawal_nonce",
+    Help: "L2 withdrawal nonce",
+  })
+  L2BurnBalance = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l2_burn_balance",
+    Help: "L2 burn balance",
   })
 )
 
 type SmartContractMetricExporter struct {
   L1Comms *l2utils.L1Comms
+  L2Comms *l2utils.L2Comms
 }
 
-func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms) *SmartContractMetricExporter {
+func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms, l2Comms *l2utils.L2Comms) *SmartContractMetricExporter {
   smartContractMetricExporter := &SmartContractMetricExporter{
     L1Comms: l1Comms,
+    L2Comms: l2Comms,
   }
 
   return smartContractMetricExporter
@@ -74,7 +100,12 @@ func SetupMetrics() {
   prometheus.MustRegister(LatestBatchProofL1Block)
   prometheus.MustRegister(LatestConfirmedBatchL1Block)
   prometheus.MustRegister(LatestConfirmedBatchProofL1Block)
-  prometheus.MustRegister(BridgeBalance)
+  prometheus.MustRegister(L1BridgeBalance)
+  prometheus.MustRegister(L1DepositNonce)
+  prometheus.MustRegister(L1WithdrawalNonce)
+  prometheus.MustRegister(L2DepositNonce)
+  prometheus.MustRegister(L2WithdrawalNonce)
+  prometheus.MustRegister(L2BurnBalance)
 }
 
 func (p *SmartContractMetricExporter) Start() error {
@@ -130,7 +161,38 @@ func (p *SmartContractMetricExporter) Start() error {
       if err != nil {
         log.Fatalf("Failed to get bridge balance: %v", err)
       }
-      BridgeBalance.Set(float64(bridgeBalance.Int64()))
+      L1BridgeBalance.Set(float64(bridgeBalance.Int64()))
+
+      depositNonce, err := p.L1Comms.BridgeContract.GetEthDepositNonce(nil)
+      if err != nil {
+        log.Fatalf("Failed to get deposit nonce: %v", err)
+      }
+      L1DepositNonce.Set(float64(depositNonce.Int64()))
+
+      withdrawalNonce, err := p.L1Comms.BridgeContract.GetEthWithdrawNonce(nil)
+      if err != nil {
+        log.Fatalf("Failed to get withdrawal nonce: %v", err)
+      }
+      L1WithdrawalNonce.Set(float64(withdrawalNonce.Int64()))
+
+      depositNonce, err = p.L2Comms.L2BridgeContract.GetEthDepositNonce(nil)
+      if err != nil {
+        log.Fatalf("Failed to get deposit nonce: %v", err)
+      }
+      L2DepositNonce.Set(float64(depositNonce.Int64()))
+
+      withdrawalNonce, err = p.L2Comms.L2BridgeContract.GetEthWithdrawNonce(nil)
+      if err != nil {
+        log.Fatalf("Failed to get withdrawal nonce: %v", err)
+      }
+      L2WithdrawalNonce.Set(float64(withdrawalNonce.Int64()))
+
+      // Burn balance is l2backend balance on l2 for 0x0 address
+      burnBalance, err := p.L2Comms.L2BridgeContract.GetBurntBalance(nil)
+      if err != nil {
+        log.Fatalf("Failed to get burn balance: %v", err)
+      }
+      L2BurnBalance.Set(float64(burnBalance.Int64()))
 
       // Sleep for 3 seconds
       time.Sleep(3 * time.Second)
@@ -143,11 +205,14 @@ func (p *SmartContractMetricExporter) Start() error {
 func main() { os.Exit(mainImp()) }
 
 func mainImp() int {
-  l1ContractAddress := flag.String("l1-contract-address", "", "Main L1 contract address")
+  l1ContractAddress := flag.String("l1-tx-storage-address", "", "Main L1 contract address")
   l1BridgeAddress := flag.String("l1-bridge-address", "", "Main L1 contract address")
   l1Host := flag.String("l1-host", "http://localhost", "L1 host")
   l1Port := flag.String("l1-port", "8545", "L1 port")
   l1ChainId := flag.Int("l1-chainid", 505, "L1 chain ID")
+
+  l2BridgeAddress := flag.String("l2-bridge-address", "", "Main L2 contract address")
+  l2IPCPath := flag.String("l2-ipc-path", "/home/brandon/naive-sequencer-data/naive-sequencer.ipc", "L2 IPC path")
   flag.Parse()
 
   l1Url := *l1Host + ":" + *l1Port
@@ -159,9 +224,21 @@ func mainImp() int {
     log.Fatalf("Failed to create L1 comms: %v", err)
   }
 
+  rpcIPC, err := rpc.DialIPC(context.Background(), *l2IPCPath)
+  if err != nil {
+    log.Fatalf("Failed to dial ipc: %v", err)
+  }
+
+  backend := ethclient.NewClient(rpcIPC)
+
+  l2Comms, err := l2utils.NewL2Comms(common.HexToAddress(*l2BridgeAddress), backend)
+  if err != nil {
+    log.Fatalf("Failed to create L2 comms: %v", err)
+  }
+
   SetupMetrics()
 
-  smartContractMetricExporter := NewSmartContractMetricExporter(l1Comms)
+  smartContractMetricExporter := NewSmartContractMetricExporter(l1Comms, l2Comms)
 
   fatalErrChan := make(chan error, 10)
   err = smartContractMetricExporter.Start()
