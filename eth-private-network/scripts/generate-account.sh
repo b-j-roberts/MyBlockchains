@@ -72,6 +72,7 @@ echo "Generating account key pair"
 ${WORK_DIR}/go-ethereum/build/bin/geth --datadir $data_dir --password $PASSWORD_FILE account new
 
 echo "Copying account key pair to $ACCOUNT_DIR"
+chmod +r $data_dir/keystore/*
 cp $data_dir/keystore/* $ACCOUNT_DIR
 cp $data_dir/password.txt $ACCOUNT_DIR
 

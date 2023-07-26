@@ -24,6 +24,9 @@ docker-run-rpc:
 connect-docker:
 	./scripts/connect-docker-peers.sh -P /l1-miner-data/geth.ipc -I /l1-rpc-data/geth.ipc
 
+generate-account:
+	./scripts/generate-account.sh -d ${HOME}/l1-miner-data/ -x
+
 launch-miner-local:
 	./scripts/generate-account.sh -d ${HOME}/l1-miner-data/ -x
 	./scripts/launch-miner.sh -d ~/l1-miner-data/ -x
