@@ -40,8 +40,8 @@ func StartMetrics() error {
   return nil
 }
 
-func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPort int, httpModules string, l1Host string, l1Port int, l1ChainID int, miningThreads int,
-                     l1ContractAddress common.Address, l1BridgeContractAddress string, l2BridgeContractAddress string, posterAddress common.Address, metricsEnabled bool) (*l2core.Sequencer, error) {
+func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPort int, httpModules string, l1Url string, l1ChainID int, l2ChainId int, miningThreads int,
+                     l1ContractAddress common.Address, l1BridgeContractAddress string, l2BridgeContractAddress string, l1TokenBridgeContractAddress string, l2TokenBridgeContractAddress string, posterAddress common.Address, metricsEnabled bool) (*l2core.Sequencer, error) {
   // Function used to create Naive Node mimicing eth/backend.go:New for Ethereum Node object
   if metricsEnabled {
     SetupMetrics()
@@ -119,7 +119,7 @@ func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPo
 
   //TODO: naiveDb, err := node.OpenDatabase("naivedata", 0, 0, "", false)
 
-  naiveNode, err := l2core.NewSequencer(node, chainDb, l2BlockChain, engine, ethConfig, l1ContractAddress, common.HexToAddress(l1BridgeContractAddress), posterAddress, l1Host, l1Port, l1ChainID, miningThreads)
+  naiveNode, err := l2core.NewSequencer(node, chainDb, l2BlockChain, engine, ethConfig, l1ContractAddress, common.HexToAddress(l1BridgeContractAddress), common.HexToAddress(l1TokenBridgeContractAddress), posterAddress, l1Url, l1ChainID, l2ChainId, miningThreads)
   if err != nil {
     return nil, fmt.Errorf("failed to create naive node: %v", err)
   }
@@ -141,17 +141,19 @@ osHomeDir, err := os.UserHomeDir()
   l1ContractAddress := flag.String("l1contract", "", "Address of the L1 contract")
   l1BridgeContractAddress := flag.String("l1bridgecontract", "", "Address of the L1 bridge contract")
   l2BridgeContractAddress := flag.String("l2bridgecontract", "", "Address of the L2 bridge contract")
+  l1TokenBridgeContractAddress := flag.String("l1tokenbridgecontract", "", "Address of the L1 token bridge contract")
+  l2TokenBridgeContractAddress := flag.String("l2tokenbridgecontract", "", "Address of the L2 token bridge contract")
   sequencerAddress := flag.String("sequencer", "", "Address of the sequencer on L1")
   sequencerKeystore := flag.String("sequencerkeystore", "", "Keystore file for the sequencer on L1")
-  l1Host := flag.String("l1host", "localhost", "L1 HTTP-RPC server listening interface")
-  l1Port := flag.Int("l1port", 8545, "L1 HTTP-RPC server listening port")
+  l1Url := flag.String("l1url", "http://localhost:8545", "URL of the L1 node")
   l1ChainID := flag.Int("l1chainid", 505, "L1 chain ID")
+  l2ChainID := flag.Int("l2chainid", 515, "L2 chain ID")
   miningThreads := flag.Int("miningthreads", 4, "Number of threads to use for mining")
   metricsFlag := flag.Bool("metrics", false, "Enable metrics")
   flag.Parse()
 
-  log.Println("Connecting to L1 contract at", *l1Host, *l1Port, "with address", *l1ContractAddress)
-  naiveNode, err := CreateNaiveNode(*genesisFile, *dataDir, *httpHost, *httpPort, *httpModules, *l1Host, *l1Port, *l1ChainID, *miningThreads, common.HexToAddress(*l1ContractAddress), *l1BridgeContractAddress, *l2BridgeContractAddress, common.HexToAddress(*sequencerAddress), *metricsFlag)
+  log.Println("Connecting to L1 contract at", *l1Url, "with address", *l1ContractAddress)
+  naiveNode, err := CreateNaiveNode(*genesisFile, *dataDir, *httpHost, *httpPort, *httpModules, *l1Url, *l1ChainID, *l2ChainID, *miningThreads, common.HexToAddress(*l1ContractAddress), *l1BridgeContractAddress, *l2BridgeContractAddress, *l1TokenBridgeContractAddress, *l2TokenBridgeContractAddress, common.HexToAddress(*sequencerAddress), *metricsFlag)
   if err != nil {
     utils.Fatalf("Failed to create naive sequencer node: %v", err)
   }

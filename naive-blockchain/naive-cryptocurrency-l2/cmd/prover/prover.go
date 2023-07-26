@@ -25,7 +25,7 @@ func mainImpl() int {
   proverL1Keystore := flag.String("prover-keystore", "", "Path to prover keystore")
   flag.Parse()
 
-  l1Comms, err := l2utils.NewL1Comms(*l1Url , common.HexToAddress(*l1TxStorageAddress), common.HexToAddress("0x0"), big.NewInt(int64(*l1ChainId)), l2utils.L1TransactionConfig{
+  l1Comms, err := l2utils.NewL1Comms(*l1Url , common.HexToAddress(*l1TxStorageAddress), common.HexToAddress("0x0"), common.HexToAddress("0x0"), big.NewInt(int64(*l1ChainId)), l2utils.L1TransactionConfig{
     GasLimit: 3000000,
     GasPrice: big.NewInt(200),
   })

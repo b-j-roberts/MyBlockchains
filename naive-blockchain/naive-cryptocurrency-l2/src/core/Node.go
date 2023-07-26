@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/cmd/utils"
@@ -66,7 +67,16 @@ func (node *Node) Start() error {
   log.Println("Address is", address)
 
   account, err := utils.MakeAddress(ks, address)
-  err = ks.Unlock(account, "password") //TODO: Hardcode
+  if err != nil {
+    return fmt.Errorf("failed to make address: %v", err)
+  }
+
+  // Load password from environment variable NODE_PASS
+  node_pass, exists := os.LookupEnv("NODE_PASS") //TODO: Think about security of this
+  if !exists {
+    node_pass = "password"
+  }
+  err = ks.Unlock(account, node_pass)
   if err != nil {
     return fmt.Errorf("failed to unlock account: %v", err)
   } else {

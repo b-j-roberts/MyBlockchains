@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"log"
@@ -103,18 +102,16 @@ func (p *Prover) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [32]
 
 
   var batchData []byte
-  //TODO: This functionality to function
   for _, tx := range block.Transactions() {
     receipt, err := p.L1Comms.L1Client.TransactionReceipt(context.Background(), tx.Hash())
     if err != nil {
-      log.Fatalf("Failed to get transaction receipt: %v", err)
+      log.Fatalf("Failed to get receipt: %v", err)
       return nil, [32]byte{}, [32]byte{}
     }
 
-    //TODO: This functionality to function
-    for _, receipt_log := range receipt.Logs {
-      eventSignature := []byte("BatchStored(uint256, uint256, byte32)")
-      if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) && common.HexToAddress(receipt_log.Address.Hex()) == p.L1Comms.TxStorageContractAddress {
+    receipt_logs := l2utils.ReceiptLogsWithEvent(receipt, []byte("BatchStored(uint256, uint256, byte32)"))
+    for _, receipt_log := range receipt_logs {
+      if common.HexToAddress(receipt_log.Address.Hex()) == p.L1Comms.TxStorageContractAddress {
         batchStored, err := p.L1Comms.TxStorageContract.ParseBatchStored(*receipt_log)
         if err != nil {
           log.Fatalf("Failed to unpack log: %v", err)

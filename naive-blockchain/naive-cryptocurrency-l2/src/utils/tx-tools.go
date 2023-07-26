@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 func CreateTransactOpts(account accounts.Account, chainID *big.Int) (*bind.TransactOpts, error) {
@@ -35,4 +36,14 @@ func CompressTransactionData(data []byte) ([]byte, error) {
   }
 
   return buf.Bytes(), nil
+}
+
+func ReceiptLogsWithEvent(receipt *types.Receipt, eventSignature []byte) []*types.Log {
+  var receipt_logs []*types.Log
+  for _, receipt_log := range receipt.Logs {
+    if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) {
+      receipt_logs = append(receipt_logs, receipt_log)
+    }
+  }
+  return receipt_logs
 }

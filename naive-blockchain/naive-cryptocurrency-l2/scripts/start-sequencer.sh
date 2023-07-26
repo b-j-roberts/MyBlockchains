@@ -18,6 +18,7 @@ display_help() {
   echo "  -k, --keystore             Keystore directory for l1 address (Required)"
   echo "  -A, --l1-tx-storage-address  L1 contract address (Required)"
   echo "  -B, --l1-bridge-address    L1 Bridge contract address (Required)"
+  echo "  -e, --l1-token-address     L1 Token contract address (Required)"
 
   echo "  -c, --chainid              Chain ID (default: 515)"
   echo "  -p, --period               Block period in seconds (default: 1)"
@@ -36,7 +37,7 @@ clear_data() {
 }
 
 # Parse command line arguments
-while getopts ":hd:k:A:B:c:p:g:xo:" opt; do
+while getopts ":hd:k:A:B:e:c:p:g:xo:" opt; do
   case ${opt} in
     h|--help )
       display_help
@@ -62,6 +63,9 @@ while getopts ":hd:k:A:B:c:p:g:xo:" opt; do
       ;;
     B|--l1-bridge-address )
       L1_BRIDGE_ADDRESS=$OPTARG
+      ;;
+    e|--l1-token-address )
+      L1_TOKEN_BRIDGE_ADDRESS=$OPTARG
       ;;
     x|--clear )
       clear_data
@@ -134,6 +138,19 @@ if [ -z "${L1_BRIDGE_ADDRESS}" ]; then
   L1_BRIDGE_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/l1-bridge-address.txt" | jq -r '.address')
 fi
 
+if [ -z "${L1_TOKEN_BRIDGE_ADDRESS}" ]; then
+  # Copy over the contract address
+  cp ${WORK_DIR}/contracts/builds/l1-token-bridge-address.txt ${NAIVE_SEQUENCER_DATA}/l1-token-bridge-address.txt
+
+  if [ ! -f "${NAIVE_SEQUENCER_DATA}/l1-token-bridge-address.txt" ]; then
+    echo "Missing required argument: --l1-token-bridge-address" 1>&2
+    display_help
+    exit 1
+  fi
+
+  L1_TOKEN_BRIDGE_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/l1-token-bridge-address.txt" | jq -r '.address')
+fi
+
 PASSWORD_FILE="${NAIVE_SEQUENCER_DATA}/password.txt"
 
 if [ $STATE_RESET -eq 1 ]; then
@@ -162,7 +179,7 @@ SEQUENCER_L1_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/sequencer-l1-address.txt" | 
 echo "Starting sequencer with L1 contract address: ${L1_CONTRACT_ADDRESS} & L1 sequencer address: ${SEQUENCER_L1_ADDRESS}"
 
 if [ -z $OUTPUT_FILE ]; then
-  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics
+  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --l1tokenbridgecontract ${L1_TOKEN_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics --httpmodules "eth,net,web3,personal,txpool,debug"
 else
-  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics > $OUTPUT_FILE 2>&1 &
+  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --l1tokenbridgecontract ${L1_TOKEN_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics > $OUTPUT_FILE 2>&1 &
 fi

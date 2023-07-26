@@ -73,6 +73,7 @@ func NodeConfig(dataDir string, httpHost string, httpPort int, httpModules strin
   nodeConfig.HTTPHost = httpHost
   nodeConfig.HTTPPort = httpPort
   nodeConfig.HTTPCors = []string{"*"}
+  log.Println("httpModules: ", httpModules)
   nodeConfig.HTTPModules = append(nodeConfig.HTTPModules, strings.Split(httpModules, ",")...)
 
   log.Println("Node config: ", nodeConfig)

@@ -8,10 +8,11 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "solcjs --bin --abi --optimize -o builds/ contracts/*.sol",
+    "build": "solcjs --base-path . --include-path node_modules/ --bin --abi --optimize -o builds/ contracts/*.sol",
     "deploy-private": "node scripts/deploy_private.js",
     "deploy-goerli": "node scripts/deploy_goerli.js",
     "deploy-l2": "node scripts/deploy_l2.js",
+    "deploy-l2-erc20": "node scripts/deploy_l2_erc20.js",
     "test-private": "mocha tests/transaction-storage.private.test.js --timeout 30000",
     "test-goerli": "mocha tests/transaction-storage.goerli.test.js --timeout 30000",
     "go-gen": "./scripts/go-gen.sh"
@@ -19,6 +20,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@openzeppelin/contracts": "^4.9.2",
     "shelljs": "^0.8.5",
     "truffle-hdwallet-provider": "^1.0.17",
     "web3": "^1.9.0"

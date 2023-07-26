@@ -81,7 +81,8 @@ func (v *Verifier) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [3
       return nil, [32]byte{}, [32]byte{}
     }
 
-    for _, receipt_log := range receipt.Logs {
+    receipt_logs := l2utils.ReceiptLogsWithEvent(receipt, []byte("BatchStored(uint256, uint256, byte32)"))
+    for _, receipt_log := range receipt_logs {
       eventSignature := []byte("BatchStored(uint256, uint256, byte32)")
       if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) && common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.TxStorageContractAddress {
         batchStored, err := v.L1Comms.TxStorageContract.ParseBatchStored(*receipt_log)
@@ -103,6 +104,7 @@ func (v *Verifier) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [3
       }
     }
   }
+  
 
   batchPreStateRoot, err := v.L1Comms.TxStorageContract.GetBatchPreStateRoot(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
@@ -144,9 +146,9 @@ func (v *Verifier) GetProof(batchNumber uint64) []byte {
       return nil
     }
 
-    for _, receipt_log := range receipt.Logs {
-      eventSignature := []byte("BatchConfirmed(uint256, uint256, byte32)")
-      if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) && common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.TxStorageContractAddress {
+    receipt_logs := l2utils.ReceiptLogsWithEvent(receipt, []byte("BatchConfirmed(uint256, uint256, byte32)"))
+    for _, receipt_log := range receipt_logs {
+      if common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.TxStorageContractAddress {
         batchConfirmed, err := v.L1Comms.TxStorageContract.ParseBatchConfirmed(*receipt_log)
         if err != nil {
           log.Fatalf("Failed to unpack log: %v", err)
@@ -196,8 +198,7 @@ func main() { os.Exit(mainImp()) }
 
 func mainImp() int {
   l1ContractAddressFile := flag.String("l1-contract-address-file", "", "Path to file containing L1 contract address")
-  l1Host := flag.String("l1-host", "http://localhost", "L1 host")
-  l1Port := flag.String("l1-port", "8545", "L1 port")
+  l1Url := flag.String("l1-url", "http://localhost:8545", "L1 URL")
   l1ChainId := flag.Uint64("l1-chainid", 505, "L1 chain ID")
   batchId := flag.Uint64("batch-id", 0, "Batch ID to verify")
   flag.Parse()
@@ -207,8 +208,7 @@ func mainImp() int {
     log.Fatalf("Failed to read address from file: %v", err)
   }
 
-  l1Url := *l1Host + ":" + *l1Port
-  l1Comms, err := l2utils.NewL1Comms(l1Url , l1ContractAddress, common.HexToAddress("0x0"), big.NewInt(int64(*l1ChainId)), l2utils.L1TransactionConfig{
+  l1Comms, err := l2utils.NewL1Comms(*l1Url , l1ContractAddress, common.HexToAddress("0x0"), common.HexToAddress("0x0"), big.NewInt(int64(*l1ChainId)), l2utils.L1TransactionConfig{
     GasLimit: 3000000,
     GasPrice: big.NewInt(200),
   })

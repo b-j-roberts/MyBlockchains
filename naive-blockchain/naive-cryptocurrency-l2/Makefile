@@ -26,6 +26,9 @@ deploy-private-l1:
 deploy-contracts-l2:
 	cd contracts && make deploy-l2
 	cp contracts/builds/l2-bridge-address.txt ~/naive-sequencer-data/l2-bridge-address.txt
+	cp contracts/builds/l2-token-bridge-address.txt ~/naive-sequencer-data/l2-token-bridge-address.txt
+	cd contracts && make deploy-l2-erc20
+	cd contracts && make allow-erc20
 
 clean:
 	rm -rf build/
@@ -83,7 +86,7 @@ run-prover:
 	./scripts/start-prover.sh -k ~/l1-miner-data/keystore/ -A $(shell cat contracts/builds/tx-storage-address.txt | jq -r .address)
 
 run-smart-contract-metrics:
-	./scripts/start-smart-contract-metrics-exporter.sh
+	./scripts/start-smart-contract-metrics-exporter.sh -s $(shell cat ~/l1-miner-data/keystore/*	| jq -r .address)
 
 watch-smart-contract:
 	./scripts/smart-contract-watch.sh -a $(shell cat contracts/builds/tx-storage-address.txt | jq -r .address)
@@ -92,12 +95,25 @@ watch-l2-bridge-contract:
 	./scripts/smart-contract-watch.sh -a $(shell cat contracts/builds/l2-bridge-address.txt | jq -r .address) -p 5055 -d /home/brandon/workspace/blockchain/tools/smart-contract-watch
 
 bridge-eth-to-l2:
-	go run ./scripts/bridge-eth.go --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --bridgeAddress $(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) --rpc http://localhost:8545 --value 1000000000000000 --keystore ~/l1-miner-data/keystore/
+	go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --bridgeAddress $(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) --rpc http://localhost:8545 --value 1000000000000000 --keystore ~/l1-miner-data/keystore/
 
 bridge-eth-to-l1:
 	#go run ./scripts/bridge-eth.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000 --bridgeAddress $(shell cat contracts/builds/l2-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --chainId 515 --to-l1 true
-	go run ./scripts/bridge-eth.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --bridgeAddress $(shell cat contracts/builds/l2-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --chainId 515 --to-l1 true
+	go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --bridgeAddress $(shell cat contracts/builds/l2-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --chainId 515 --to-l1 true
 	#./scripts/bridge-eth-to-l1.sh -i ~/naive-sequencer-data/naive-sequencer.ipc -v 1000000000000 -t 0x0000000000000000000000000000000000000505
+
+#TODO: if true in middle it will fail ?
+bridge-basic-erc20-to-l2:
+	go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --bridgeAddress $(shell cat contracts/builds/l1-token-bridge-address.txt | jq -r .address) --keystore ~/l1-miner-data/keystore/ --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc
+
+bridge-basic-erc20-to-l1:
+	go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 1000 --bridgeAddress $(shell cat contracts/builds/l2-token-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc --to-l1
+
+bridge-stable-erc20-to-l2:
+	go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --bridgeAddress $(shell cat contracts/builds/l1-token-bridge-address.txt | jq -r .address) --keystore ~/l1-miner-data/keystore/ --token $(shell cat contracts/builds/stable-erc20-address.txt | jq -r .address) --is-erc
+
+bridge-stable-erc20-to-l1:
+	go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 1000 --bridgeAddress $(shell cat contracts/builds/l2-token-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --token $(shell cat contracts/builds/stable-erc20-address.txt | jq -r .address) --is-erc --to-l1
 
 # Define the default rule
 .DEFAULT_GOAL := all

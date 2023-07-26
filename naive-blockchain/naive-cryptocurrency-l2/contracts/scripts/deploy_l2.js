@@ -14,6 +14,13 @@ import fs from 'fs'
       var jsonOutput = "{\"address\": \"" + result.address + "\"}"
       // Write the contract address to a file
       fs.writeFileSync('./builds/l2-bridge-address.txt', jsonOutput)
+
+      const result2 = await deploy('L2TokenBridge', [process.env.SEQUENCER_ADDRESS], '/home/brandon/naive-sequencer-data/naive-sequencer.ipc')
+      console.log(result2)
+      console.log("Deployed L2TokenBridge contract to : ", result2.address)
+      var jsonOutput2 = "{\"address\": \"" + result2.address + "\"}"
+      // Write the contract address to a file
+      fs.writeFileSync('./builds/l2-token-bridge-address.txt', jsonOutput2)
   } catch (e) {
       console.log(e.message)
   }
