@@ -230,9 +230,9 @@ func (bw *BridgeWatcher) WatchL1() error {
           }
 
           log.Println("Calling mint tokens on L2 Token Bridge Address : ", l2TokenBridgeAddress.Hex())
-          log.Println("Using args: ", tokenDep.TokenAddress.Hex(), tokenDep.From.Hex(), tokenDep.Amount)
+          log.Println("Using args: ", tokenDep.TokenAddress.Hex(), tokenDep.From.Hex(), tokenDep.Value)
           //TODO: Check if token is already deployed on L2by allowedTOkens
-          tx, err := l2Comms.L2TokenBridgeContract.MintTokens(transactOpts, tokenDep.TokenAddress, tokenDep.From, tokenDep.Amount)
+          tx, err := l2Comms.L2TokenBridgeContract.MintTokens(transactOpts, tokenDep.TokenAddress, tokenDep.From, tokenDep.Value)
           if err != nil {
             log.Fatalf("Failed to deposit tokens: %v", err)
             return err

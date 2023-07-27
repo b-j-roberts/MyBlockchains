@@ -193,6 +193,7 @@ func (l1BridgeComms *L1Comms) BridgeTokenToL2(tokenAddress common.Address, fromA
     return err
   }
 
+  //TODO: Generalize this to work with any ERC20 contract or erc721
   erc20Contract, err := basicerc20.NewBasicerc20(tokenAddress, l1BridgeComms.L1Client)
   if err != nil {
     log.Println("Failed to create ERC20 contract", err)

@@ -12,7 +12,7 @@
     "deploy-private": "node scripts/deploy_private.js",
     "deploy-goerli": "node scripts/deploy_goerli.js",
     "deploy-l2": "node scripts/deploy_l2.js",
-    "deploy-l2-erc20": "node scripts/deploy_l2_erc20.js",
+    "deploy-l2-tokens": "node scripts/deploy_l2_tokens.js",
     "test-private": "mocha tests/transaction-storage.private.test.js --timeout 30000",
     "test-goerli": "mocha tests/transaction-storage.goerli.test.js --timeout 30000",
     "go-gen": "./scripts/go-gen.sh"

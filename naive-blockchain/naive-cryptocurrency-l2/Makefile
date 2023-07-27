@@ -27,8 +27,8 @@ deploy-contracts-l2:
 	cd contracts && make deploy-l2
 	cp contracts/builds/l2-bridge-address.txt ~/naive-sequencer-data/l2-bridge-address.txt
 	cp contracts/builds/l2-token-bridge-address.txt ~/naive-sequencer-data/l2-token-bridge-address.txt
-	cd contracts && make deploy-l2-erc20
-	cd contracts && make allow-erc20
+	cd contracts && make deploy-l2-tokens
+	cd contracts && make allow-tokens
 
 clean:
 	rm -rf build/
@@ -92,6 +92,9 @@ run-prover-daemon:
 	./scripts/start-prover.sh -k ~/l1-miner-data/keystore/ -A $(shell cat contracts/builds/tx-storage-address.txt | jq -r .address) -o ${OUTPUT_FILE}
 
 run-smart-contract-metrics:
+	./scripts/start-smart-contract-metrics-exporter.sh -s $(shell cat ~/l1-miner-data/keystore/*	| jq -r .address)
+
+run-smart-contract-metrics-daemon:
 	./scripts/start-smart-contract-metrics-exporter.sh -s $(shell cat ~/l1-miner-data/keystore/*	| jq -r .address) -o /dev/null
 
 watch-smart-contract:
@@ -120,6 +123,20 @@ bridge-stable-erc20-to-l2:
 
 bridge-stable-erc20-to-l1:
 	go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 1000 --bridgeAddress $(shell cat contracts/builds/l2-token-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --token $(shell cat contracts/builds/stable-erc20-address.txt | jq -r .address) --is-erc --to-l1
+
+bridge-basic-erc721-to-l2:
+	go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 0 --bridgeAddress $(shell cat contracts/builds/l1-token-bridge-address.txt | jq -r .address) --keystore ~/l1-miner-data/keystore/ --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
+	go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 1 --bridgeAddress $(shell cat contracts/builds/l1-token-bridge-address.txt | jq -r .address) --keystore ~/l1-miner-data/keystore/ --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
+	go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 2 --bridgeAddress $(shell cat contracts/builds/l1-token-bridge-address.txt | jq -r .address) --keystore ~/l1-miner-data/keystore/ --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
+
+bridge-basic-erc721-to-l1:
+	go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 0 --bridgeAddress $(shell cat contracts/builds/l2-token-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc --to-l1
+
+bridge-special-erc721-to-l2:
+	go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 0 --bridgeAddress $(shell cat contracts/builds/l1-token-bridge-address.txt | jq -r .address) --keystore ~/l1-miner-data/keystore/ --token $(shell cat contracts/builds/special-erc721-address.txt | jq -r .address) --is-erc
+
+bridge-special-erc721-to-l1:
+	go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 0 --bridgeAddress $(shell cat contracts/builds/l2-token-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --token $(shell cat contracts/builds/special-erc721-address.txt | jq -r .address) --is-erc --to-l1
 
 quick-launch:
 	./scripts/quick-launch.sh -b

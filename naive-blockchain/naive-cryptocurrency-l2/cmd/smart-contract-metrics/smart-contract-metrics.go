@@ -10,7 +10,11 @@ import (
 	"time"
 
 	basicerc20 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicerc20"
+	basicerc721 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicerc721"
 	basicl2erc20 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicl2erc20"
+	basicl2erc721 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicl2erc721"
+	specialerc721 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/specialerc721"
+	speciall2erc721 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/speciall2erc721"
 	stableerc20 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/stableerc20"
 	stablel2erc20 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/stablel2erc20"
 	l2utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
@@ -135,6 +139,43 @@ var (
     Name: "l2_stable_token_sequencer_balance",
     Help: "L2 stable token sequencer balance",
   })
+
+  L1BasicNFTSupply = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_basic_nft_supply",
+    Help: "L1 basic NFT supply",
+  })
+  L1BasicNFTSequencerBalance = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_basic_nft_sequencer_balance",
+    Help: "L1 basic NFT sequencer balance",
+  })
+  L1BasicNFTBridgeBalance = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_basic_nft_bridge_balance",
+    Help: "L1 basic NFT bridge balance",
+  })
+  L1SpecialNFTSupply = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_special_nft_supply",
+    Help: "L1 special NFT supply",
+  })
+  L1SpecialNFTSequencerBalance = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_special_nft_sequencer_balance",
+    Help: "L1 special NFT sequencer balance",
+  })
+  L1SpecialNFTBridgeBalance = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_special_nft_bridge_balance",
+    Help: "L1 special NFT bridge balance",
+  })
+  L2BasicNFTSupply = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l2_basic_nft_supply",
+    Help: "L2 basic NFT supply",
+  })
+  L2BasicNFTSequencerBalance = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l2_basic_nft_sequencer_balance",
+    Help: "L2 basic NFT sequencer balance",
+  })
+  L2SpecialNFTSequencerBalance = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l2_special_nft_sequencer_balance",
+    Help: "L2 special NFT sequencer balance",
+  })
 )
 
 type SmartContractMetricExporter struct {
@@ -152,9 +193,21 @@ type SmartContractMetricExporter struct {
 
   L2StableERC20Address common.Address
   L2StableERC20Contract *stablel2erc20.Stablel2erc20
+
+  ERC721Address common.Address
+  ERC721Contract *basicerc721.Basicerc721
+
+  L2ERC721Address common.Address
+  L2ERC721Contract *basicl2erc721.Basicl2erc721
+
+  SpecialERC721Address common.Address
+  SpecialERC721Contract *specialerc721.Specialerc721
+
+  L2SpecialERC721Address common.Address
+  L2SpecialERC721Contract *speciall2erc721.Speciall2erc721
 }
 
-func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms, l2Comms *l2utils.L2Comms, erc20Address common.Address, l2erc20Address common.Address, stableerc20Address common.Address, l2stableerc20Address common.Address) *SmartContractMetricExporter {
+func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms, l2Comms *l2utils.L2Comms, erc20Address common.Address, l2erc20Address common.Address, stableerc20Address common.Address, l2stableerc20Address common.Address, erc721Address common.Address, l2erc721Address common.Address, specialerc721Address common.Address, l2specialerc721Address common.Address) *SmartContractMetricExporter {
   smartContractMetricExporter := &SmartContractMetricExporter{
     L1Comms: l1Comms,
     L2Comms: l2Comms,
@@ -162,6 +215,10 @@ func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms, l2Comms *l2utils.L
     L2ERC20Address: l2erc20Address,
     StableERC20Address: stableerc20Address,
     L2StableERC20Address: l2stableerc20Address,
+    ERC721Address: erc721Address,
+    L2ERC721Address: l2erc721Address,
+    SpecialERC721Address: specialerc721Address,
+    L2SpecialERC721Address: l2specialerc721Address,
   }
 
   var err error
@@ -182,6 +239,26 @@ func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms, l2Comms *l2utils.L
   }
 
   smartContractMetricExporter.L2StableERC20Contract, err = stablel2erc20.NewStablel2erc20(smartContractMetricExporter.L2StableERC20Address, smartContractMetricExporter.L2Comms.L2Backend)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  smartContractMetricExporter.ERC721Contract, err = basicerc721.NewBasicerc721(smartContractMetricExporter.ERC721Address, smartContractMetricExporter.L1Comms.L1Client)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  smartContractMetricExporter.L2ERC721Contract, err = basicl2erc721.NewBasicl2erc721(smartContractMetricExporter.L2ERC721Address, smartContractMetricExporter.L2Comms.L2Backend)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  smartContractMetricExporter.SpecialERC721Contract, err = specialerc721.NewSpecialerc721(smartContractMetricExporter.SpecialERC721Address, smartContractMetricExporter.L1Comms.L1Client)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  smartContractMetricExporter.L2SpecialERC721Contract, err = speciall2erc721.NewSpeciall2erc721(smartContractMetricExporter.L2SpecialERC721Address, smartContractMetricExporter.L2Comms.L2Backend)
   if err != nil {
     log.Fatal(err)
   }
@@ -219,6 +296,16 @@ func SetupMetrics() {
   prometheus.MustRegister(L2TokenWithdrawalNonce)
   prometheus.MustRegister(L2BasicTokenSequencerBalance)
   prometheus.MustRegister(L2StableTokenSequencerBalance)
+
+  prometheus.MustRegister(L1BasicNFTSupply)
+  prometheus.MustRegister(L1BasicNFTSequencerBalance)
+  prometheus.MustRegister(L1BasicNFTBridgeBalance)
+  prometheus.MustRegister(L1SpecialNFTSupply)
+  prometheus.MustRegister(L1SpecialNFTSequencerBalance)
+  prometheus.MustRegister(L1SpecialNFTBridgeBalance)
+  prometheus.MustRegister(L2BasicNFTSupply)
+  prometheus.MustRegister(L2BasicNFTSequencerBalance)
+  prometheus.MustRegister(L2SpecialNFTSequencerBalance)
 }
 
 func (p *SmartContractMetricExporter) Start() error {
@@ -399,6 +486,70 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L2StableTokenSequencerBalance.Set(float64(l2StableTokenSequencerBalance.Int64()))
 
+      basicNFTokenSupply, err := p.ERC721Contract.TotalSupply(nil)
+      if err != nil {
+        log.Fatalf("Failed to get basic NFT token supply: %v", err)
+      }
+      L1BasicNFTSupply.Set(float64(basicNFTokenSupply.Int64()))
+
+      basicNFTokenSequencerBalance, err := p.ERC721Contract.BalanceOf(nil, l2utils.GetSequencer())
+      if err != nil {
+        log.Fatalf("Failed to get basic NFT token sequencer balance: %v", err)
+      }
+      L1BasicNFTSequencerBalance.Set(float64(basicNFTokenSequencerBalance.Int64()))
+
+      basicNFTBridgeBalance, err := p.ERC721Contract.BalanceOf(nil, p.L1Comms.TokenBridgeContractAddress)
+      if err != nil {
+        log.Fatalf("Failed to get basic NFT token bridge balance: %v", err)
+      }
+      L1BasicNFTBridgeBalance.Set(float64(basicNFTBridgeBalance.Int64()))
+
+      specialNFTTokenName, err := p.SpecialERC721Contract.Name(nil)
+      if err != nil {
+        log.Fatalf("Failed to get special NFT token name: %v", err)
+      }
+      if specialNFTTokenName != "" {
+        L1SpecialNFTSupply.Set(float64(1))
+      } else {
+        L1SpecialNFTSupply.Set(float64(0))
+      }
+
+      specialNFTSequncerBalance, err := p.SpecialERC721Contract.BalanceOf(nil, l2utils.GetSequencer())
+      if err != nil {
+        log.Fatalf("Failed to get special NFT token sequencer balance: %v", err)
+      }
+      L2SpecialNFTSequencerBalance.Set(float64(specialNFTSequncerBalance.Int64()))
+
+      specialNFTBridgeBalance, err := p.SpecialERC721Contract.BalanceOf(nil, p.L1Comms.TokenBridgeContractAddress)
+      if err != nil {
+        log.Fatalf("Failed to get special NFT token bridge balance: %v", err)
+      }
+      L1SpecialNFTBridgeBalance.Set(float64(specialNFTBridgeBalance.Int64()))
+
+      specialNFTSequncerBalance, err = p.SpecialERC721Contract.BalanceOf(nil, l2utils.GetSequencer())
+      if err != nil {
+        log.Fatalf("Failed to get special NFT token sequencer balance: %v", err)
+      }
+      L1SpecialNFTSequencerBalance.Set(float64(specialNFTSequncerBalance.Int64()))
+
+      l2BasicNFTSupply, err := p.L2ERC721Contract.TotalSupply(nil)
+      if err != nil {
+        log.Fatalf("Failed to get basic NFT token supply: %v", err)
+      }
+      L2BasicNFTSupply.Set(float64(l2BasicNFTSupply.Int64()))
+
+      l2BasicNFTSequencerBalance, err := p.L2ERC721Contract.BalanceOf(nil, l2utils.GetSequencer())
+      if err != nil {
+        log.Fatalf("Failed to get basic NFT token sequencer balance: %v", err)
+      }
+      L2BasicNFTSequencerBalance.Set(float64(l2BasicNFTSequencerBalance.Int64()))
+
+      l2SpecialNFTSequncerBalance, err := p.L2SpecialERC721Contract.BalanceOf(nil, l2utils.GetSequencer())
+      if err != nil {
+        log.Fatalf("Failed to get special NFT token sequencer balance: %v", err)
+      }
+      L2SpecialNFTSequencerBalance.Set(float64(l2SpecialNFTSequncerBalance.Int64()))
+
       // Sleep for 3 seconds
       time.Sleep(3 * time.Second)
     }
@@ -423,6 +574,10 @@ func mainImp() int {
   l2erc20Address := flag.String("l2-erc20-address", "", "ERC20 address on L2")
   stableERC20Address := flag.String("stable-erc20-address", "", "Stable ERC20 address")
   l2StableERC20Address := flag.String("l2-stable-erc20-address", "", "Stable ERC20 address on L2")
+  erc721Address := flag.String("erc721-address", "", "ERC721 address")
+  l2erc721Address := flag.String("l2-erc721-address", "", "ERC721 address on L2")
+  specialERC721Address := flag.String("special-erc721-address", "", "Special ERC721 address")
+  l2specialERC721Address := flag.String("l2-special-erc721-address", "", "Special ERC721 address on L2")
   l2BridgeAddress := flag.String("l2-bridge-address", "", "Main L2 contract address")
   l2IPCPath := flag.String("l2-ipc-path", "/home/brandon/naive-sequencer-data/naive-sequencer.ipc", "L2 IPC path")
   flag.Parse()
@@ -453,7 +608,7 @@ func mainImp() int {
 
   SetupMetrics()
 
-  smartContractMetricExporter := NewSmartContractMetricExporter(l1Comms, l2Comms, common.HexToAddress(*erc20Address), common.HexToAddress(*l2erc20Address), common.HexToAddress(*stableERC20Address), common.HexToAddress(*l2StableERC20Address))
+  smartContractMetricExporter := NewSmartContractMetricExporter(l1Comms, l2Comms, common.HexToAddress(*erc20Address), common.HexToAddress(*l2erc20Address), common.HexToAddress(*stableERC20Address), common.HexToAddress(*l2StableERC20Address), common.HexToAddress(*erc721Address), common.HexToAddress(*l2erc721Address), common.HexToAddress(*specialERC721Address), common.HexToAddress(*l2specialERC721Address))
 
   fatalErrChan := make(chan error, 10)
   err = smartContractMetricExporter.Start()

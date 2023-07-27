@@ -18,13 +18,17 @@ display_help() {
   echo "   -f, --l2-erc20-address     l2 erc20 address (Required)"
   echo "   -u, --stable              stable coin address (Required)"
   echo "   -U, --l2-stable           l2 stable coin address (Required)"
+  echo "   -n, --erc721-address      erc721 address (Required)"
+  echo "   -N, --l2-erc721           l2 erc721 address (Required)"
+  echo "   -p, --special-erc721      special erc721 address (Required)"
+  echo "   -P, --l2-special-erc721   l2 special erc721 address (Required)"
   echo "   -o, --output               Output file -- If outfile selected, run task as daemon ( default: console )"
 
   echo
   #TODO: Examples for all
 }
 
-while getopts ":hs:A:B:M:E:F:e:f:u:U:o:" opt; do
+while getopts ":hs:A:B:M:E:F:e:f:u:U:n:N:p:P:o:" opt; do
   case ${opt} in
     h|--help )
       display_help
@@ -59,6 +63,18 @@ while getopts ":hs:A:B:M:E:F:e:f:u:U:o:" opt; do
       ;;
     U|--l2-stable )
       L2_STABLE_ADDRESS=$OPTARG
+      ;;
+    n|--erc721-address )
+      ERC721_ADDRESS=$OPTARG
+      ;;
+    N|--l2-erc721 )
+      L2_ERC721_ADDRESS=$OPTARG
+      ;;
+    p|--special-erc721 )
+      SPECIAL_ERC721_ADDRESS=$OPTARG
+      ;;
+    P|--l2-special-erc721 )
+      L2_SPECIAL_ERC721_ADDRESS=$OPTARG
       ;;
     o|--output )
       OUTPUT_FILE=$OPTARG
@@ -185,8 +201,52 @@ if [ -z "${L2_STABLE_ADDRESS}" ]; then
   fi
 fi
 
+if [ -z "${ERC721_ADDRESS}" ]; then
+  # Try and copy over address from build
+  ERC721_ADDRESS=$(cat $WORK_DIR/contracts/builds/basic-erc721-address.txt | jq -r '.address')
+
+  if [ -z "${ERC721_ADDRESS}" ]; then
+    echo "Missing required argument: -n" 1>&2
+    display_help
+    exit 1
+  fi
+fi
+
+if [ -z "${L2_ERC721_ADDRESS}" ]; then
+  # Try and copy over address from build
+  L2_ERC721_ADDRESS=$(cat $WORK_DIR/contracts/builds/l2-basic-erc721-address.txt | jq -r '.address')
+
+  if [ -z "${L2_ERC721_ADDRESS}" ]; then
+    echo "Missing required argument: -N" 1>&2
+    display_help
+    exit 1
+  fi
+fi
+
+if [ -z "${SPECIAL_ERC721_ADDRESS}" ]; then
+  # Try and copy over address from build
+  SPECIAL_ERC721_ADDRESS=$(cat $WORK_DIR/contracts/builds/special-erc721-address.txt | jq -r '.address')
+
+  if [ -z "${SPECIAL_ERC721_ADDRESS}" ]; then
+    echo "Missing required argument: -o" 1>&2
+    display_help
+    exit 1
+  fi
+fi
+
+if [ -z "${L2_SPECIAL_ERC721_ADDRESS}" ]; then
+  # Try and copy over address from build
+  L2_SPECIAL_ERC721_ADDRESS=$(cat $WORK_DIR/contracts/builds/l2-special-erc721-address.txt | jq -r '.address')
+
+  if [ -z "${L2_SPECIAL_ERC721_ADDRESS}" ]; then
+    echo "Missing required argument: -O" 1>&2
+    display_help
+    exit 1
+  fi
+fi
+
 if [ -z "${OUTPUT_FILE}" ]; then
-  $WORK_DIR/build/smart-contract-metrics --l1-tx-storage-address ${L1_CONTRACT_ADDRESS} --l1-bridge-address ${L1_BRIDGE_ADDRESS} --l2-bridge-address ${L2_BRIDGE_ADDRESS} --l1-token-bridge-address ${L1_TOKEN_BRIDGE_ADDRESS} --l2-token-bridge-address ${L2_TOKEN_BRIDGE_ADDRESS} --erc20-address ${ERC20_ADDRESS} --l2-erc20-address ${L2_ERC20_ADDRESS} --stable-erc20-address ${STABLE_ADDRESS} --l2-stable-erc20-address ${L2_STABLE_ADDRESS} --sequencer ${SEQUENCER_ADDRESS}
+  $WORK_DIR/build/smart-contract-metrics --l1-tx-storage-address ${L1_CONTRACT_ADDRESS} --l1-bridge-address ${L1_BRIDGE_ADDRESS} --l2-bridge-address ${L2_BRIDGE_ADDRESS} --l1-token-bridge-address ${L1_TOKEN_BRIDGE_ADDRESS} --l2-token-bridge-address ${L2_TOKEN_BRIDGE_ADDRESS} --erc20-address ${ERC20_ADDRESS} --l2-erc20-address ${L2_ERC20_ADDRESS} --stable-erc20-address ${STABLE_ADDRESS} --l2-stable-erc20-address ${L2_STABLE_ADDRESS} --erc721-address ${ERC721_ADDRESS} --l2-erc721-address ${L2_ERC721_ADDRESS} --special-erc721-address ${SPECIAL_ERC721_ADDRESS} --l2-special-erc721-address ${L2_SPECIAL_ERC721_ADDRESS} --sequencer ${SEQUENCER_ADDRESS}
 else
-  $WORK_DIR/build/smart-contract-metrics --l1-tx-storage-address ${L1_CONTRACT_ADDRESS} --l1-bridge-address ${L1_BRIDGE_ADDRESS} --l2-bridge-address ${L2_BRIDGE_ADDRESS} --l1-token-bridge-address ${L1_TOKEN_BRIDGE_ADDRESS} --l2-token-bridge-address ${L2_TOKEN_BRIDGE_ADDRESS} --erc20-address ${ERC20_ADDRESS} --l2-erc20-address ${L2_ERC20_ADDRESS} --stable-erc20-address ${STABLE_ADDRESS} --l2-stable-erc20-address ${L2_STABLE_ADDRESS} --sequencer ${SEQUENCER_ADDRESS} > ${OUTPUT_FILE} 2>&1 &
+  $WORK_DIR/build/smart-contract-metrics --l1-tx-storage-address ${L1_CONTRACT_ADDRESS} --l1-bridge-address ${L1_BRIDGE_ADDRESS} --l2-bridge-address ${L2_BRIDGE_ADDRESS} --l1-token-bridge-address ${L1_TOKEN_BRIDGE_ADDRESS} --l2-token-bridge-address ${L2_TOKEN_BRIDGE_ADDRESS} --erc20-address ${ERC20_ADDRESS} --l2-erc20-address ${L2_ERC20_ADDRESS} --stable-erc20-address ${STABLE_ADDRESS} --l2-stable-erc20-address ${L2_STABLE_ADDRESS} --erc721-address ${ERC721_ADDRESS} --l2-erc721-address ${L2_ERC721_ADDRESS} --special-erc721-address ${SPECIAL_ERC721_ADDRESS} --l2-special-erc721-address ${L2_SPECIAL_ERC721_ADDRESS} --sequencer ${SEQUENCER_ADDRESS} > ${OUTPUT_FILE} 2>&1 &
 fi

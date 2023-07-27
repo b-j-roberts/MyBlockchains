@@ -23,6 +23,10 @@ func mainImpl() int {
   l2erc20Address := flag.String("l2erc20", "", "L2 ERC20 token address")
   stableErc20Address := flag.String("stableErc20", "", "stable ERC20 token address")
   l2StableErc20Address := flag.String("l2stableErc20", "", "L2 stable ERC20 token address")
+  erc721Address := flag.String("erc721", "", "ERC721 token address")
+  l2erc721Address := flag.String("l2erc721", "", "L2 ERC721 token address")
+  specialErc721Address := flag.String("specialErc721", "", "special ERC721 token address")
+  l2SpecialErc721Address := flag.String("l2specialErc721", "", "L2 special ERC721 token address")
   tokenBridgeAddress := flag.String("tokenBridge", "", "token bridge address")
   l2TokenBridgeAddress := flag.String("l2tokenBridge", "", "L2 token bridge address")
   rpcUrl := flag.String("rpc", "http://localhost:8545", "RPC URL")
@@ -30,6 +34,8 @@ func mainImpl() int {
   chainId := flag.Int("chainId", 505, "chain ID")
   l2ChainId := flag.Int("l2chainId", 515, "L2 chain ID")
   flag.Parse()
+
+  log.Println("All token addresses : ", "erc20", *erc20Address, "l2erc20", *l2erc20Address, "stableErc20", *stableErc20Address, "l2StableErc20", *l2StableErc20Address, "erc721", *erc721Address, "l2erc721", *l2erc721Address, "specialErc721", *specialErc721Address, "l2SpecialErc721", *l2SpecialErc721Address)
 
   l2utils.RegisterAccount(common.HexToAddress(*sender), *keystore)
 
@@ -87,6 +93,34 @@ func mainImpl() int {
     return 1
   }
   log.Println("Added allowed token", "txHash", tx.Hash().Hex())
+
+  l1TransactionOpts, err = l1Comms.CreateL1TransactionOpts(common.HexToAddress(*sender), big.NewInt(0))
+  tx, err = l1Comms.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, common.HexToAddress(*erc721Address))
+  if err != nil {
+    log.Println("Failed to add allowed token", "error", err)
+    return 1
+  }
+
+  l2TransactionOpts, err = l2Comms.CreateL2TransactionOpts(common.HexToAddress(*sender), big.NewInt(0))
+  tx, err = l2Comms.L2TokenBridgeContract.AddAllowedToken(l2TransactionOpts, common.HexToAddress(*erc721Address), common.HexToAddress(*l2erc721Address))
+  if err != nil {
+    log.Println("Failed to add allowed token", "error", err)
+    return 1
+  }
+
+  l1TransactionOpts, err = l1Comms.CreateL1TransactionOpts(common.HexToAddress(*sender), big.NewInt(0))
+  tx, err = l1Comms.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, common.HexToAddress(*specialErc721Address))
+  if err != nil {
+    log.Println("Failed to add allowed token", "error", err)
+    return 1
+  }
+
+  l2TransactionOpts, err = l2Comms.CreateL2TransactionOpts(common.HexToAddress(*sender), big.NewInt(0))
+  tx, err = l2Comms.L2TokenBridgeContract.AddAllowedToken(l2TransactionOpts, common.HexToAddress(*specialErc721Address), common.HexToAddress(*l2SpecialErc721Address))
+  if err != nil {
+    log.Println("Failed to add allowed token", "error", err)
+    return 1
+  }
 
   return 0
 }

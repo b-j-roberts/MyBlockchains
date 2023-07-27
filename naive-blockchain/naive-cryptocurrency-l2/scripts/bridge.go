@@ -33,11 +33,6 @@ func mainImpl() int {
   tokenAddress := flag.String("token", "", "token address")
   flag.Parse()
 
-  if *value == 0 {
-    flag.Usage()
-    return 1
-  }
-
   if *address == "" {
     flag.Usage()
     return 1

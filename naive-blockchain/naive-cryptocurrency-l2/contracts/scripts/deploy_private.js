@@ -41,6 +41,20 @@ import fs from 'fs'
       var jsonOutput5 = "{\"address\": \"" + result5.address + "\"}"
       // Write the contract address to a file
       fs.writeFileSync('./builds/stable-erc20-address.txt', jsonOutput5)
+
+      const result6 = await deploy('BasicERC721', [5, 10], 'http://localhost:8545')
+      console.log(result6)
+      console.log("Deployed BasicERC721 contract to : ", result6.address)
+      var jsonOutput6 = "{\"address\": \"" + result6.address + "\"}"
+      // Write the contract address to a file
+      fs.writeFileSync('./builds/basic-erc721-address.txt', jsonOutput6)
+
+      const result7 = await deploy('SpecialERC721', [], 'http://localhost:8545')
+      console.log(result7)
+      console.log("Deployed SpecialERC721 contract to : ", result7.address)
+      var jsonOutput7 = "{\"address\": \"" + result7.address + "\"}"
+      // Write the contract address to a file
+      fs.writeFileSync('./builds/special-erc721-address.txt', jsonOutput7)
   } catch (e) {
       console.log(e.message)
   }

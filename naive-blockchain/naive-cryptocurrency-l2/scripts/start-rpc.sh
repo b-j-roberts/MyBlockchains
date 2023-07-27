@@ -132,7 +132,7 @@ else
   $WORK_DIR/build/rpc --datadir ${NAIVE_RPC_DATA} --addr ${SEQUENCER_L1_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} > $OUTPUT_FILE 2>&1 &
   echo "Waiting for rpc to start..."
   while true; do
-    if grep -q "self=enode://" "${NAIVE_RPC_DATA}/rpc.log"; then
+    if grep -q "self=enode://" "${OUTPUT_FILE}"; then
       break
     fi
     sleep 1

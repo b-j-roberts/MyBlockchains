@@ -33,3 +33,15 @@ abigen --bin=builds/contracts_StableERC20_sol_StableERC20.bin --abi=builds/contr
 
 mkdir -p ${GO_CONTRACT_DIR}/stablel2erc20
 abigen --bin=builds/contracts_StableL2ERC20_sol_StableL2ERC20.bin --abi=builds/contracts_StableL2ERC20_sol_StableL2ERC20.abi --pkg=stablel2erc20 --out=${GO_CONTRACT_DIR}/stablel2erc20/stable-l2-erc20.go
+
+mkdir -p ${GO_CONTRACT_DIR}/basicerc721
+abigen --bin=builds/contracts_BasicERC721_sol_BasicERC721.bin --abi=builds/contracts_BasicERC721_sol_BasicERC721.abi --pkg=basicerc721 --out=${GO_CONTRACT_DIR}/basicerc721/basic-erc721.go
+
+mkdir -p ${GO_CONTRACT_DIR}/basicl2erc721
+abigen --bin=builds/contracts_BasicL2ERC721_sol_BasicL2ERC721.bin --abi=builds/contracts_BasicL2ERC721_sol_BasicL2ERC721.abi --pkg=basicl2erc721 --out=${GO_CONTRACT_DIR}/basicl2erc721/basic-l2-erc721.go
+
+mkdir -p ${GO_CONTRACT_DIR}/specialerc721
+abigen --bin=builds/contracts_SpecialERC721_sol_SpecialERC721.bin --abi=builds/contracts_SpecialERC721_sol_SpecialERC721.abi --pkg=specialerc721 --out=${GO_CONTRACT_DIR}/specialerc721/special-erc721.go
+
+mkdir -p ${GO_CONTRACT_DIR}/speciall2erc721
+abigen --bin=builds/contracts_SpecialL2ERC721_sol_SpecialL2ERC721.bin --abi=builds/contracts_SpecialL2ERC721_sol_SpecialL2ERC721.abi --pkg=speciall2erc721 --out=${GO_CONTRACT_DIR}/speciall2erc721/special-l2-erc721.go

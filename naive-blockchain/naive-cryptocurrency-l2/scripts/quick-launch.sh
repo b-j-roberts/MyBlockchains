@@ -102,7 +102,7 @@ L2_PROVER_LOGS=${OUTPUT_DIR}/l2-prover.logs
 cd ${WORK_DIR} && OUTPUT_FILE=${L2_PROVER_LOGS} make run-prover-daemon
 
 echo "Starting metrics server"
-cd ${WORK_DIR} && make run-smart-contract-metrics
+cd ${WORK_DIR} && make run-smart-contract-metrics-daemon
 
 if [ "$BRIDGE" = true ]; then
   echo "Bridge things over..."
@@ -140,4 +140,13 @@ if [ "$BRIDGE" = true ]; then
   cd ${WORK_DIR} && make bridge-stable-erc20-to-l1
   cd ${WORK_DIR} && make bridge-stable-erc20-to-l1
   cd ${WORK_DIR} && make bridge-stable-erc20-to-l1
+
+  echo "Bridging basic erc721 to l2"
+  cd ${WORK_DIR} && make bridge-basic-erc721-to-l2
+
+  echo "Bridging basic erc721 to l1"
+  cd ${WORK_DIR} && make bridge-basic-erc721-to-l1
+
+  echo "Bridging special erc721 to l2"
+  cd ${WORK_DIR} && make bridge-special-erc721-to-l2
 fi
