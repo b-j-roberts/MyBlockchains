@@ -73,11 +73,14 @@ docker-run-smart-contract-metrics:
 run-sequencer:
 	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -x -k ~/l1-miner-data/keystore/
 
+run-sequencer-daemon:
+	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -x -k ~/l1-miner-data/keystore/ -o ${OUTPUT_FILE}
+
 run-sequencer-noclean:
 	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -k ~/l1-miner-data/keystore/
 
 run-rpc:
-	./scripts/start-rpc.sh -d ~/naive-rpc-data/ -x -k ~/l1-miner-data/keystore/ -o ~/naive-rpc-data/rpc.log
+	./scripts/start-rpc.sh -d ~/naive-rpc-data/ -x -k ~/l1-miner-data/keystore/ -o ${OUTPUT_FILE}
 
 run-rpc-noclean:
 	./scripts/start-rpc.sh -d ~/naive-rpc-data/ -k ~/l1-miner-data/keystore/ -o ~/naive-rpc-data/rpc.log
@@ -85,8 +88,11 @@ run-rpc-noclean:
 run-prover:
 	./scripts/start-prover.sh -k ~/l1-miner-data/keystore/ -A $(shell cat contracts/builds/tx-storage-address.txt | jq -r .address)
 
+run-prover-daemon:
+	./scripts/start-prover.sh -k ~/l1-miner-data/keystore/ -A $(shell cat contracts/builds/tx-storage-address.txt | jq -r .address) -o ${OUTPUT_FILE}
+
 run-smart-contract-metrics:
-	./scripts/start-smart-contract-metrics-exporter.sh -s $(shell cat ~/l1-miner-data/keystore/*	| jq -r .address)
+	./scripts/start-smart-contract-metrics-exporter.sh -s $(shell cat ~/l1-miner-data/keystore/*	| jq -r .address) -o /dev/null
 
 watch-smart-contract:
 	./scripts/smart-contract-watch.sh -a $(shell cat contracts/builds/tx-storage-address.txt | jq -r .address)
@@ -114,6 +120,15 @@ bridge-stable-erc20-to-l2:
 
 bridge-stable-erc20-to-l1:
 	go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 1000 --bridgeAddress $(shell cat contracts/builds/l2-token-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --token $(shell cat contracts/builds/stable-erc20-address.txt | jq -r .address) --is-erc --to-l1
+
+quick-launch:
+	./scripts/quick-launch.sh -b
+
+quick-launch-full:
+	./scripts/quick-launch.sh -b -f
+
+quick-clean:
+	./scripts/quick-clean.sh
 
 # Define the default rule
 .DEFAULT_GOAL := all

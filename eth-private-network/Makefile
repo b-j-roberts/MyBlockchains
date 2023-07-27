@@ -31,11 +31,18 @@ launch-miner-local:
 	./scripts/generate-account.sh -d ${HOME}/l1-miner-data/ -x
 	./scripts/launch-miner.sh -d ~/l1-miner-data/ -x
 
+launch-miner-local-daemon:
+	./scripts/generate-account.sh -d ${HOME}/l1-miner-data/ -x
+	./scripts/launch-miner.sh -d ~/l1-miner-data/ -x -o ${OUTPUT_FILE}
+
 launch-miner-local-noclean:
 	./scripts/launch-miner.sh -d ~/l1-miner-data/
 
 launch-rpc-local:
 	./scripts/launch-rpc.sh -d ~/l1-rpc-data/ -x -g ~/l1-miner-data/genesis.json -m 30306 -r 8550 -H 8548
+
+launch-rpc-local-daemon:
+	./scripts/launch-rpc.sh -d ~/l1-rpc-data/ -x -g ~/l1-miner-data/genesis.json -m 30306 -r 8550 -H 8548 -o ${OUTPUT_FILE}
 
 launch-rpc-local-noclean:
 	./scripts/launch-rpc.sh -d ~/l1-rpc-data/ -g ~/l1-miner-data/genesis.json -m 30306 -r 8550 -H 8548
