@@ -61,7 +61,7 @@ contract TransactionStorage {
     }
 
     if(proof.length > 0) {
-      //TODO: COnfirm proof
+      //TODO: Confirm proof
       confirmedBatches[id] = true;
       lastConfirmedBatch = id;
       batchRewards[id] = 100;

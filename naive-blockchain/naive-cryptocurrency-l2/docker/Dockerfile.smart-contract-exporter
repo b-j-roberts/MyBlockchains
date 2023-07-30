@@ -1,19 +1,8 @@
-FROM golang:1.20-alpine as go-builder
-
-RUN apk add --no-cache gcc musl-dev linux-headers git
-
-# Get dependencies - will also be cached if we won't change go.mod/go.sum
-COPY go-ethereum/go.mod /go-ethereum/
-COPY go-ethereum/go.sum /go-ethereum/
-RUN cd /go-ethereum && go mod download
-
-ADD go-ethereum/ /go-ethereum
-RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/geth
-RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/abigen
+FROM ethereum/client-go:alltools-v1.11.6 as abigen-builder
 
 FROM node:20.2 as solc-builder
 
-COPY --from=go-builder /go-ethereum/build/bin/abigen /usr/local/bin/abigen
+COPY --from=abigen-builder /usr/local/bin/abigen /usr/local/bin/abigen
 
 RUN npm install -g solc@0.8.18
 
@@ -24,6 +13,25 @@ COPY Makefile /naive-l2/Makefile
 RUN cd /naive-l2/contracts && npm install
 RUN cd /naive-l2/contracts && make clean
 RUN cd /naive-l2 && make contracts
+
+FROM golang:1.20-alpine as go-builder
+
+RUN apk add --no-cache gcc musl-dev linux-headers git
+
+# Get dependencies - will also be cached if we won't change go.mod/go.sum
+COPY go-ethereum/go.mod /go-ethereum/
+COPY go-ethereum/go.sum /go-ethereum/
+
+COPY go.mod /naive-cryptocurrency-l2/
+COPY go.sum /naive-cryptocurrency-l2/
+COPY src/ /naive-cryptocurrency-l2/src
+COPY --from=solc-builder /naive-l2/contracts/go /naive-cryptocurrency-l2/contracts/go
+
+RUN cd /go-ethereum && go mod download
+
+ADD go-ethereum/ /go-ethereum
+RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/geth
+RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/abigen
 
 FROM golang:1.20-alpine as go-builder2
 
@@ -52,10 +60,14 @@ COPY --from=solc-builder /naive-l2/contracts/builds/ /app/contracts/builds/
 
 EXPOSE 6169
 
+VOLUME /sequencer-data/
+
 WORKDIR /app
 
 COPY scripts/ scripts/
 
 ENV L1_CONTRACT_ADDRESS=
+ENV SEQUENCER_ADDRESS=
+ENV L2_IPC_PATH=
 
 ENTRYPOINT ["./scripts/start-smart-contract-metrics-exporter.sh"]

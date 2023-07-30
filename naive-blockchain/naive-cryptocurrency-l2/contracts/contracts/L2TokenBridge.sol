@@ -13,6 +13,7 @@ contract L2TokenBridge {
     uint256 public tokenDepositNonce;
     uint256 public tokenWithdrawNonce;
 
+    //TODO: add indexed for to, from, tokenAddress so that we can filter events?
     event TokensDeposited(uint256 nonce, address to, address tokenAddress, uint256 value);
     event TokensWithdrawn(uint256 nonce, address from, address tokenAddress, uint256 value);
 
@@ -28,10 +29,8 @@ contract L2TokenBridge {
 
     // Function to allow users to lock ERC-20 & 721 tokens in this contract
     function MintTokens(address tokenAddress, address to, uint256 value) external onlySequencer {
-      // TODO: Deployer should be able to set the allowedTokens after deploying
         require(l1l2TokenMap[tokenAddress] != address(0x0), "Token not allowed");
 
-        //TODO: Use ERC-165 to check
         L2TokenMinter tokenContract = L2TokenMinter(l1l2TokenMap[tokenAddress]);
         tokenContract.sequencerMint(to, value);
 
@@ -42,7 +41,7 @@ contract L2TokenBridge {
 
     // Function to allow the admin to add ERC-20 & 721 tokens to the allowed list
     function addAllowedToken(address l1TokenAddress, address l2TokenAddress) external onlySequencer {
-      //TODO: use ERC-165 to check if the contract is ERC-20 or ERC-721
+        //TODO: use ERC-165 to check if the contract is tokenminter?
         l1l2TokenMap[l1TokenAddress] = l2TokenAddress;
     }
 

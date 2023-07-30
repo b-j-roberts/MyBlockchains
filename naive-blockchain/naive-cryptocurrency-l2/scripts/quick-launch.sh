@@ -53,7 +53,7 @@ L1_MINER_LOGS=${OUTPUT_DIR}/l1-miner.logs
 touch $L1_MINER_LOGS
 cd ${WORK_DIR}/../../eth-private-network/ && OUTPUT_FILE=${L1_MINER_LOGS} make launch-miner-local-daemon
 
-#TODO: Wait for miner to be ready
+# Wait for miner to be ready
 sleep 5
 
 if [ "$FULL" = true ]; then
@@ -62,7 +62,7 @@ if [ "$FULL" = true ]; then
   touch $L1_RPC_SERVER_LOGS
   cd ${WORK_DIR}/../../eth-private-network/ && OUTPUT_FILE=${L1_RPC_SERVER_LOGS} make launch-rpc-local-daemon
   
-  #TODO: Wait for rpc to be ready
+  # Wait for rpc to be ready
   sleep 5
   
   echo "Connecting Miner & RPC"

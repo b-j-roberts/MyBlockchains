@@ -9,7 +9,6 @@ contract StableL2ERC20 is ERC20, L2TokenMinter {
   address public owner;
   address public bridge;
 
-  //TODO: indexed?
   event ReturnedTokens(address from, uint256 amount);
 
   modifier onlyOwner() {
@@ -20,7 +19,7 @@ contract StableL2ERC20 is ERC20, L2TokenMinter {
   constructor(address _owner, uint256 initialSupply, address _bridge) public ERC20("Stable", "STBL") {
     owner = _owner;
     bridge = _bridge;
-    _mint(owner, initialSupply); //TODO: Initial supply should be 0
+    _mint(owner, initialSupply);
   }
 
   function mint(address account, uint256 amount) public onlyOwner {

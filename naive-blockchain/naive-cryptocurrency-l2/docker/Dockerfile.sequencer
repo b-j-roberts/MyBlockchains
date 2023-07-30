@@ -1,20 +1,9 @@
-FROM golang:1.20-alpine as go-builder
-
-RUN apk add --no-cache gcc musl-dev linux-headers git
-
-# Get dependencies - will also be cached if we won't change go.mod/go.sum
-COPY go-ethereum/go.mod /go-ethereum/
-COPY go-ethereum/go.sum /go-ethereum/
-RUN cd /go-ethereum && go mod download
-
-ADD go-ethereum/ /go-ethereum
-RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/geth
-RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/abigen
+FROM ethereum/client-go:alltools-v1.11.6 as abigen-builder
 
 #FROM ethereum/solc:0.8.18-alpine as solc-builder
 FROM node:20.2 as solc-builder
 
-COPY --from=go-builder /go-ethereum/build/bin/abigen /usr/local/bin/abigen
+COPY --from=abigen-builder /usr/local/bin/abigen /usr/local/bin/abigen
 
 RUN npm install -g solc@0.8.18
 
@@ -28,6 +17,25 @@ COPY Makefile /naive-l2/Makefile
 RUN cd /naive-l2/contracts && npm install
 RUN cd /naive-l2/contracts && make clean
 RUN cd /naive-l2 && make contracts
+
+FROM golang:1.20-alpine as go-builder
+
+RUN apk add --no-cache gcc musl-dev linux-headers git
+
+# Get dependencies - will also be cached if we won't change go.mod/go.sum
+COPY go-ethereum/go.mod /go-ethereum/
+COPY go-ethereum/go.sum /go-ethereum/
+
+COPY go.mod /naive-cryptocurrency-l2/
+COPY go.sum /naive-cryptocurrency-l2/
+COPY src/ /naive-cryptocurrency-l2/src
+COPY --from=solc-builder /naive-l2/contracts/go /naive-cryptocurrency-l2/contracts/go
+
+RUN cd /go-ethereum && go mod download
+
+ADD go-ethereum/ /go-ethereum
+RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/geth
+RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/abigen
 
 FROM golang:1.20-alpine as go-builder2
 
@@ -44,22 +52,27 @@ COPY src/ /naive-l2/src
 COPY cmd/ /naive-l2/cmd
 COPY Makefile /naive-l2/Makefile
 
-RUN cd /naive-l2 && make sequencer
+RUN cd /naive-l2 && make sequencer && make allow-tokens
 
 # Pull Geth into a second stage deploy alpine container
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates bash jq
+RUN apk add --no-cache ca-certificates bash jq npm make
 COPY --from=go-builder /go-ethereum/build/bin/geth /app/go-ethereum/build/bin/geth
 COPY --from=go-builder2 /naive-l2/build/sequencer /app/build/sequencer
-COPY --from=solc-builder /naive-l2/contracts/builds/ /app/contracts/builds/
+COPY --from=go-builder2 /naive-l2/build/allow-tokens /app/build/allow-tokens
+COPY --from=solc-builder /naive-l2/contracts/ /app/contracts
+COPY Makefile /app/Makefile
 
-EXPOSE 5055
+EXPOSE 5055 6160
+VOLUME /sequencer-data
 
 WORKDIR /app
 
 COPY scripts/ scripts/
 
 ENV L1_CONTRACT_ADDRESS=
+ENV L1_BRIDGE_ADDRESS=
+ENV L1_TOKEN_BRIDGE_ADDRESS=
 
 ENTRYPOINT ["./scripts/start-sequencer.sh", "-d", "/sequencer-data", "-k", "/l1-data/keystore/"]

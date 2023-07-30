@@ -8,18 +8,15 @@ import fs from 'fs'
 (async () => {
   try {
       console.log("Deploying BasicL2ERC20... with L2 Token Bridge Address: ", process.env.L2_TOKEN_BRIDGE_ADDRESS)
-      const result = await deploy('BasicL2ERC20', [0, process.env.L2_TOKEN_BRIDGE_ADDRESS], '/home/brandon/naive-sequencer-data/naive-sequencer.ipc')
+      const result = await deploy('BasicL2ERC20', [0, process.env.L2_TOKEN_BRIDGE_ADDRESS], process.env.IPC_PATH)
       console.log(result)
       console.log("Deployed BasicL2ERC20 to : ", result.address)
       var jsonOutput = "{\"address\": \"" + result.address + "\"}"
       // Write the contract address to a file
       fs.writeFileSync('./builds/l2-basic-erc20-address.txt', jsonOutput)
-      //Sleep for 3 seconds to allow the contract to be deployed
 
-      //TODO: Check above succeeded
-      //TODO: Call to allowToken on l1&2
       console.log("Deploying StableL2ERC20... with L2 Token Bridge Address: ", process.env.L2_TOKEN_BRIDGE_ADDRESS)
-      const result2 = await deploy('StableL2ERC20', [process.env.SEQUENCER_ADDRESS, 0, process.env.L2_TOKEN_BRIDGE_ADDRESS], '/home/brandon/naive-sequencer-data/naive-sequencer.ipc')
+      const result2 = await deploy('StableL2ERC20', [process.env.SEQUENCER_ADDRESS, 0, process.env.L2_TOKEN_BRIDGE_ADDRESS], process.env.IPC_PATH)
       console.log(result2)
       console.log("Deployed StableL2ERC20 to : ", result2.address)
       var jsonOutput2 = "{\"address\": \"" + result2.address + "\"}"
@@ -27,7 +24,7 @@ import fs from 'fs'
       fs.writeFileSync('./builds/l2-stable-erc20-address.txt', jsonOutput2)
 
       console.log("Deploying BasicL2ERC721... with L2 Token Bridge Address: ", process.env.L2_TOKEN_BRIDGE_ADDRESS)
-      const result3 = await deploy('BasicL2ERC721', [process.env.L2_TOKEN_BRIDGE_ADDRESS, 10], '/home/brandon/naive-sequencer-data/naive-sequencer.ipc')
+      const result3 = await deploy('BasicL2ERC721', [process.env.L2_TOKEN_BRIDGE_ADDRESS, 10], process.env.IPC_PATH)
       console.log(result3)
       console.log("Deployed BasicL2ERC721 to : ", result3.address)
       var jsonOutput3 = "{\"address\": \"" + result3.address + "\"}"
@@ -35,7 +32,7 @@ import fs from 'fs'
       fs.writeFileSync('./builds/l2-basic-erc721-address.txt', jsonOutput3)
 
       console.log("Deploying SpecialL2ERC721... with L2 Token Bridge Address: ", process.env.L2_TOKEN_BRIDGE_ADDRESS)
-      const result4 = await deploy('SpecialL2ERC721', [process.env.L2_TOKEN_BRIDGE_ADDRESS], '/home/brandon/naive-sequencer-data/naive-sequencer.ipc')
+      const result4 = await deploy('SpecialL2ERC721', [process.env.L2_TOKEN_BRIDGE_ADDRESS], process.env.IPC_PATH)
       console.log(result4)
       console.log("Deployed SpecialL2ERC721 to : ", result4.address)
       var jsonOutput4 = "{\"address\": \"" + result4.address + "\"}"

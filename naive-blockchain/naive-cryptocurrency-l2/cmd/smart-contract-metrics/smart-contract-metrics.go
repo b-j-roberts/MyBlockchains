@@ -27,7 +27,6 @@ import (
 )
 
 // TODO: From root metrics such as : total rewards by account?, ...
-//TODO: Token bridge metrics
 var (
   BatchCount = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "batch_count",
@@ -227,7 +226,7 @@ func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms, l2Comms *l2utils.L
     log.Fatal(err)
   }
 
-  //TODO: Get l2erc20address from l2comms contract
+  //TODO: Get l2erc20address from l2comms contract using allowedTokens
   smartContractMetricExporter.L2ERC20Contract, err = basicl2erc20.NewBasicl2erc20(smartContractMetricExporter.L2ERC20Address, smartContractMetricExporter.L2Comms.L2Backend)
   if err != nil {
     log.Fatal(err)
@@ -564,7 +563,6 @@ func mainImp() int {
   sequencer := flag.String("sequencer", "", "Sequencer address")
   l1ContractAddress := flag.String("l1-tx-storage-address", "", "Main L1 contract address")
   l1BridgeAddress := flag.String("l1-bridge-address", "", "Main L1 contract address")
-  //TODO: l2bridgeaddress?
   l1TokenBridgeAddress := flag.String("l1-token-bridge-address", "", "Main L1 contract address")
   l2TokenBridgeAddress := flag.String("l2-token-bridge-address", "", "Main L1 contract address")
   l1Url := flag.String("l1-url", "http://localhost:8545", "L1 URL")
@@ -581,6 +579,8 @@ func mainImp() int {
   l2BridgeAddress := flag.String("l2-bridge-address", "", "Main L2 contract address")
   l2IPCPath := flag.String("l2-ipc-path", "/home/brandon/naive-sequencer-data/naive-sequencer.ipc", "L2 IPC path")
   flag.Parse()
+
+  log.Println("Got args:", "sequencer", *sequencer, "l1ContractAddress", *l1ContractAddress, "l1BridgeAddress", *l1BridgeAddress, "l1TokenBridgeAddress", *l1TokenBridgeAddress, "l2TokenBridgeAddress", *l2TokenBridgeAddress, "l1Url", *l1Url, "l1ChainId", *l1ChainId, "l2ChainId", *l2ChainId, "erc20Address", *erc20Address, "l2erc20Address", *l2erc20Address, "stableERC20Address", *stableERC20Address, "l2StableERC20Address", *l2StableERC20Address, "erc721Address", *erc721Address, "l2erc721Address", *l2erc721Address, "specialERC721Address", *specialERC721Address, "l2specialERC721Address", *l2specialERC721Address, "l2BridgeAddress", *l2BridgeAddress, "l2IPCPath", *l2IPCPath)
 
   if *sequencer == "" {
     log.Fatalf("Must provide sequencer address")

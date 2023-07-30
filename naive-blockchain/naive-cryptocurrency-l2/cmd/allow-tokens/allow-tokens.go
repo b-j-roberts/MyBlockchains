@@ -63,7 +63,7 @@ func mainImpl() int {
   }
 
   l1TransactionOpts, err := l1Comms.CreateL1TransactionOpts(common.HexToAddress(*sender), big.NewInt(0))
-  tx, err := l1Comms.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, common.HexToAddress(*erc20Address))
+  tx, err := l1Comms.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, common.HexToAddress(*erc20Address), 1)
   if err != nil {
     log.Println("Failed to add allowed token", "error", err)
     return 1
@@ -79,7 +79,7 @@ func mainImpl() int {
   log.Println("Added allowed token", "txHash", tx.Hash().Hex())
 
   l1TransactionOpts, err = l1Comms.CreateL1TransactionOpts(common.HexToAddress(*sender), big.NewInt(0))
-  tx, err = l1Comms.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, common.HexToAddress(*stableErc20Address))
+  tx, err = l1Comms.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, common.HexToAddress(*stableErc20Address), 1)
   if err != nil {
     log.Println("Failed to add allowed token", "error", err)
     return 1
@@ -95,7 +95,7 @@ func mainImpl() int {
   log.Println("Added allowed token", "txHash", tx.Hash().Hex())
 
   l1TransactionOpts, err = l1Comms.CreateL1TransactionOpts(common.HexToAddress(*sender), big.NewInt(0))
-  tx, err = l1Comms.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, common.HexToAddress(*erc721Address))
+  tx, err = l1Comms.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, common.HexToAddress(*erc721Address), 2)
   if err != nil {
     log.Println("Failed to add allowed token", "error", err)
     return 1
@@ -109,7 +109,7 @@ func mainImpl() int {
   }
 
   l1TransactionOpts, err = l1Comms.CreateL1TransactionOpts(common.HexToAddress(*sender), big.NewInt(0))
-  tx, err = l1Comms.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, common.HexToAddress(*specialErc721Address))
+  tx, err = l1Comms.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, common.HexToAddress(*specialErc721Address), 2)
   if err != nil {
     log.Println("Failed to add allowed token", "error", err)
     return 1

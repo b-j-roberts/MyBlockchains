@@ -29,9 +29,11 @@ type BridgeWatcher struct {
   L1Comms *l2utils.L1Comms
 
   L2ChainID int64
+  L2IPCPath string
+  ContractsPath string
 }
 
-func NewBridgeWatcher(l1BridgeAddress common.Address, l2BridgeAddress common.Address, L1TokenBridgeAddress common.Address, l2TokenBridgeAddress common.Address, l1Comms *l2utils.L1Comms, l2ChainID int64) *BridgeWatcher {
+func NewBridgeWatcher(l1BridgeAddress common.Address, l2BridgeAddress common.Address, L1TokenBridgeAddress common.Address, l2TokenBridgeAddress common.Address, l1Comms *l2utils.L1Comms, l2ChainID int64, l2IPCPath string, contractsPath string) *BridgeWatcher {
   return &BridgeWatcher{
     L1BridgeAddress: l1BridgeAddress,
     L2BridgeAddress: l2BridgeAddress,
@@ -39,6 +41,8 @@ func NewBridgeWatcher(l1BridgeAddress common.Address, l2BridgeAddress common.Add
     L2TokenBridgeAddress: l2TokenBridgeAddress,
     L1Comms: l1Comms,
     L2ChainID: l2ChainID,
+    L2IPCPath: l2IPCPath,
+    ContractsPath: contractsPath,
   }
 }
 
@@ -90,15 +94,14 @@ func (bw *BridgeWatcher) WatchL1() error {
             return err
           }
 
-          ipcFile := "/home/brandon/naive-sequencer-data/naive-sequencer.ipc"
-          rpcIPC, err := rpc.DialIPC(context.Background(), ipcFile)
+          rpcIPC, err := rpc.DialIPC(context.Background(), bw.L2IPCPath)
           if err != nil {
             log.Fatalf("Failed to dial ipc: %v", err)
             return err
           }
   
           // l2 bridge address file is json containing field address
-          l2BridgeAddressFile := "/home/brandon/naive-sequencer-data/l2-bridge-address.txt"
+          l2BridgeAddressFile := bw.ContractsPath + "/l2-bridge-address.txt"
           l2BridgeAddressBytes, err := ioutil.ReadFile(l2BridgeAddressFile)
           if err != nil {
             log.Fatalf("Failed to read l2 bridge address file: %v", err)
@@ -112,7 +115,7 @@ func (bw *BridgeWatcher) WatchL1() error {
           }
           l2BridgeAddress := common.HexToAddress(l2BridgeAddressJSONMap["address"].(string))
 
-          l2TokenBridgeAddressFile := "/home/brandon/naive-sequencer-data/l2-token-bridge-address.txt"
+          l2TokenBridgeAddressFile := bw.ContractsPath + "/l2-token-bridge-address.txt"
           l2TokenBridgeAddressBytes, err := ioutil.ReadFile(l2TokenBridgeAddressFile)
           if err != nil {
             log.Fatalf("Failed to read l2 token bridge address file: %v", err)
@@ -175,14 +178,13 @@ func (bw *BridgeWatcher) WatchL1() error {
             return err
           }
 
-          ipcFile := "/home/brandon/naive-sequencer-data/naive-sequencer.ipc"
-          rpcIPC, err := rpc.DialIPC(context.Background(), ipcFile)
+          rpcIPC, err := rpc.DialIPC(context.Background(), bw.L2IPCPath)
           if err != nil {
             log.Fatalf("Failed to dial ipc: %v", err)
             return err
           }
 
-          l2BridgeAddressFile := "/home/brandon/naive-sequencer-data/l2-bridge-address.txt"
+          l2BridgeAddressFile := bw.ContractsPath + "/l2-bridge-address.txt"
           l2BridgeAddressBytes, err := ioutil.ReadFile(l2BridgeAddressFile)
           if err != nil {
             log.Fatalf("Failed to read l2 bridge address file: %v", err)
@@ -197,7 +199,7 @@ func (bw *BridgeWatcher) WatchL1() error {
           l2BridgeAddress := common.HexToAddress(l2BridgeAddressJSONMap["address"].(string))
 
           // l2 token bridge address file is json containing field address
-          l2TokenBridgeAddressFile := "/home/brandon/naive-sequencer-data/l2-token-bridge-address.txt"
+          l2TokenBridgeAddressFile := bw.ContractsPath + "/l2-token-bridge-address.txt"
           l2TokenBridgeAddressBytes, err := ioutil.ReadFile(l2TokenBridgeAddressFile)
           if err != nil {
             log.Fatalf("Failed to read l2 token bridge address file: %v", err)
@@ -231,7 +233,7 @@ func (bw *BridgeWatcher) WatchL1() error {
 
           log.Println("Calling mint tokens on L2 Token Bridge Address : ", l2TokenBridgeAddress.Hex())
           log.Println("Using args: ", tokenDep.TokenAddress.Hex(), tokenDep.From.Hex(), tokenDep.Value)
-          //TODO: Check if token is already deployed on L2by allowedTOkens
+          //TODO: Check if token is already deployed on L2 by allowedTokens
           tx, err := l2Comms.L2TokenBridgeContract.MintTokens(transactOpts, tokenDep.TokenAddress, tokenDep.From, tokenDep.Value)
           if err != nil {
             log.Fatalf("Failed to deposit tokens: %v", err)

@@ -31,6 +31,7 @@ func mainImpl() int {
   toL1 := flag.Bool("to-l1", false, "send to l1")
   isERC := flag.Bool("is-erc", false, "is erc20")
   tokenAddress := flag.String("token", "", "token address")
+  ipcFile := flag.String("ipc", "", "File for sequencer ipc")
   flag.Parse()
 
   if *address == "" {
@@ -62,8 +63,7 @@ func mainImpl() int {
 
       l2utils.RegisterAccount(common.HexToAddress(*address), *keystore)
 
-      ipcFile := *keystore + "/../naive-sequencer.ipc"
-      rpcIPC, err := rpc.DialIPC(context.Background(), ipcFile)
+      rpcIPC, err := rpc.DialIPC(context.Background(), *ipcFile)
       if err != nil {
         panic(err)
       }
@@ -106,17 +106,18 @@ func mainImpl() int {
       l2utils.RegisterAccount(common.HexToAddress(*address), *keystore)
 
       log.Println("Sending eth to l1")
-      ipcFile := *keystore + "/../naive-sequencer.ipc"
-      rpcIPC, err := rpc.DialIPC(context.Background(), ipcFile)
+      rpcIPC, err := rpc.DialIPC(context.Background(), *ipcFile)
       if err != nil {
         panic(err)
       }
       backend := ethclient.NewClient(rpcIPC)
 
+      log.Println("Creating l2 comms with values :", common.HexToAddress(*bridgeAddress), common.HexToAddress("0x0"), big.NewInt(int64(*l2chainId)))
       l2BridgeComms, err := l2utils.NewL2Comms(common.HexToAddress(*bridgeAddress), common.HexToAddress("0x0"), big.NewInt(int64(*l2chainId)), backend, l2utils.GetDefaultL2TransactionConfig())
       if err != nil {
         panic(err)
       }
+      log.Println("Bridging eth with values :", common.HexToAddress(*address), big.NewInt(int64(*value)))
       err = l2BridgeComms.BridgeEthToL1(common.HexToAddress(*address), big.NewInt(int64(*value)))
       if err != nil {
         panic(err)

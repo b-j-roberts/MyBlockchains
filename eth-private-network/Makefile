@@ -10,14 +10,14 @@ docker-push:
 	docker push brandonjroberts/eth-private-rpc:latest
 
 docker-run-miner:
-	docker run -it -p 30303:30303 -p 8545:8545 -p 8551:8551 -p 30303:30303/udp \
+	docker run -it -p 30303:30303 -p 8545:8545 -p 8551:8551 -p 30303:30303/udp -p 6060:6060 \
 		--network host --rm --name eth-private-miner brandonjroberts/eth-private-miner:latest
 
 docker-run-rpc:
 	mkdir -p build/
 	-rm -f build/genesis.json
 	docker cp eth-private-miner:/l1-miner-data/genesis.json build/
-	docker run -it -p 30306:30306 -p 8548:8548 -p 8550:8550 -p 30306:30306/udp \
+	docker run -it -p 30306:30306 -p 8548:8548 -p 8550:8550 -p 30306:30306/udp -p 6061:6061 \
 		--mount type=bind,source="$(shell pwd)"/build/genesis.json,target=/genesis.json,readonly \
 		--network host --rm --name eth-private-rpc brandonjroberts/eth-private-rpc:latest
 

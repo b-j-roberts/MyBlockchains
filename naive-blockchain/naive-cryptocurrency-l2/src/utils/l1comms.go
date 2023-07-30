@@ -193,7 +193,8 @@ func (l1BridgeComms *L1Comms) BridgeTokenToL2(tokenAddress common.Address, fromA
     return err
   }
 
-  //TODO: Generalize this to work with any ERC20 contract or erc721
+  // Using the basic ERC20 contract to approve the token bridge contract to transfer the tokens
+  // NOTICE : Using hardcoded basic erc20 contract, but it is just using this to build the tx with the correct interface, so it should work with ERC20 & ERC721 tokens
   erc20Contract, err := basicerc20.NewBasicerc20(tokenAddress, l1BridgeComms.L1Client)
   if err != nil {
     log.Println("Failed to create ERC20 contract", err)

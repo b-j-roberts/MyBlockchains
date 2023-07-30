@@ -25,7 +25,7 @@ type Sequencer struct {
   L2TokenBridgeAddress common.Address
 }
 
-func NewSequencer(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config, l1ContractAddress common.Address, l1BridgeAddress common.Address, l1TokenBridgeAddress common.Address, posterAddress common.Address, l1Url string, l1ChainId int, l2ChainId int, miningThreads int) (*Sequencer, error) {
+func NewSequencer(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config, l1ContractAddress common.Address, l1BridgeAddress common.Address, l1TokenBridgeAddress common.Address, posterAddress common.Address, l1Url string, l1ChainId int, l2ChainId int, miningThreads int, contractsPath string) (*Sequencer, error) {
 
   l1BridgeConfig := &eth.L1BridgeConfig{
     L1BridgeAddress: l1BridgeAddress,
@@ -50,6 +50,8 @@ func NewSequencer(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.Bl
     MaxBatchTimeMinutes: 1,
     L1BridgeAddress: l1BridgeAddress,
     L1TokenBridgeAddress: l1TokenBridgeAddress,
+    L2IPCPath: node.DataDir() + "/naive-sequencer.ipc",
+    ContractsPath: contractsPath,
   }
 
   batcher := NewBatcher(l2Blockchain, batcherConfig)
@@ -58,7 +60,7 @@ func NewSequencer(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.Bl
   return &Sequencer{
     L2Node:   l2Node,
     Batcher:   batcher,
-    BridgeWatcher: NewBridgeWatcher(l1BridgeAddress, common.HexToAddress("0x0"), l1TokenBridgeAddress, common.HexToAddress("0x0"), batcher.L1Comms, int64(l2ChainId)),
+    BridgeWatcher: NewBridgeWatcher(l1BridgeAddress, common.HexToAddress("0x0"), l1TokenBridgeAddress, common.HexToAddress("0x0"), batcher.L1Comms, int64(l2ChainId), node.DataDir() + "/naive-sequencer.ipc", contractsPath),
     MiningThreads: miningThreads,
   }, nil
 }

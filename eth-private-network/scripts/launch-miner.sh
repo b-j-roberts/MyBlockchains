@@ -107,7 +107,12 @@ WORK_DIR=$SCRIPT_DIR/..
 PASSWORD_FILE=$DATA_DIR/password.txt
 
 if [ $STATE_RESET -eq 1 ]; then
-  #TODO: SHould i generate accounts here? & not store password file
+  # Check if .eth-accounts exists, if not call 
+  if [ ! -d "${HOME}/.eth-accounts" ]; then
+    echo "No accounts found, creating new account"
+    $WORK_DIR/scripts/generate-account.sh -d ${DATA_DIR} -x
+  fi
+
   cp -r ${HOME}/.eth-accounts/ $DATA_DIR/keystore
   mv $DATA_DIR/keystore/password.txt $PASSWORD_FILE
 fi

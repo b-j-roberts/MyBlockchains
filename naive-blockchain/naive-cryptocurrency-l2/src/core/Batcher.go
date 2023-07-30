@@ -42,6 +42,8 @@ type BatcherConfig struct {
   MaxBatchTimeMinutes int
   L1BridgeAddress common.Address
   L1TokenBridgeAddress common.Address
+  L2IPCPath string
+  ContractsPath string
 }
     
    
@@ -147,8 +149,7 @@ func (batcher *Batcher) Start() error {
         batcher.TxBatch = append(batcher.TxBatch, tx)
 
         //TODO: To function
-        ipcFile := "/home/brandon/naive-sequencer-data/naive-sequencer.ipc" //TODO: hardcoded
-        rpcIPC, err := rpc.DialIPC(context.Background(), ipcFile)
+        rpcIPC, err := rpc.DialIPC(context.Background(), batcher.BatcherConfig.L2IPCPath)
         if err != nil {
           log.Fatalf("Failed to dial ipc: %v", err)
           panic(err)
@@ -166,7 +167,7 @@ func (batcher *Batcher) Start() error {
         for _, receipt_log := range receipt_logs {
           //TODO: l2 bridge address hardcoded
           //TODO: To function
-         l2BridgeAddressFile := "/home/brandon/naive-sequencer-data/l2-bridge-address.txt" //TODO: hardcoded
+         l2BridgeAddressFile := batcher.BatcherConfig.ContractsPath + "/l2-bridge-address.txt"
          l2BridgeAddressBytes, err := ioutil.ReadFile(l2BridgeAddressFile)
          if err != nil {
            log.Fatalf("Failed to read l2 bridge address file: %v", err)
@@ -225,7 +226,7 @@ func (batcher *Batcher) Start() error {
         receipt_logs = l2utils.ReceiptLogsWithEvent(receipt, crypto.Keccak256Hash([]byte("TokensWithdrawn(uint256,address,address,uint256)")).Bytes())
         log.Println("Got receipt logs:", len(receipt_logs))
         for _, receipt_log := range receipt_logs {
-         l2TokenBridgeAddressFile := "/home/brandon/naive-sequencer-data/l2-token-bridge-address.txt" //TODO: hardcoded
+         l2TokenBridgeAddressFile := batcher.BatcherConfig.ContractsPath + "/l2-token-bridge-address.txt"
          l2TokenBridgeAddressBytes, err := ioutil.ReadFile(l2TokenBridgeAddressFile)
          if err != nil {
            log.Fatalf("Failed to read l2 token bridge address file: %v", err)

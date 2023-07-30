@@ -41,7 +41,7 @@ func StartMetrics() error {
 }
 
 func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPort int, httpModules string, l1Url string, l1ChainID int, l2ChainId int, miningThreads int,
-                     l1ContractAddress common.Address, l1BridgeContractAddress string, l2BridgeContractAddress string, l1TokenBridgeContractAddress string, l2TokenBridgeContractAddress string, posterAddress common.Address, metricsEnabled bool) (*l2core.Sequencer, error) {
+                     l1ContractAddress common.Address, l1BridgeContractAddress string, l2BridgeContractAddress string, l1TokenBridgeContractAddress string, l2TokenBridgeContractAddress string, posterAddress common.Address, metricsEnabled bool, contractsPath string) (*l2core.Sequencer, error) {
   // Function used to create Naive Node mimicing eth/backend.go:New for Ethereum Node object
   if metricsEnabled {
     SetupMetrics()
@@ -101,6 +101,7 @@ func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPo
   ethConfig := EthConfig(address)
   cliqueConfig, err := core.LoadCliqueConfig(chainDb, genesis)
   cliqueConfig.L2BridgeAddress = l2BridgeContractAddress
+  cliqueConfig.ContractsPath = contractsPath
   if err != nil {
     return nil, fmt.Errorf("failed to load clique config: %v", err)
   }
@@ -119,7 +120,7 @@ func CreateNaiveNode(genesisFile string, dataDir string, httpHost string, httpPo
 
   //TODO: naiveDb, err := node.OpenDatabase("naivedata", 0, 0, "", false)
 
-  naiveNode, err := l2core.NewSequencer(node, chainDb, l2BlockChain, engine, ethConfig, l1ContractAddress, common.HexToAddress(l1BridgeContractAddress), common.HexToAddress(l1TokenBridgeContractAddress), posterAddress, l1Url, l1ChainID, l2ChainId, miningThreads)
+  naiveNode, err := l2core.NewSequencer(node, chainDb, l2BlockChain, engine, ethConfig, l1ContractAddress, common.HexToAddress(l1BridgeContractAddress), common.HexToAddress(l1TokenBridgeContractAddress), posterAddress, l1Url, l1ChainID, l2ChainId, miningThreads, contractsPath)
   if err != nil {
     return nil, fmt.Errorf("failed to create naive node: %v", err)
   }
@@ -150,10 +151,12 @@ osHomeDir, err := os.UserHomeDir()
   l2ChainID := flag.Int("l2chainid", 515, "L2 chain ID")
   miningThreads := flag.Int("miningthreads", 4, "Number of threads to use for mining")
   metricsFlag := flag.Bool("metrics", false, "Enable metrics")
+  contractsPath := flag.String("contracts", "", "Path to the contracts directory")
   flag.Parse()
 
   log.Println("Connecting to L1 contract at", *l1Url, "with address", *l1ContractAddress)
-  naiveNode, err := CreateNaiveNode(*genesisFile, *dataDir, *httpHost, *httpPort, *httpModules, *l1Url, *l1ChainID, *l2ChainID, *miningThreads, common.HexToAddress(*l1ContractAddress), *l1BridgeContractAddress, *l2BridgeContractAddress, *l1TokenBridgeContractAddress, *l2TokenBridgeContractAddress, common.HexToAddress(*sequencerAddress), *metricsFlag)
+  log.Println("Using arg values:", "genesis", *genesisFile, "datadir", *dataDir, "httphost", *httpHost, "httpport", *httpPort, "httpmodules", *httpModules, "l1contract", *l1ContractAddress, "l1bridgecontract", *l1BridgeContractAddress, "l2bridgecontract", *l2BridgeContractAddress, "l1tokenbridgecontract", *l1TokenBridgeContractAddress, "l2tokenbridgecontract", *l2TokenBridgeContractAddress, "sequencer", *sequencerAddress, "sequencerkeystore", *sequencerKeystore, "l1url", *l1Url, "l1chainid", *l1ChainID, "l2chainid", *l2ChainID, "miningthreads", *miningThreads, "metrics", *metricsFlag)
+  naiveNode, err := CreateNaiveNode(*genesisFile, *dataDir, *httpHost, *httpPort, *httpModules, *l1Url, *l1ChainID, *l2ChainID, *miningThreads, common.HexToAddress(*l1ContractAddress), *l1BridgeContractAddress, *l2BridgeContractAddress, *l1TokenBridgeContractAddress, *l2TokenBridgeContractAddress, common.HexToAddress(*sequencerAddress), *metricsFlag, *contractsPath)
   if err != nil {
     utils.Fatalf("Failed to create naive sequencer node: %v", err)
   }

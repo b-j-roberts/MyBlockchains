@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract StableERC20 is ERC20 {
   address public owner;
 
-  //TODO: indexed?
   event ReturnedTokens(address from, uint256 amount);
 
   modifier onlyOwner() {
