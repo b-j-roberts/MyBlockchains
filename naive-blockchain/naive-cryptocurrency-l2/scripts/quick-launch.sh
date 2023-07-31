@@ -66,7 +66,7 @@ if [ "$FULL" = true ]; then
   sleep 5
   
   echo "Connecting Miner & RPC"
-  cd ${WORK_DIR}/../../eth-private-network/ && make connect-local
+  cd ${WORK_DIR}/../../eth-private-network/ && make connect-peers
 fi
 
 echo "Deploying Contracts to L1"

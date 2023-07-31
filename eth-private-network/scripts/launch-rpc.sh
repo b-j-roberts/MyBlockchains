@@ -138,7 +138,7 @@ if [ $STATE_RESET -eq 1 ]; then
 fi
 
 if [ -z "$OUTPUT_FILE" ]; then
-  ${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --allow-insecure-unlock --password $PASSWORD_FILE --port $PEER_PORT --authrpc.port $RPC_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6061
+  ${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool,admin" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --allow-insecure-unlock --password $PASSWORD_FILE --port $PEER_PORT --authrpc.port $RPC_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6061
 else
-  ${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --allow-insecure-unlock --password $PASSWORD_FILE --port $PEER_PORT --authrpc.port $RPC_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6061 > $OUTPUT_FILE 2>&1 &
+  ${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool,admin" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --allow-insecure-unlock --password $PASSWORD_FILE --port $PEER_PORT --authrpc.port $RPC_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6061 > $OUTPUT_FILE 2>&1 &
 fi

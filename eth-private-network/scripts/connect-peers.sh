@@ -10,8 +10,8 @@ display_help() {
   echo
   echo "    -h, --help        Display this help message."
   echo "    -e, --enode       Enode of the peer to connect to. (Required or use enode-ipc)"
-  echo "    -P, --enode-ipc   Path to the peer's IPC file. (Required or use enode)"
-  echo "    -H, --host-ipc    Path to the host's IPC file. (Required)"
+  echo "    -P, --enode-host  Path to the peer's http rpc endpoint. (Required or use enode)"
+  echo "    -H, --host        Path to the host's http rpc endpint. (Required)"
   echo "    -i, --ip          IP address of the peer to connect to. (Default: localhost)"
   echo "    -p, --port        Port of the peer to connect to. (Default: 30306)"
   echo
@@ -34,11 +34,11 @@ while getopts ":he:i:p:H:P:" opt; do
       ENODE_PORT=$OPTARG
       ;;
     H | host-ipc)
-      HOST_IPC_PATH=$OPTARG
+      HOST=$OPTARG
       ;;
     P | enode-ipc)
-      ENODE_IPC_PATH=$OPTARG
-      ENODE=$(geth attach --exec "admin.nodeInfo.enode" $ENODE_IPC_PATH | tr -d '"' | cut -d '@' -f 1 | cut -d '/' -f 3)
+      ENODE_HOST=$OPTARG
+      ENODE=$(geth attach --exec "admin.nodeInfo.enode" $ENODE_HOST | tr -d '"' | cut -d '@' -f 1 | cut -d '/' -f 3)
       echo "Enode: $ENODE"
       ;;
     \?)
@@ -52,16 +52,16 @@ while getopts ":he:i:p:H:P:" opt; do
   esac
 done
 
-if [ -z "$ENODE" && -z "$ENODE_IPC_PATH" ]; then
+if [[ -z "$ENODE" && -z "$ENODE_HOST" ]]; then
   echo "Enode or Enode IPC is required."
   display_help
 fi
 
-if [ -z "$HOST_IPC_PATH" ]; then
+if [ -z "$HOST" ]; then
   echo "Host IPC is required."
   display_help
 fi
 
-echo "Connecting node at $HOST_IPC_PATH to peer: $ENODE@$ENODE_IP:$ENODE_PORT"
-geth attach --exec "admin.addPeer(\"enode://${ENODE}@${ENODE_IP}:${ENODE_PORT}\")" $HOST_IPC_PATH
-geth attach --exec "admin.peers" $HOST_IPC_PATH
+echo "Connecting node at $HOST to peer: $ENODE@$ENODE_IP:$ENODE_PORT"
+geth attach --exec "admin.addPeer(\"enode://${ENODE}@${ENODE_IP}:${ENODE_PORT}\")" $HOST
+geth attach --exec "admin.peers" $HOST

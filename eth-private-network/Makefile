@@ -21,9 +21,6 @@ docker-run-rpc:
 		--mount type=bind,source="$(shell pwd)"/build/genesis.json,target=/genesis.json,readonly \
 		--network host --rm --name eth-private-rpc brandonjroberts/eth-private-rpc:latest
 
-connect-docker:
-	./scripts/connect-docker-peers.sh -P /l1-miner-data/geth.ipc -I /l1-rpc-data/geth.ipc
-
 generate-account:
 	./scripts/generate-account.sh -d ${HOME}/l1-miner-data/ -x
 
@@ -47,8 +44,8 @@ launch-rpc-local-daemon:
 launch-rpc-local-noclean:
 	./scripts/launch-rpc.sh -d ~/l1-rpc-data/ -g ~/l1-miner-data/genesis.json -m 30306 -r 8550 -H 8548
 
-connect-local:
-	./scripts/connect-peers.sh -P ~/l1-rpc-data/geth.ipc -H ~/l1-miner-data/geth.ipc
+connect-peers:
+	./scripts/connect-peers.sh -P http://localhost:8548 -H http://localhost:8545
 
 kube-deploy-miner:
 	kubectl apply -f kube/miner-node-deploy-sts.yaml
