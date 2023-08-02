@@ -13,10 +13,16 @@ import (
 
 var Sender common.Address
 
-func AddL1Token(l1Comms *l2utils.L1Comms, tokenAddr common.Address) error {
+type TokenType int
+const (
+  ERC20Type = 1
+  ERC721Type = 2
+)
+
+func AddL1Token(l1Comms *l2utils.L1Comms, tokenAddr common.Address, tokenType TokenType) error {
   log.Println("Adding allowed token", "tokenAddr", tokenAddr.Hex(), "sender", Sender.Hex())
   l1TransactionOpts, err := l1Comms.CreateL1TransactionOpts(Sender, big.NewInt(0))
-  tx, err := l1Comms.L1Contracts.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, tokenAddr, 1)
+  tx, err := l1Comms.L1Contracts.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, tokenAddr, uint8(tokenType))
   if err != nil {
     log.Println("Failed to add allowed token", "error", err)
     return err
@@ -37,19 +43,19 @@ func AddL2Token(l2Comms *l2utils.L2Comms, l1TokenAddr common.Address, l2TokenAdd
 }
 
 func AddL1Tokens(tokenAddresses l2utils.TokenAddresses, l1Comms *l2utils.L1Comms) error {
-  err := AddL1Token(l1Comms, tokenAddresses.Erc20Address)
+  err := AddL1Token(l1Comms, tokenAddresses.Erc20Address, ERC20Type)
   if err != nil {
     return err
   }
-  err = AddL1Token(l1Comms, tokenAddresses.StableErc20Address)
+  err = AddL1Token(l1Comms, tokenAddresses.StableErc20Address, ERC20Type)
   if err != nil {
     return err
   }
-  err = AddL1Token(l1Comms, tokenAddresses.Erc721Address)
+  err = AddL1Token(l1Comms, tokenAddresses.Erc721Address, ERC721Type)
   if err != nil {
     return err
   }
-  err = AddL1Token(l1Comms, tokenAddresses.SpecialErc721Address)
+  err = AddL1Token(l1Comms, tokenAddresses.SpecialErc721Address, ERC721Type)
   if err != nil {
     return err
   }

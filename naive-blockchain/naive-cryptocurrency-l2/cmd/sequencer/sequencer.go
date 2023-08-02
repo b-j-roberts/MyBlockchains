@@ -66,6 +66,7 @@ func mainImpl() int {
   log.Println("Naive Sequencer Node started", naiveNode)
 
   if naiveNode.L2Node.Config.Metrics.Enabled {
+    log.Println("Starting Metrics Server")
     err = StartMetrics()
     if err != nil {                                                                          
        fatalErrChan <- fmt.Errorf("failed to start metrics: %v", err)                                  

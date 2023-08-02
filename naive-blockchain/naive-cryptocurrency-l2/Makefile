@@ -1,6 +1,6 @@
-.PHONY: all contracts sequencer prover rpc verifier allow-tokens clean smart-contract-metrics
+.PHONY: all contracts sequencer prover rpc verifier allow-tokens clean smart-contract-metrics bridge
 
-all: contracts sequencer prover rpc verifier smart-contract-metrics allow-tokens
+all: contracts sequencer prover rpc verifier smart-contract-metrics allow-tokens bridge
 
 contracts:
 	cd contracts && make
@@ -22,6 +22,9 @@ smart-contract-metrics:
 
 allow-tokens:
 	go build -o build/allow-tokens ./cmd/allow-tokens
+
+bridge:
+	go build -o build/bridge ./cmd/bridge
 
 deploy-private-l1:
 	rm -f contracts/builds/*-address.txt
@@ -105,7 +108,7 @@ run-sequencer:
 	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x
 
 run-sequencer-daemon:
-	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -x -k ~/l1-miner-data/keystore/ -C ./contracts/builds/ -o ${OUTPUT_FILE}
+	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x -o ${OUTPUT_FILE}
 
 run-sequencer-noclean:
 	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -k ~/l1-miner-data/keystore/ -C ./contracts/builds/
@@ -138,47 +141,47 @@ docker-own:
 	sudo chown brandon ~/docker-sequencer/*
 
 bridge-eth-to-l2:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --value 1000000000000000 --config configs/sequencer.config.json
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --value 1000000000000000 --config configs/sequencer.config.json
 
 docker-bridge-eth-to-l2:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/*  | jq -r .address) --bridgeAddress $(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) --rpc http://localhost:8545 --value 1000000000000000 --keystore ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/*  | jq -r .address) --bridgeAddress $(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) --rpc http://localhost:8545 --value 1000000000000000 --keystore ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/
 
 bridge-eth-to-l1:
 	#ACCOUNT_PASS=password go run ./scripts/bridge-eth.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000 --bridgeAddress $(shell cat contracts/builds/l2-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --chainId 515 --to-l1 true
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --config configs/sequencer.config.json --to-l1
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --config configs/sequencer.config.json --to-l1
 
 docker-bridge-eth-to-l1:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/* | jq -r .address) --value 10000000000000 --bridgeAddress $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/builds/l2-bridge-address.txt | jq -r .address) --keystore ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/ --chainId 515 --to-l1 --ipc ~/docker-sequencer/naive-sequencer.ipc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/* | jq -r .address) --value 10000000000000 --bridgeAddress $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/builds/l2-bridge-address.txt | jq -r .address) --keystore ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/ --chainId 515 --to-l1 --ipc ~/docker-sequencer/naive-sequencer.ipc
 	#./scripts/bridge-eth-to-l1.sh -i ~/naive-sequencer-data/naive-sequencer.ipc -v 1000000000000 -t 0x0000000000000000000000000000000000000505
 
 bridge-basic-erc20-to-l2:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc
 
 docker-bridge-basic-erc20-to-l2:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/* | jq -r .address) --value 100000 --bridgeAddress $(shell cat contracts/builds/l1-token-bridge-address.txt | jq -r .address) --keystore ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/ --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/* | jq -r .address) --value 100000 --bridgeAddress $(shell cat contracts/builds/l1-token-bridge-address.txt | jq -r .address) --keystore ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/ --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc
 
 bridge-basic-erc20-to-l1:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 1000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc --to-l1
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 1000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc --to-l1
 
 bridge-stable-erc20-to-l2:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/stable-erc20-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/stable-erc20-address.txt | jq -r .address) --is-erc
 
 bridge-stable-erc20-to-l1:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 1000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/stable-erc20-address.txt | jq -r .address) --is-erc --to-l1
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 1000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/stable-erc20-address.txt | jq -r .address) --is-erc --to-l1
 
 bridge-basic-erc721-to-l2:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 1 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 2 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 1 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 2 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
 
 bridge-basic-erc721-to-l1:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc --to-l1
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc --to-l1
 
 bridge-special-erc721-to-l2:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/special-erc721-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/special-erc721-address.txt | jq -r .address) --is-erc
 
 bridge-special-erc721-to-l1:
-	ACCOUNT_PASS=password go run ./scripts/bridge.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/special-erc721-address.txt | jq -r .address) --is-erc --to-l1
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/special-erc721-address.txt | jq -r .address) --is-erc --to-l1
 
 quick-launch:
 	./scripts/quick-launch.sh -b

@@ -81,6 +81,10 @@ var (
     Help: "L2 burn balance",
   })
 
+  L1BasicTokenAllowed = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_basic_token_allowed",
+    Help: "L1 basic token allowed",
+  })
   L1BasicTokenSupply = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "l1_basic_token_supply",
     Help: "L1 basic token supply",
@@ -92,6 +96,10 @@ var (
   L1BasicTokenBridgeBalance = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "l1_basic_token_bridge_balance",
     Help: "L1 basic token bridge balance",
+  })
+  L1StableTokenAllowed = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_stable_token_allowed",
+    Help: "L1 stable token allowed",
   })
   L1StableTokenSupply = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "l1_stable_token_supply",
@@ -113,9 +121,17 @@ var (
     Name: "l1_token_withdrawal_nonce",
     Help: "L1  token withdrawal nonce",
   })
+  L2BasicTokenAllowed = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l2_basic_token_allowed",
+    Help: "L2 basic token allowed",
+  })
   L2BasicTokenSupply = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "l2_basic_token_supply",
     Help: "L2 basic token supply",
+  })
+  L2StableTokenAllowed = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l2_stable_token_allowed",
+    Help: "L2 basic token allowed",
   })
   L2StableTokenSupply = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "l2_stable_token_supply",
@@ -138,6 +154,10 @@ var (
     Help: "L2 stable token sequencer balance",
   })
 
+  L1BasicNFTAllowed = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_basic_nft_allowed",
+    Help: "L1 basic NFT allowed",
+  })
   L1BasicNFTSupply = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "l1_basic_nft_supply",
     Help: "L1 basic NFT supply",
@@ -149,6 +169,10 @@ var (
   L1BasicNFTBridgeBalance = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "l1_basic_nft_bridge_balance",
     Help: "L1 basic NFT bridge balance",
+  })
+  L1SpecialNFTAllowed = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l1_special_nft_allowed",
+    Help: "L1 special NFT allowed",
   })
   L1SpecialNFTSupply = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "l1_special_nft_supply",
@@ -162,9 +186,17 @@ var (
     Name: "l1_special_nft_bridge_balance",
     Help: "L1 special NFT bridge balance",
   })
+  L2BasicNFTAllowed = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l2_basic_nft_allowed",
+    Help: "L2 basic NFT allowed",
+  })
   L2BasicNFTSupply = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "l2_basic_nft_supply",
     Help: "L2 basic NFT supply",
+  })
+  L2SpecialNFTAllowed = prometheus.NewGauge(prometheus.GaugeOpts{
+    Name: "l2_special_nft_allowed",
+    Help: "L2 special NFT allowed",
   })
   L2BasicNFTSequencerBalance = prometheus.NewGauge(prometheus.GaugeOpts{
     Name: "l2_basic_nft_sequencer_balance",
@@ -260,28 +292,36 @@ func SetupMetrics() {
   prometheus.MustRegister(L2WithdrawalNonce)
   prometheus.MustRegister(L2BurnBalance)
 
+  prometheus.MustRegister(L1BasicTokenAllowed)
   prometheus.MustRegister(L1BasicTokenSupply)
   prometheus.MustRegister(L1BasicTokenSequencerBalance)
   prometheus.MustRegister(L1BasicTokenBridgeBalance)
+  prometheus.MustRegister(L1StableTokenAllowed)
   prometheus.MustRegister(L1StableTokenSupply)
   prometheus.MustRegister(L1StableTokenSequencerBalance)
   prometheus.MustRegister(L1StableTokenBridgeBalance)
   prometheus.MustRegister(L1TokenDepositNonce)
   prometheus.MustRegister(L1TokenWithdrawalNonce)
+  prometheus.MustRegister(L2BasicTokenAllowed)
   prometheus.MustRegister(L2BasicTokenSupply)
+  prometheus.MustRegister(L2StableTokenAllowed)
   prometheus.MustRegister(L2StableTokenSupply)
   prometheus.MustRegister(L2TokenDepositNonce)
   prometheus.MustRegister(L2TokenWithdrawalNonce)
   prometheus.MustRegister(L2BasicTokenSequencerBalance)
   prometheus.MustRegister(L2StableTokenSequencerBalance)
 
+  prometheus.MustRegister(L1BasicNFTAllowed)
   prometheus.MustRegister(L1BasicNFTSupply)
   prometheus.MustRegister(L1BasicNFTSequencerBalance)
   prometheus.MustRegister(L1BasicNFTBridgeBalance)
+  prometheus.MustRegister(L1SpecialNFTAllowed)
   prometheus.MustRegister(L1SpecialNFTSupply)
   prometheus.MustRegister(L1SpecialNFTSequencerBalance)
   prometheus.MustRegister(L1SpecialNFTBridgeBalance)
+  prometheus.MustRegister(L2BasicNFTAllowed)
   prometheus.MustRegister(L2BasicNFTSupply)
+  prometheus.MustRegister(L2SpecialNFTAllowed)
   prometheus.MustRegister(L2BasicNFTSequencerBalance)
   prometheus.MustRegister(L2SpecialNFTSequencerBalance)
 }
@@ -375,6 +415,11 @@ func (p *SmartContractMetricExporter) Start() error {
       L2BurnBalance.Set(float64(burnBalance.Int64()))
 
 
+      basicTokenAllowed, err := p.L1Comms.L1Contracts.TokenBridgeContract.AllowedTokens(nil, p.TokenAddresses.Erc20Address)
+      if err != nil {
+        log.Fatalf("Failed to get basic token allowed: %v", err)
+      }
+      L1BasicTokenAllowed.Set(float64(basicTokenAllowed))
 
       basicTokenSupply, err := p.ERC20Contract.TotalSupply(nil)
       if err != nil {
@@ -395,6 +440,12 @@ func (p *SmartContractMetricExporter) Start() error {
         log.Fatalf("Failed to get basic token balance: %v", err)
       }
       L1BasicTokenBridgeBalance.Set(float64(basicTokenBalance.Int64()))
+
+      stableTokenAllowed, err := p.L1Comms.L1Contracts.TokenBridgeContract.AllowedTokens(nil, p.TokenAddresses.StableErc20Address)
+      if err != nil {
+        log.Fatalf("Failed to get stable token allowed: %v", err)
+      }
+      L1StableTokenAllowed.Set(float64(stableTokenAllowed))
 
       stableTokenSupply, err := p.StableERC20Contract.TotalSupply(nil)
       if err != nil {
@@ -428,11 +479,31 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L1TokenWithdrawalNonce.Set(float64(basicTokenWithdrawalNonce.Int64()))
 
+      l2BasicTokenAllowed, err := p.L2Comms.L2Contracts.L2TokenBridgeContract.GetAllowedToken(nil, p.TokenAddresses.Erc20Address)
+      if err != nil {
+        log.Fatalf("Failed to get basic token allowed: %v", err)
+      }
+      if l2BasicTokenAllowed {
+        L2BasicTokenAllowed.Set(1)
+      } else {
+        L2BasicTokenAllowed.Set(0)
+      }
+
       l2BasicTokenSupply, err := p.L2ERC20Contract.TotalSupply(nil)
       if err != nil {
         log.Fatalf("Failed to get basic token supply: %v", err)
       }
       L2BasicTokenSupply.Set(float64(l2BasicTokenSupply.Int64()))
+
+      l2StableTokenAllowed, err := p.L2Comms.L2Contracts.L2TokenBridgeContract.GetAllowedToken(nil, p.TokenAddresses.StableErc20Address)
+      if err != nil {
+        log.Fatalf("Failed to get stable token allowed: %v", err)
+      }
+      if l2StableTokenAllowed {
+        L2StableTokenAllowed.Set(1)
+      } else {
+        L2StableTokenAllowed.Set(0)
+      }
       
       l2StableTokenSupply, err := p.L2StableERC20Contract.TotalSupply(nil)
       if err != nil {
@@ -464,6 +535,12 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L2StableTokenSequencerBalance.Set(float64(l2StableTokenSequencerBalance.Int64()))
 
+      basicNFTokenAllowed, err := p.L1Comms.L1Contracts.TokenBridgeContract.AllowedTokens(nil, p.TokenAddresses.Erc721Address)
+      if err != nil {
+        log.Fatalf("Failed to get basic NFT allowed: %v", err)
+      }
+      L1BasicNFTAllowed.Set(float64(basicNFTokenAllowed))
+
       basicNFTokenSupply, err := p.ERC721Contract.TotalSupply(nil)
       if err != nil {
         log.Fatalf("Failed to get basic NFT token supply: %v", err)
@@ -492,6 +569,12 @@ func (p *SmartContractMetricExporter) Start() error {
         L1SpecialNFTSupply.Set(float64(0))
       }
 
+      specialNFTokenAllowed, err := p.L1Comms.L1Contracts.TokenBridgeContract.AllowedTokens(nil, p.TokenAddresses.SpecialErc721Address)
+      if err != nil {
+        log.Fatalf("Failed to get special NFT allowed: %v", err)
+      }
+      L1SpecialNFTAllowed.Set(float64(specialNFTokenAllowed))
+
       specialNFTSequncerBalance, err := p.SpecialERC721Contract.BalanceOf(nil, l2utils.GetSequencer())
       if err != nil {
         log.Fatalf("Failed to get special NFT token sequencer balance: %v", err)
@@ -510,6 +593,16 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L1SpecialNFTSequencerBalance.Set(float64(specialNFTSequncerBalance.Int64()))
 
+      l2BasicNFTokenAllowed, err := p.L2Comms.L2Contracts.L2TokenBridgeContract.GetAllowedToken(nil, p.TokenAddresses.Erc721Address)
+      if err != nil {
+        log.Fatalf("Failed to get basic NFT allowed: %v", err)
+      }
+      if l2BasicNFTokenAllowed {
+        L2BasicNFTAllowed.Set(float64(1))
+      } else {
+        L2BasicNFTAllowed.Set(float64(0))
+      }
+
       l2BasicNFTSupply, err := p.L2ERC721Contract.TotalSupply(nil)
       if err != nil {
         log.Fatalf("Failed to get basic NFT token supply: %v", err)
@@ -521,6 +614,16 @@ func (p *SmartContractMetricExporter) Start() error {
         log.Fatalf("Failed to get basic NFT token sequencer balance: %v", err)
       }
       L2BasicNFTSequencerBalance.Set(float64(l2BasicNFTSequencerBalance.Int64()))
+
+      l2SpecialNFTokenAllowed, err := p.L2Comms.L2Contracts.L2TokenBridgeContract.GetAllowedToken(nil, p.TokenAddresses.SpecialErc721Address)
+      if err != nil {
+        log.Fatalf("Failed to get special NFT allowed: %v", err)
+      }
+      if l2SpecialNFTokenAllowed {
+        L2SpecialNFTAllowed.Set(float64(1))
+      } else {
+        L2SpecialNFTAllowed.Set(float64(0))
+      }
 
       l2SpecialNFTSequncerBalance, err := p.L2SpecialERC721Contract.BalanceOf(nil, l2utils.GetSequencer())
       if err != nil {
