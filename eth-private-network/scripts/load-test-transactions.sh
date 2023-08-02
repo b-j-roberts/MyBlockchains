@@ -4,24 +4,25 @@
 #
 # This script is used to load test the transaction throughput of a geth node.
 
-HOST="localhost"                                           
-PORT="8545"                                                
+RPC="http://localhost:8545"
                                                            
 TXN_COUNT=100000                                           
 THREAD_COUNT=1500
 
 display_help() {
-  echo "Usage: load-test-gets.sh [Options]"
+  echo "Usage: $0 [option...] " >&2
+  echo "NOTE: Long form flags are not supported, but listed for reference." >&2
+  echo "WARNING: You may need to alter the ulimit to allow for more open files. (ulimit -n 10000)" >&2
   echo
   echo "-h, --help            Display help"
-  echo "-t, --txn-count       Number of transactions to send"
-  echo "-c, --thread-count    Number of threads to use"
-  echo "-H, --host            Host to connect to"
-  echo "-p, --port            Port to connect to"
+  echo "-t, --txn-count       Number of transactions to send (default: 100000)"
+  echo "-c, --thread-count    Number of threads to use (default: 1500)"
+  echo "-r, --rpc             RPC endpoint (default: http://localhost:8545)"
   echo
+  echo "Example: $0 -t 100000 -c 1500 -r http://localhost:8545"
 }
 
-while getopts ":ht:c:H:p:" opt; do
+while getopts ":ht:c:r:" opt; do
   case $opt in
     h|help)
       display_help
@@ -33,11 +34,8 @@ while getopts ":ht:c:H:p:" opt; do
     c|thread-count)
       THREAD_COUNT=$OPTARG
       ;;
-    H|host)
-      HOST=$OPTARG
-      ;;
-    p|port)
-      PORT=$OPTARG
+    r|rpc)
+      RPC=$OPTARG
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -53,9 +51,9 @@ while getopts ":ht:c:H:p:" opt; do
 done
 
 # Unlock the account
-geth --exec "web3.personal.unlockAccount(web3.personal.listAccounts[0], \"password\", 10000)" attach http://$HOST:$PORT
+geth --exec "web3.personal.unlockAccount(web3.personal.listAccounts[0], \"password\", 10000)" attach $RPC
 
-FROM=$(geth --exec "web3.personal.listAccounts[0]" attach http://$HOST:$PORT)
+FROM=$(geth --exec "web3.personal.listAccounts[0]" attach $RPC)
 
 JSOM='
 {
@@ -80,6 +78,6 @@ echo $JSOM > $TMP_SEND_TX
 
 cat $TMP_SEND_TX
 
-ab -c $THREAD_COUNT -n $TXN_COUNT -p $TMP_SEND_TX -T application/json http://$HOST:$PORT/
+ab -c $THREAD_COUNT -n $TXN_COUNT -p $TMP_SEND_TX -T application/json $RPC
 
 rm -f $TMP_SEND_TX

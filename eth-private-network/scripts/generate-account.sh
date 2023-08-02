@@ -6,13 +6,15 @@ ACCOUNT_DIR="${HOME}/.eth-accounts"
 
 display_help() {
   echo "Usage: $0 [option...] " >&2
+  echo "NOTE: Long form flags are not supported, but are listed here for reference"
   echo
   echo "   -h, --help                 display help"
-  echo "   -d, --data-dir             data directory"
+  echo "   -d, --data-dir             data directory (Required)"
   echo "   -x, --clear                clear data directory & accounts"
-  echo "   -a, --account-dir          account directory"
+  echo "   -a, --account-dir          account directory (Default: ${HOME}/.eth-accounts/)"
+  echo "   Set ACCOUNT_PASS env var to set the password for the account (Default: password)"
   echo
-  echo "Example: $0 --data-dir ${HOME}/l1-miner-data/"
+  echo "Example: $0 -d ${HOME}/l1-miner-data/"
 }
 
 while getopts ":hxd:a:" opt; do

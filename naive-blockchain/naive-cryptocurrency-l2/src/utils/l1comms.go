@@ -22,23 +22,73 @@ type L1TransactionConfig struct {
   GasPrice *big.Int
 }
 
+type L1ContractAddressConfig struct {
+  TxStorageContractAddress common.Address
+  BridgeContractAddress common.Address
+  TokenBridgeContractAddress common.Address
+}
+
+type L1Contracts struct {
+  TxStorageContract *txstorage.Txstorage
+  BridgeContract *l1bridge.L1bridge
+  TokenBridgeContract *l1tokenbridge.L1tokenbridge
+}
+
+func CreateL1ContractAddressConfig(contractAddressDir string) L1ContractAddressConfig {
+  // Read contract addresses from files in directory
+  txStorageContractAddress, err := ReadContractAddressFromFile(contractAddressDir + "/tx-storage-address.txt")
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  l1BridgeContractAddress, err := ReadContractAddressFromFile(contractAddressDir + "/l1-bridge-address.txt")
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  l1TokenBridgeContractAddress, err := ReadContractAddressFromFile(contractAddressDir + "/l1-token-bridge-address.txt")
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  return L1ContractAddressConfig{
+    TxStorageContractAddress: txStorageContractAddress,
+    BridgeContractAddress: l1BridgeContractAddress,
+    TokenBridgeContractAddress: l1TokenBridgeContractAddress,
+  }
+}
+
+func CreateL1Contracts(client *ethclient.Client, l1ContractAddressConfig L1ContractAddressConfig) L1Contracts {
+  txStorageContract, err := txstorage.NewTxstorage(l1ContractAddressConfig.TxStorageContractAddress, client)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  l1BridgeContract, err := l1bridge.NewL1bridge(l1ContractAddressConfig.BridgeContractAddress, client)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  l1TokenBridgeContract, err := l1tokenbridge.NewL1tokenbridge(l1ContractAddressConfig.TokenBridgeContractAddress, client)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  return L1Contracts{
+    TxStorageContract: txStorageContract,
+    BridgeContract: l1BridgeContract,
+    TokenBridgeContract: l1TokenBridgeContract,
+  }
+}
+
 type L1Comms struct {
   RpcUrl string
   L1Client *ethclient.Client
   L1ChainID *big.Int
   L1TransactionConfig L1TransactionConfig
 
-  // L1 Tx Storage
-  TxStorageContract *txstorage.Txstorage
-  TxStorageContractAddress common.Address
-
-  // L1 Bridge
-  BridgeContract *l1bridge.L1bridge
-  BridgeContractAddress common.Address
-
-  // L1 Token Bridge
-  TokenBridgeContract *l1tokenbridge.L1tokenbridge
-  TokenBridgeContractAddress common.Address
+  L1ContractAddressConfig L1ContractAddressConfig
+  L1Contracts L1Contracts
 }
 
 func (l1Comms *L1Comms) CreateL1TransactionOpts(fromAddress common.Address, value *big.Int) (*bind.TransactOpts, error) {
@@ -53,37 +103,22 @@ func (l1Comms *L1Comms) CreateL1TransactionOpts(fromAddress common.Address, valu
   return transactOpts, nil
 }
 
-func NewL1Comms(rpcUrl string, txStorageContractAddress common.Address, bridgeContractAddress common.Address, tokenBridgeContractAddress common.Address, chainID *big.Int, l1TransactionConfig L1TransactionConfig) (*L1Comms, error) {
+func NewL1Comms(rpcUrl string, contractAddressDir string, chainID *big.Int, l1TransactionConfig L1TransactionConfig) (*L1Comms, error) {
+  rawRpc, err := rpc.Dial(rpcUrl)
+  if err != nil {
+    return nil, err
+  }
+
   l1Comms := &L1Comms{
     RpcUrl: rpcUrl,
-    TxStorageContractAddress: txStorageContractAddress,
-    BridgeContractAddress: bridgeContractAddress,
-    TokenBridgeContractAddress: tokenBridgeContractAddress,
+    L1Client: ethclient.NewClient(rawRpc),
     L1ChainID: chainID,
     L1TransactionConfig: l1TransactionConfig,
+    L1ContractAddressConfig: CreateL1ContractAddressConfig(contractAddressDir),
   }
 
-  // Connect to L1
-  rawRpc, err := rpc.Dial(l1Comms.RpcUrl)
-  if err != nil {
-    return nil, err
-  }
-  l1Comms.L1Client = ethclient.NewClient(rawRpc)
-
-  l1Comms.TxStorageContract, err = txstorage.NewTxstorage(l1Comms.TxStorageContractAddress, l1Comms.L1Client)
-  if err != nil {
-    return nil, err
-  }
-
-  l1Comms.BridgeContract, err = l1bridge.NewL1bridge(l1Comms.BridgeContractAddress, l1Comms.L1Client)
-  if err != nil {
-    return nil, err
-  }
-
-  l1Comms.TokenBridgeContract, err = l1tokenbridge.NewL1tokenbridge(l1Comms.TokenBridgeContractAddress, l1Comms.L1Client)
-  if err != nil {
-    return nil, err
-  }
+  // Create L1 contracts
+  l1Comms.L1Contracts = CreateL1Contracts(l1Comms.L1Client, l1Comms.L1ContractAddressConfig)
 
   return l1Comms, nil
 }
@@ -98,7 +133,7 @@ func (l1Comms *L1Comms) L2GenesisOnL1(genesis *core.Genesis, posterAddress commo
     return err
   }
 
-  _, err = l1Comms.TxStorageContract.StoreGenesisState(transactOpts, genesisHash)
+  _, err = l1Comms.L1Contracts.TxStorageContract.StoreGenesisState(transactOpts, genesisHash)
   if err != nil {
     log.Fatalf("Failed to store genesis state on L1: %v", err)
     return err
@@ -117,7 +152,7 @@ func (l1Comms *L1Comms) PostBatch(transactionByteData []byte, id int64, hash [32
     return err
   }
 
-  _, err = l1Comms.TxStorageContract.StoreBatch(transactOpts, big.NewInt(id), hash, transactionByteData)
+  _, err = l1Comms.L1Contracts.TxStorageContract.StoreBatch(transactOpts, big.NewInt(id), hash, transactionByteData)
   if err != nil {
     log.Fatalf("Failed to post batch to L1: %v", err)
     return err
@@ -136,7 +171,7 @@ func (l1Comms *L1Comms) SubmitProof(proof []byte, batchNumber int, proverAddress
     return err
   }
 
-  _, err = l1Comms.TxStorageContract.SubmitProof(transactOpts, big.NewInt(int64(batchNumber)), proof)
+  _, err = l1Comms.L1Contracts.TxStorageContract.SubmitProof(transactOpts, big.NewInt(int64(batchNumber)), proof)
   if err != nil {
     log.Fatalf("Failed to submit proof to L1: %v", err)
     return err
@@ -155,7 +190,7 @@ func (l1BridgeComms *L1Comms) BridgeEthToL2(address common.Address, amount uint6
     return err
   }
 
-  bridgeTx, err := l1BridgeComms.BridgeContract.DepositEth(transactOpts)
+  bridgeTx, err := l1BridgeComms.L1Contracts.BridgeContract.DepositEth(transactOpts)
   if err != nil {
     log.Println("Failed to create bridge transaction", err)
     return err
@@ -174,7 +209,7 @@ func (l1BridgeComms *L1Comms) BridgeEthToL1(address common.Address, amount *big.
     return err
   }
 
-  bridgeTx, err := l1BridgeComms.BridgeContract.WithdrawEth(transactOpts, address, amount)
+  bridgeTx, err := l1BridgeComms.L1Contracts.BridgeContract.WithdrawEth(transactOpts, address, amount)
   if err != nil {
     log.Println("Failed to create bridge transaction", err)
     return err
@@ -185,7 +220,7 @@ func (l1BridgeComms *L1Comms) BridgeEthToL1(address common.Address, amount *big.
 }
 
 func (l1BridgeComms *L1Comms) BridgeTokenToL2(tokenAddress common.Address, fromAddress common.Address, amount *big.Int) error {
-  log.Println("Bridging ", amount, " tokens of type", tokenAddress.Hex(), " to L2 for address ", fromAddress.Hex(), " on token bridge contract", l1BridgeComms.TokenBridgeContractAddress.Hex())
+  log.Println("Bridging ", amount, " tokens of type", tokenAddress.Hex(), " to L2 for address ", fromAddress.Hex(), " on token bridge contract", l1BridgeComms.L1ContractAddressConfig.TokenBridgeContractAddress.Hex())
 
   transactOpts, err := l1BridgeComms.CreateL1TransactionOpts(fromAddress, big.NewInt(0))
   if err != nil {
@@ -201,14 +236,14 @@ func (l1BridgeComms *L1Comms) BridgeTokenToL2(tokenAddress common.Address, fromA
     return err
   }
 
-  approveTx, err := erc20Contract.Approve(transactOpts, l1BridgeComms.TokenBridgeContractAddress, amount)
+  approveTx, err := erc20Contract.Approve(transactOpts, l1BridgeComms.L1ContractAddressConfig.TokenBridgeContractAddress, amount)
   if err != nil {
     log.Println("Failed to approve token bridge contract", err)
     return err
   }
   log.Println("Approved token bridge contract: ", approveTx.Hash().Hex())
 
-  bridgeTc, err := l1BridgeComms.TokenBridgeContract.DepositTokens(transactOpts, tokenAddress, amount)
+  bridgeTc, err := l1BridgeComms.L1Contracts.TokenBridgeContract.DepositTokens(transactOpts, tokenAddress, amount)
   if err != nil {
     log.Println("Failed to create bridge transaction", err)
     return err
@@ -227,7 +262,7 @@ func (l1BridgeComms *L1Comms) BridgeTokenToL1(tokenAddress common.Address, toAdd
     return err
   }
 
-  bridgeTx, err := l1BridgeComms.TokenBridgeContract.WithdrawTokens(transactOpts, tokenAddress, toAddress, amount)
+  bridgeTx, err := l1BridgeComms.L1Contracts.TokenBridgeContract.WithdrawTokens(transactOpts, tokenAddress, toAddress, amount)
   if err != nil {
     log.Println("Failed to create bridge transaction", err)
     return err

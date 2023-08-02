@@ -4,6 +4,10 @@
 
 STATE_RESET=0
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+WORK_DIR="${SCRIPT_DIR}/.."
+
+# TODO: Include in sequencer config?
 # Defaults give theoretical max throughput of 1800 TPS = ~15 tx/sec ( mainnet ) X 12 X 10
 CHAIN_ID=515
 PERIOD=1 # 1 second per block ( 12x faster than Ethereum mainnet )
@@ -14,13 +18,7 @@ display_help() {
   echo
   echo "  -h, --help                 Show help message"
 
-  echo "  -d, --datadir              Data directory (Required)"
-  echo "  -k, --keystore             Keystore directory for l1 address (Required)"
-  echo "  -A, --l1-tx-storage-address  L1 contract address (Required)"
-  echo "  -B, --l1-bridge-address    L1 Bridge contract address (Required)"
-  echo "  -e, --l1-token-address     L1 Token contract address (Required)"
-  echo "  -C, --contracts           Contracts directory (default: contracts)"
-
+  echo "  -f, --config               Config file (default: $WORK_DIR/configs/sequencer.config.json)"
   echo "  -c, --chainid              Chain ID (default: 515)"
   echo "  -p, --period               Block period in seconds (default: 1)"
   echo "  -g, --gaslimit             Gas limit per block (default: 300000000)"
@@ -38,17 +36,15 @@ clear_data() {
 }
 
 # Parse command line arguments
-while getopts ":hd:k:A:B:e:C:c:p:g:xo:" opt; do
+while getopts ":hf:c:p:g:xo:" opt; do
   case ${opt} in
     h|--help )
       display_help
       exit 0
       ;;
-    d|--datadir )
-      NAIVE_SEQUENCER_DATA=$OPTARG
-      ;;
-    C|--contracts )
-      CONTRACTS_DIR=$OPTARG
+    f|--config )
+      CONFIG_FILE=$OPTARG
+      NAIVE_SEQUENCER_DATA=$(jq '."data-dir"' -r $CONFIG_FILE)
       ;;
     c|--chainid )
       CHAIN_ID=$OPTARG
@@ -58,18 +54,6 @@ while getopts ":hd:k:A:B:e:C:c:p:g:xo:" opt; do
       ;;
     g|--gaslimit )
       GAS_LIMIT=$OPTARG
-      ;;
-    k|--keystore )
-      L1_KEYSTORE=$OPTARG
-      ;;
-    A|--l1-tx-storage-address )
-      L1_CONTRACT_ADDRESS=$OPTARG
-      ;;
-    B|--l1-bridge-address )
-      L1_BRIDGE_ADDRESS=$OPTARG
-      ;;
-    e|--l1-token-address )
-      L1_TOKEN_BRIDGE_ADDRESS=$OPTARG
       ;;
     x|--clear )
       clear_data
@@ -91,12 +75,9 @@ while getopts ":hd:k:A:B:e:C:c:p:g:xo:" opt; do
   esac
 done
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-WORK_DIR="${SCRIPT_DIR}/.."
 
-# Check if required arguments are present
-if [[ -z "${NAIVE_SEQUENCER_DATA}" || -z ${L1_KEYSTORE} || -z ${CONTRACTS_DIR} ]]; then
-  echo "Missing required argument: --datadir or --keystore or --contracts" 1>&2
+if [[ -z "${NAIVE_SEQUENCER_DATA}" ]]; then
+  echo "Missing required argument: --config" 1>&2
   display_help
   exit 1
 fi
@@ -115,46 +96,6 @@ if [ ! -d "${NAIVE_SEQUENCER_DATA}/sequencer" ]; then
   STATE_RESET=1
 fi
 
-if [ -z "${L1_CONTRACT_ADDRESS}" ]; then
-  # Copy over the contract address
-  cp ${WORK_DIR}/contracts/builds/tx-storage-address.txt ${NAIVE_SEQUENCER_DATA}/l1-tx-storage-address.txt
-
-  if [ ! -f "${NAIVE_SEQUENCER_DATA}/l1-tx-storage-address.txt" ]; then
-    echo "Missing required argument: --l1-tx-storage-address" 1>&2
-    display_help
-    exit 1
-  fi
-
-  # Start the sequencer
-  L1_CONTRACT_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/l1-tx-storage-address.txt" | jq -r '.address')
-fi
-
-if [ -z "${L1_BRIDGE_ADDRESS}" ]; then
-  # Copy over the contract address
-  cp ${WORK_DIR}/contracts/builds/l1-bridge-address.txt ${NAIVE_SEQUENCER_DATA}/l1-bridge-address.txt
-
-  if [ ! -f "${NAIVE_SEQUENCER_DATA}/l1-bridge-address.txt" ]; then
-    echo "Missing required argument: --l1-bridge-address" 1>&2
-    display_help
-    exit 1
-  fi
-
-  L1_BRIDGE_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/l1-bridge-address.txt" | jq -r '.address')
-fi
-
-if [ -z "${L1_TOKEN_BRIDGE_ADDRESS}" ]; then
-  # Copy over the contract address
-  cp ${WORK_DIR}/contracts/builds/l1-token-bridge-address.txt ${NAIVE_SEQUENCER_DATA}/l1-token-bridge-address.txt
-
-  if [ ! -f "${NAIVE_SEQUENCER_DATA}/l1-token-bridge-address.txt" ]; then
-    echo "Missing required argument: --l1-token-bridge-address" 1>&2
-    display_help
-    exit 1
-  fi
-
-  L1_TOKEN_BRIDGE_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/l1-token-bridge-address.txt" | jq -r '.address')
-fi
-
 PASSWORD_FILE="${NAIVE_SEQUENCER_DATA}/password.txt"
 
 if [ $STATE_RESET -eq 1 ]; then
@@ -171,11 +112,17 @@ if [ $STATE_RESET -eq 1 ]; then
 
   echo "Creating L2 Genesis file: ${GENESIS_FILE} with account: ${ACCOUNT1} & balance: 10000000000000000000 wei (10 ETH)"
   $WORK_DIR/scripts/generate-genesis.sh -a ${ACCOUNT1} -b 10000000000000000000 -o ${GENESIS_FILE} -p ${PERIOD} -g ${GAS_LIMIT} -c ${CHAIN_ID}
-  #$WORK_DIR/scripts/generate-genesis-empty.sh -a ${ACCOUNT1} -o ${GENESIS_FILE} -p ${PERIOD} -g ${GAS_LIMIT} -c ${CHAIN_ID}
   $WORK_DIR/go-ethereum/build/bin/geth init --datadir ${NAIVE_SEQUENCER_DATA} ${GENESIS_FILE}
 
   # Copy over the sequencer l1 address
   for p in  ${NAIVE_SEQUENCER_DATA}/keystore/*; do cp $p ${NAIVE_SEQUENCER_DATA}/sequencer-l1-address.txt; break; done
+  rm -rf ${HOME}/.transactor
+  mkdir -p ${HOME}/.transactor
+  for p in  ${NAIVE_SEQUENCER_DATA}/keystore/*; do cp $p ${HOME}/.transactor; break; done
+
+  # Copy over contracts
+  mkdir -p ${NAIVE_SEQUENCER_DATA}/contracts/
+  cp -r ${WORK_DIR}/contracts/builds/*-address.txt ${NAIVE_SEQUENCER_DATA}/contracts/
 fi
 
 SEQUENCER_L1_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/sequencer-l1-address.txt" | jq -r '.address')
@@ -183,9 +130,7 @@ SEQUENCER_L1_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/sequencer-l1-address.txt" | 
 echo "Starting sequencer with L1 contract address: ${L1_CONTRACT_ADDRESS} & L1 sequencer address: ${SEQUENCER_L1_ADDRESS}"
 
 if [ -z $OUTPUT_FILE ]; then
-  echo "Running $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --l1tokenbridgecontract ${L1_TOKEN_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics --httpmodules 'eth,net,web3,personal,txpool,debug' --genesis ${GENESIS_FILE}"
-  #$WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --l1tokenbridgecontract ${L1_TOKEN_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics --httpmodules "eth,net,web3,personal,txpool,debug" --genesis ${GENESIS_FILE}
-  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --l1tokenbridgecontract ${L1_TOKEN_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${NAIVE_SEQUENCER_DATA}/keystore/ --metrics --httpmodules "eth,net,web3,personal,txpool,debug" --genesis ${GENESIS_FILE} --contracts ${CONTRACTS_DIR}
+  ACCOUNT_PASS=$(cat ${PASSWORD_FILE}) $WORK_DIR/build/sequencer --config ${CONFIG_FILE} --sequencer ${SEQUENCER_L1_ADDRESS}
 else
-  $WORK_DIR/build/sequencer --datadir ${NAIVE_SEQUENCER_DATA} --l1contract ${L1_CONTRACT_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} --l1tokenbridgecontract ${L1_TOKEN_BRIDGE_ADDRESS} --sequencer ${SEQUENCER_L1_ADDRESS} --sequencerkeystore ${L1_KEYSTORE} --metrics --genesis ${GENESIS_FILE} --contracts ${CONTRACTS_DIR} > $OUTPUT_FILE 2>&1 &
+  ACCOUNT_PASS=$(cat ${PASSWORD_FILE}) $WORK_DIR/build/sequencer --config ${CONFIG_FILE} --sequencer ${SEQUENCER_L1_ADDRESS} > $OUTPUT_FILE 2>&1 &
 fi

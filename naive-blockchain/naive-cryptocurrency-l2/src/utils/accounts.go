@@ -27,13 +27,6 @@ func AddressFromFile(path string) (common.Address, error) {
   return common.HexToAddress(addressString), nil
 }
 
-// Store address -> KeyStoreDir map
-var addressKeyStoreDirMap = make(map[common.Address]string)
-
-func RegisterAccount(address common.Address, dir string) {
-  addressKeyStoreDirMap[address] = dir
-}
-
 func SetSequencer(address common.Address) {
   // Set sequencer address
   sequencerAddress = address

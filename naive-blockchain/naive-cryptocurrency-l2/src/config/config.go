@@ -1,7 +1,10 @@
-package main
+package config
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -9,10 +12,11 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/metrics/exp"
 	"github.com/ethereum/go-ethereum/node"
 )
 
-// Don't preserve reorg'd out blocks
 func ShouldPreserveFalse(_ *types.Header) bool {
   return false
 }
@@ -61,19 +65,68 @@ func DefaultCacheConfigFor(stack *node.Node, archive bool) *core.CacheConfig {
   }
 }
 
-func NodeConfig(dataDir string, httpHost string, httpPort int, httpModules string) *node.Config {
+type NodeBaseConfig struct {
+  DataDir      string `json:"data-dir"`
+  Genesis      string `json:"genesis"`
+  Contracts    string `json:"contracts"`
+  L2ChainID    int    `json:"l2ChainId"`
+  Host         string `json:"host"`
+  Port         int    `json:"port"`
+  Modules      string `json:"modules"`
+  L1URL        string `json:"l1Url"`
+  L1ChainID    int    `json:"l1ChainId"`
+  MiningThreads int   `json:"miningThreads"`
+  Metrics      struct {
+    Enabled bool   `json:"enabled"`
+    Host    string `json:"host"`
+    Port    int    `json:"port"`
+  } `json:"metrics"`
+}
+
+//TODO: Move somewhere else
+func SetupMetrics(nodeBaseConfig *NodeBaseConfig) {
+  log.Println("Metrics enabled: ", nodeBaseConfig.Metrics.Enabled)
+  if !nodeBaseConfig.Metrics.Enabled {
+    return
+  }
+
+  metrics.Enabled = true
+  metrics.EnabledExpensive = true
+  exp.Exp(metrics.DefaultRegistry)
+  address := fmt.Sprintf("%s:%d", nodeBaseConfig.Metrics.Host, nodeBaseConfig.Metrics.Port)
+  log.Println("Metrics address is", address)
+  exp.Setup(address)
+}
+
+func LoadNodeBaseConfig(configFile string) (*NodeBaseConfig, error) {
+  file, err := os.Open(configFile)
+  if err != nil {
+    return nil, fmt.Errorf("failed to open config file: %v", err)
+  }
+  defer file.Close()
+
+  config := new(NodeBaseConfig)
+  if err := json.NewDecoder(file).Decode(config); err != nil {
+    return nil, fmt.Errorf("invalid config file: %v", err)
+  }
+
+  return config, nil
+}
+
+func NodeConfig(nodeBaseConfig *NodeBaseConfig) *node.Config {
   //TODO: Learn more about node config + default config
   nodeConfig := node.DefaultConfig
-  nodeConfig.DataDir = dataDir
-  //nodeConfig.P2P.ListenAddr = ""
-  //nodeConfig.P2P.NoDial = true
+  nodeConfig.DataDir = nodeBaseConfig.DataDir
+  //nodeConfig.P2P.ListenAddr = ""                            
+  //nodeConfig.P2P.NoDial = true                              
   //nodeConfig.P2P.NoDiscovery = true
-  nodeConfig.P2P.ListenAddr = ":30316"
-  nodeConfig.IPCPath = "naive-rpc.ipc"// TODO: learn more about ipc
-  nodeConfig.HTTPHost = httpHost
-  nodeConfig.HTTPPort = httpPort
+  nodeConfig.P2P.ListenAddr = ":30313"
+  nodeConfig.IPCPath = "naive-sequencer.ipc"
+  nodeConfig.HTTPHost = nodeBaseConfig.Host
+  nodeConfig.HTTPPort = nodeBaseConfig.Port
   nodeConfig.HTTPCors = []string{"*"}
-  nodeConfig.HTTPModules = append(nodeConfig.HTTPModules, strings.Split(httpModules, ",")...)
+  log.Println("httpModules: ", nodeBaseConfig.Modules)
+  nodeConfig.HTTPModules = append(nodeConfig.HTTPModules, strings.Split(nodeBaseConfig.Modules, ",")...)
 
   log.Println("Node config: ", nodeConfig)
 
@@ -83,6 +136,8 @@ func NodeConfig(dataDir string, httpHost string, httpPort int, httpModules strin
 func EthConfig(address common.Address) *ethconfig.Config {
   //TODO: Learn more about eth config + default config
   config := ethconfig.Defaults
+  config.Miner.Etherbase = address
+  config.Miner.GasCeil = 300000000 // 10x default
   config.Ethash.NotifyFull = config.Miner.NotifyFull
 
   return &config

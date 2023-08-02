@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	l2config "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/config"
 	l2utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 )
 
@@ -34,21 +35,16 @@ type Batcher struct {
 }  
 
 type BatcherConfig struct {
-  L1NodeUrl string
-  L1ContractAddress common.Address
-  L1ChainId int
+  NodeConfig *l2config.NodeBaseConfig
   PosterAddress common.Address
+
   BatchSize int
   MaxBatchTimeMinutes int
-  L1BridgeAddress common.Address
-  L1TokenBridgeAddress common.Address
-  L2IPCPath string
-  ContractsPath string
 }
     
    
 func NewBatcher(l2Blockchain *core.BlockChain, batcherConfig *BatcherConfig) *Batcher {
-  l1Comms, err := l2utils.NewL1Comms(batcherConfig.L1NodeUrl, batcherConfig.L1ContractAddress, batcherConfig.L1BridgeAddress, batcherConfig.L1TokenBridgeAddress, big.NewInt(int64(batcherConfig.L1ChainId)), l2utils.L1TransactionConfig{
+  l1Comms, err := l2utils.NewL1Comms(batcherConfig.NodeConfig.L1URL, batcherConfig.NodeConfig.Contracts, big.NewInt(int64(batcherConfig.NodeConfig.L1ChainID)), l2utils.L1TransactionConfig{
     GasLimit: 3000000,
     GasPrice: big.NewInt(200),
   })
@@ -60,7 +56,7 @@ func NewBatcher(l2Blockchain *core.BlockChain, batcherConfig *BatcherConfig) *Ba
     BatcherConfig: batcherConfig,
     L1Comms: l1Comms,  
     L2Blockchain: l2Blockchain,
-    CurrL2BlockNumber:     l2Blockchain.CurrentBlock().Number.Uint64(),
+    CurrL2BlockNumber: l2Blockchain.CurrentBlock().Number.Uint64(),
     LastPostTime: time.Now(), //TODO: load from file? or change this logic
     TxBatch:      make([]*types.Transaction, 0),
     BatchId: 0, //TODO: load from l1?
@@ -149,7 +145,7 @@ func (batcher *Batcher) Start() error {
         batcher.TxBatch = append(batcher.TxBatch, tx)
 
         //TODO: To function
-        rpcIPC, err := rpc.DialIPC(context.Background(), batcher.BatcherConfig.L2IPCPath)
+        rpcIPC, err := rpc.DialIPC(context.Background(), batcher.BatcherConfig.NodeConfig.DataDir + "/naive-sequencer.ipc")
         if err != nil {
           log.Fatalf("Failed to dial ipc: %v", err)
           panic(err)
@@ -167,7 +163,7 @@ func (batcher *Batcher) Start() error {
         for _, receipt_log := range receipt_logs {
           //TODO: l2 bridge address hardcoded
           //TODO: To function
-         l2BridgeAddressFile := batcher.BatcherConfig.ContractsPath + "/l2-bridge-address.txt"
+         l2BridgeAddressFile := batcher.BatcherConfig.NodeConfig.Contracts + "/l2-bridge-address.txt"
          l2BridgeAddressBytes, err := ioutil.ReadFile(l2BridgeAddressFile)
          if err != nil {
            log.Fatalf("Failed to read l2 bridge address file: %v", err)
@@ -194,7 +190,7 @@ func (batcher *Batcher) Start() error {
               panic(err)
             }
 
-            currL1BridgeNonce, err := batcher.L1Comms.BridgeContract.GetEthWithdrawNonce(&bind.CallOpts{})
+            currL1BridgeNonce, err := batcher.L1Comms.L1Contracts.BridgeContract.GetEthWithdrawNonce(&bind.CallOpts{})
             if err != nil {
               log.Printf("Batcher got error: %v\n", err)
               panic(err)
@@ -214,7 +210,7 @@ func (batcher *Batcher) Start() error {
 
             //TODO: Check nonce
             //TODO: WHat happens if briding more than has / exists? & try and start state with 0 extra tokens / eth
-            tx, err := batcher.L1Comms.BridgeContract.WithdrawEth(transactOpts, addr, amount)
+            tx, err := batcher.L1Comms.L1Contracts.BridgeContract.WithdrawEth(transactOpts, addr, amount)
             if err != nil {
               log.Printf("Batcher got error: %v\n", err)
               panic(err)
@@ -226,7 +222,7 @@ func (batcher *Batcher) Start() error {
         receipt_logs = l2utils.ReceiptLogsWithEvent(receipt, crypto.Keccak256Hash([]byte("TokensWithdrawn(uint256,address,address,uint256)")).Bytes())
         log.Println("Got receipt logs:", len(receipt_logs))
         for _, receipt_log := range receipt_logs {
-         l2TokenBridgeAddressFile := batcher.BatcherConfig.ContractsPath + "/l2-token-bridge-address.txt"
+         l2TokenBridgeAddressFile := batcher.BatcherConfig.NodeConfig.Contracts + "/l2-token-bridge-address.txt"
          l2TokenBridgeAddressBytes, err := ioutil.ReadFile(l2TokenBridgeAddressFile)
          if err != nil {
            log.Fatalf("Failed to read l2 token bridge address file: %v", err)
@@ -248,7 +244,7 @@ func (batcher *Batcher) Start() error {
               panic(err)
             }
 
-            currL1TokenBridgeNonce, err := batcher.L1Comms.TokenBridgeContract.GetTokenWithdrawNonce(&bind.CallOpts{})
+            currL1TokenBridgeNonce, err := batcher.L1Comms.L1Contracts.TokenBridgeContract.GetTokenWithdrawNonce(&bind.CallOpts{})
             if err != nil {
               log.Printf("Batcher got error: %v\n", err)
               panic(err)
@@ -266,7 +262,7 @@ func (batcher *Batcher) Start() error {
               panic(err)
             }
 
-            tx, err := batcher.L1Comms.TokenBridgeContract.WithdrawTokens(transactOpts, token, from, amount)
+            tx, err := batcher.L1Comms.L1Contracts.TokenBridgeContract.WithdrawTokens(transactOpts, token, from, amount)
             if err != nil {
               log.Printf("Batcher got error: %v\n", err)
               panic(err)

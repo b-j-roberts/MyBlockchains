@@ -6,16 +6,19 @@ ENODE_IP="localhost"
 ENODE_PORT="30306"
 
 display_help() {
-  echo "Usage: connect-peers.sh [OPTION]..."
+  echo "Usage: $0 [option...] " >&2
+  echo "NOTE: Long form flags are not supported by this script, but are listed for reference."
   echo
   echo "    -h, --help        Display this help message."
-  echo "    -e, --enode       Enode of the peer to connect to. (Required or use enode-ipc)"
-  echo "    -P, --enode-host  Path to the peer's http rpc endpoint. (Required or use enode)"
-  echo "    -H, --host        Path to the host's http rpc endpint. (Required)"
+
+  echo "    -e, --enode       Enode of the peer to connect to. (Required or use peer-host and the script will get the enode for you)"
+  echo "    -P, --peer-host   Path to the peer's http rpc endpoint. (Required or use enode flag)"
   echo "    -i, --ip          IP address of the peer to connect to. (Default: localhost)"
   echo "    -p, --port        Port of the peer to connect to. (Default: 30306)"
+
+  echo "    -H, --host        Path to the host's http rpc endpoint. (Required)"
   echo
-  echo "Example: ./scripts/connect-peers.sh -P ~/l1-rpc-data/geth.ipc -H ~/l1-miner-data/geth.ipc"
+  echo "Example: ./scripts/connect-peers.sh -P http://localhost:8545 -H http://localhost:8548"
   exit 1
 }
 
@@ -25,6 +28,7 @@ while getopts ":he:i:p:H:P:" opt; do
       display_help
       ;;
     e | enode)
+      echo $opt
       ENODE=$OPTARG
       ;;
     i | ip)
@@ -33,10 +37,10 @@ while getopts ":he:i:p:H:P:" opt; do
     p | port)
       ENODE_PORT=$OPTARG
       ;;
-    H | host-ipc)
+    H | host)
       HOST=$OPTARG
       ;;
-    P | enode-ipc)
+    P | peer-host)
       ENODE_HOST=$OPTARG
       ENODE=$(geth attach --exec "admin.nodeInfo.enode" $ENODE_HOST | tr -d '"' | cut -d '@' -f 1 | cut -d '/' -f 3)
       echo "Enode: $ENODE"
@@ -53,12 +57,12 @@ while getopts ":he:i:p:H:P:" opt; do
 done
 
 if [[ -z "$ENODE" && -z "$ENODE_HOST" ]]; then
-  echo "Enode or Enode IPC is required."
+  echo "Enode or Peer Host is required."
   display_help
 fi
 
 if [ -z "$HOST" ]; then
-  echo "Host IPC is required."
+  echo "Host is required."
   display_help
 fi
 

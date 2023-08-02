@@ -9,19 +9,18 @@ import (
 	"os"
 	"time"
 
-	basicerc20 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicerc20"
-	basicerc721 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicerc721"
-	basicl2erc20 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicl2erc20"
-	basicl2erc721 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicl2erc721"
-	specialerc721 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/specialerc721"
-	speciall2erc721 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/speciall2erc721"
-	stableerc20 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/stableerc20"
-	stablel2erc20 "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/stablel2erc20"
+	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicerc20"
+	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicerc721"
+	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicl2erc20"
+	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/basicl2erc721"
+	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/specialerc721"
+	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/speciall2erc721"
+	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/stableerc20"
+	"github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/contracts/go/stablel2erc20"
+	l2config "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/config"
 	l2utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -181,83 +180,63 @@ type SmartContractMetricExporter struct {
   L1Comms *l2utils.L1Comms
   L2Comms *l2utils.L2Comms
 
-  ERC20Address common.Address
+  TokenAddresses l2utils.TokenAddresses
+
   ERC20Contract *basicerc20.Basicerc20
-
-  L2ERC20Address common.Address
   L2ERC20Contract *basicl2erc20.Basicl2erc20
-
-  StableERC20Address common.Address
   StableERC20Contract *stableerc20.Stableerc20
-
-  L2StableERC20Address common.Address
   L2StableERC20Contract *stablel2erc20.Stablel2erc20
-
-  ERC721Address common.Address
   ERC721Contract *basicerc721.Basicerc721
-
-  L2ERC721Address common.Address
   L2ERC721Contract *basicl2erc721.Basicl2erc721
-
-  SpecialERC721Address common.Address
   SpecialERC721Contract *specialerc721.Specialerc721
-
-  L2SpecialERC721Address common.Address
   L2SpecialERC721Contract *speciall2erc721.Speciall2erc721
 }
 
-func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms, l2Comms *l2utils.L2Comms, erc20Address common.Address, l2erc20Address common.Address, stableerc20Address common.Address, l2stableerc20Address common.Address, erc721Address common.Address, l2erc721Address common.Address, specialerc721Address common.Address, l2specialerc721Address common.Address) *SmartContractMetricExporter {
+func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms, l2Comms *l2utils.L2Comms, tokenAddresses l2utils.TokenAddresses) *SmartContractMetricExporter {
   smartContractMetricExporter := &SmartContractMetricExporter{
     L1Comms: l1Comms,
     L2Comms: l2Comms,
-    ERC20Address: erc20Address,
-    L2ERC20Address: l2erc20Address,
-    StableERC20Address: stableerc20Address,
-    L2StableERC20Address: l2stableerc20Address,
-    ERC721Address: erc721Address,
-    L2ERC721Address: l2erc721Address,
-    SpecialERC721Address: specialerc721Address,
-    L2SpecialERC721Address: l2specialerc721Address,
+    TokenAddresses: tokenAddresses,
   }
 
   var err error
-  smartContractMetricExporter.ERC20Contract, err = basicerc20.NewBasicerc20(smartContractMetricExporter.ERC20Address, smartContractMetricExporter.L1Comms.L1Client)
+  smartContractMetricExporter.ERC20Contract, err = basicerc20.NewBasicerc20(smartContractMetricExporter.TokenAddresses.Erc20Address, smartContractMetricExporter.L1Comms.L1Client)
   if err != nil {
     log.Fatal(err)
   }
 
   //TODO: Get l2erc20address from l2comms contract using allowedTokens
-  smartContractMetricExporter.L2ERC20Contract, err = basicl2erc20.NewBasicl2erc20(smartContractMetricExporter.L2ERC20Address, smartContractMetricExporter.L2Comms.L2Backend)
+  smartContractMetricExporter.L2ERC20Contract, err = basicl2erc20.NewBasicl2erc20(smartContractMetricExporter.TokenAddresses.L2Erc20Address, smartContractMetricExporter.L2Comms.L2Client)
   if err != nil {
     log.Fatal(err)
   }
 
-  smartContractMetricExporter.StableERC20Contract, err = stableerc20.NewStableerc20(smartContractMetricExporter.StableERC20Address, smartContractMetricExporter.L1Comms.L1Client)
+  smartContractMetricExporter.StableERC20Contract, err = stableerc20.NewStableerc20(smartContractMetricExporter.TokenAddresses.StableErc20Address, smartContractMetricExporter.L1Comms.L1Client)
   if err != nil {
     log.Fatal(err)
   }
 
-  smartContractMetricExporter.L2StableERC20Contract, err = stablel2erc20.NewStablel2erc20(smartContractMetricExporter.L2StableERC20Address, smartContractMetricExporter.L2Comms.L2Backend)
+  smartContractMetricExporter.L2StableERC20Contract, err = stablel2erc20.NewStablel2erc20(smartContractMetricExporter.TokenAddresses.L2StableErc20Address, smartContractMetricExporter.L2Comms.L2Client)
   if err != nil {
     log.Fatal(err)
   }
 
-  smartContractMetricExporter.ERC721Contract, err = basicerc721.NewBasicerc721(smartContractMetricExporter.ERC721Address, smartContractMetricExporter.L1Comms.L1Client)
+  smartContractMetricExporter.ERC721Contract, err = basicerc721.NewBasicerc721(smartContractMetricExporter.TokenAddresses.Erc721Address, smartContractMetricExporter.L1Comms.L1Client)
   if err != nil {
     log.Fatal(err)
   }
 
-  smartContractMetricExporter.L2ERC721Contract, err = basicl2erc721.NewBasicl2erc721(smartContractMetricExporter.L2ERC721Address, smartContractMetricExporter.L2Comms.L2Backend)
+  smartContractMetricExporter.L2ERC721Contract, err = basicl2erc721.NewBasicl2erc721(smartContractMetricExporter.TokenAddresses.L2Erc721Address, smartContractMetricExporter.L2Comms.L2Client)
   if err != nil {
     log.Fatal(err)
   }
 
-  smartContractMetricExporter.SpecialERC721Contract, err = specialerc721.NewSpecialerc721(smartContractMetricExporter.SpecialERC721Address, smartContractMetricExporter.L1Comms.L1Client)
+  smartContractMetricExporter.SpecialERC721Contract, err = specialerc721.NewSpecialerc721(smartContractMetricExporter.TokenAddresses.SpecialErc721Address, smartContractMetricExporter.L1Comms.L1Client)
   if err != nil {
     log.Fatal(err)
   }
 
-  smartContractMetricExporter.L2SpecialERC721Contract, err = speciall2erc721.NewSpeciall2erc721(smartContractMetricExporter.L2SpecialERC721Address, smartContractMetricExporter.L2Comms.L2Backend)
+  smartContractMetricExporter.L2SpecialERC721Contract, err = speciall2erc721.NewSpeciall2erc721(smartContractMetricExporter.TokenAddresses.L2SpecialErc721Address, smartContractMetricExporter.L2Comms.L2Client)
   if err != nil {
     log.Fatal(err)
   }
@@ -312,15 +291,15 @@ func (p *SmartContractMetricExporter) Start() error {
 
   go func() {
     for {
-      log.Println("Updating smart contract metrics from ", p.L1Comms.TxStorageContractAddress.String())
+      log.Println("Updating smart contract metrics from ", p.L1Comms.L1ContractAddressConfig.TxStorageContractAddress.String())
       // Update metric values
-      batchCount, err := p.L1Comms.TxStorageContract.GetBatchCount(nil)
+      batchCount, err := p.L1Comms.L1Contracts.TxStorageContract.GetBatchCount(nil)
       if err != nil {
         log.Fatalf("Failed to get batch count: %v", err)
       }
       BatchCount.Set(float64(batchCount.Int64()))
 
-      lastConfirmedBatch, err := p.L1Comms.TxStorageContract.GetLastConfirmedBatch(nil)
+      lastConfirmedBatch, err := p.L1Comms.L1Contracts.TxStorageContract.GetLastConfirmedBatch(nil)
       if err != nil {
         log.Fatalf("Failed to get last confirmed batch: %v", err)
       }
@@ -332,25 +311,25 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L1BlockHeight.Set(float64(l1BlockHeight))
 
-      latestBatchL1Block, err := p.L1Comms.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(batchCount.Int64() - 1)))
+      latestBatchL1Block, err := p.L1Comms.L1Contracts.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(batchCount.Int64() - 1)))
       if err != nil {
         log.Fatalf("Failed to get latest batch L1 block: %v", err)
       }
       LatestBatchL1Block.Set(float64(latestBatchL1Block.Int64()))
 
-      latestBatchProofL1Block, err := p.L1Comms.TxStorageContract.GetProofL1Block(nil, big.NewInt(int64(batchCount.Int64() - 1)))
+      latestBatchProofL1Block, err := p.L1Comms.L1Contracts.TxStorageContract.GetProofL1Block(nil, big.NewInt(int64(batchCount.Int64() - 1)))
       if err != nil {
         log.Fatalf("Failed to get latest batch proof L1 block: %v", err)
       }
       LatestBatchProofL1Block.Set(float64(latestBatchProofL1Block.Int64()))
 
-      latestConfirmedBatchL1Block, err := p.L1Comms.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(lastConfirmedBatch.Int64())))
+      latestConfirmedBatchL1Block, err := p.L1Comms.L1Contracts.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(lastConfirmedBatch.Int64())))
       if err != nil {
         log.Fatalf("Failed to get latest confirmed batch L1 block: %v", err)
       }
       LatestConfirmedBatchL1Block.Set(float64(latestConfirmedBatchL1Block.Int64()))
 
-      latestConfirmedBatchProofL1Block, err := p.L1Comms.TxStorageContract.GetProofL1Block(nil, big.NewInt(int64(lastConfirmedBatch.Int64())))
+      latestConfirmedBatchProofL1Block, err := p.L1Comms.L1Contracts.TxStorageContract.GetProofL1Block(nil, big.NewInt(int64(lastConfirmedBatch.Int64())))
       if err != nil {
         log.Fatalf("Failed to get latest confirmed batch proof L1 block: %v", err)
       }
@@ -358,38 +337,38 @@ func (p *SmartContractMetricExporter) Start() error {
       
 
 
-      bridgeBalance, err := p.L1Comms.BridgeContract.GetBridgeBalance(nil)
+      bridgeBalance, err := p.L1Comms.L1Contracts.BridgeContract.GetBridgeBalance(nil)
       if err != nil {
         log.Fatalf("Failed to get bridge balance: %v", err)
       }
       L1BridgeBalance.Set(float64(bridgeBalance.Int64()))
 
-      depositNonce, err := p.L1Comms.BridgeContract.GetEthDepositNonce(nil)
+      depositNonce, err := p.L1Comms.L1Contracts.BridgeContract.GetEthDepositNonce(nil)
       if err != nil {
         log.Fatalf("Failed to get deposit nonce: %v", err)
       }
       L1DepositNonce.Set(float64(depositNonce.Int64()))
 
-      withdrawalNonce, err := p.L1Comms.BridgeContract.GetEthWithdrawNonce(nil)
+      withdrawalNonce, err := p.L1Comms.L1Contracts.BridgeContract.GetEthWithdrawNonce(nil)
       if err != nil {
         log.Fatalf("Failed to get withdrawal nonce: %v", err)
       }
       L1WithdrawalNonce.Set(float64(withdrawalNonce.Int64()))
 
-      depositNonce, err = p.L2Comms.L2BridgeContract.GetEthDepositNonce(nil)
+      depositNonce, err = p.L2Comms.L2Contracts.L2BridgeContract.GetEthDepositNonce(nil)
       if err != nil {
         log.Fatalf("Failed to get deposit nonce: %v", err)
       }
       L2DepositNonce.Set(float64(depositNonce.Int64()))
 
-      withdrawalNonce, err = p.L2Comms.L2BridgeContract.GetEthWithdrawNonce(nil)
+      withdrawalNonce, err = p.L2Comms.L2Contracts.L2BridgeContract.GetEthWithdrawNonce(nil)
       if err != nil {
         log.Fatalf("Failed to get withdrawal nonce: %v", err)
       }
       L2WithdrawalNonce.Set(float64(withdrawalNonce.Int64()))
 
       // Burn balance is l2backend balance on l2 for 0x0 address
-      burnBalance, err := p.L2Comms.L2BridgeContract.GetBurntBalance(nil)
+      burnBalance, err := p.L2Comms.L2Contracts.L2BridgeContract.GetBurntBalance(nil)
       if err != nil {
         log.Fatalf("Failed to get burn balance: %v", err)
       }
@@ -410,8 +389,8 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L1BasicTokenSequencerBalance.Set(float64(basicTokenSequencerBalance.Int64()))
 
-      log.Println("Getting token balance for token bridge account ", p.L1Comms.TokenBridgeContractAddress)
-      basicTokenBalance, err := p.ERC20Contract.BalanceOf(nil, p.L1Comms.TokenBridgeContractAddress)
+      log.Println("Getting token balance for token bridge account ", p.L1Comms.L1ContractAddressConfig.TokenBridgeContractAddress)
+      basicTokenBalance, err := p.ERC20Contract.BalanceOf(nil, p.L1Comms.L1ContractAddressConfig.TokenBridgeContractAddress)
       if err != nil {
         log.Fatalf("Failed to get basic token balance: %v", err)
       }
@@ -430,20 +409,20 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L1StableTokenSequencerBalance.Set(float64(stableTokenSequencerBalance.Int64()))
 
-      log.Println("Getting token balance for token bridge account ", p.L1Comms.TokenBridgeContractAddress)
-      stableTokenBalance, err := p.StableERC20Contract.BalanceOf(nil, p.L1Comms.TokenBridgeContractAddress)
+      log.Println("Getting token balance for token bridge account ", p.L1Comms.L1ContractAddressConfig.TokenBridgeContractAddress)
+      stableTokenBalance, err := p.StableERC20Contract.BalanceOf(nil, p.L1Comms.L1ContractAddressConfig.TokenBridgeContractAddress)
       if err != nil {
         log.Fatalf("Failed to get stable token balance: %v", err)
       }
       L1StableTokenBridgeBalance.Set(float64(stableTokenBalance.Int64()))
 
-      basicTokenDepositNonce, err := p.L1Comms.TokenBridgeContract.GetTokenDepositNonce(nil)
+      basicTokenDepositNonce, err := p.L1Comms.L1Contracts.TokenBridgeContract.GetTokenDepositNonce(nil)
       if err != nil {
         log.Fatalf("Failed to get basic token deposit nonce: %v", err)
       }
       L1TokenDepositNonce.Set(float64(basicTokenDepositNonce.Int64()))
 
-      basicTokenWithdrawalNonce, err := p.L1Comms.TokenBridgeContract.GetTokenWithdrawNonce(nil)
+      basicTokenWithdrawalNonce, err := p.L1Comms.L1Contracts.TokenBridgeContract.GetTokenWithdrawNonce(nil)
       if err != nil {
         log.Fatalf("Failed to get basic token withdrawal nonce: %v", err)
       }
@@ -461,13 +440,13 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L2StableTokenSupply.Set(float64(l2StableTokenSupply.Int64()))
 
-      l2BasicTokenDepositNonce, err := p.L2Comms.L2TokenBridgeContract.GetTokenDepositNonce(nil)
+      l2BasicTokenDepositNonce, err := p.L2Comms.L2Contracts.L2TokenBridgeContract.GetTokenDepositNonce(nil)
       if err != nil {
         log.Fatalf("Failed to get basic token deposit nonce: %v", err)
       }
       L2TokenDepositNonce.Set(float64(l2BasicTokenDepositNonce.Int64()))
 
-      l2BasicTokenWithdrawalNonce, err := p.L2Comms.L2TokenBridgeContract.GetTokenWithdrawNonce(nil)
+      l2BasicTokenWithdrawalNonce, err := p.L2Comms.L2Contracts.L2TokenBridgeContract.GetTokenWithdrawNonce(nil)
       if err != nil {
         log.Fatalf("Failed to get basic token withdrawal nonce: %v", err)
       }
@@ -497,7 +476,7 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L1BasicNFTSequencerBalance.Set(float64(basicNFTokenSequencerBalance.Int64()))
 
-      basicNFTBridgeBalance, err := p.ERC721Contract.BalanceOf(nil, p.L1Comms.TokenBridgeContractAddress)
+      basicNFTBridgeBalance, err := p.ERC721Contract.BalanceOf(nil, p.L1Comms.L1ContractAddressConfig.TokenBridgeContractAddress)
       if err != nil {
         log.Fatalf("Failed to get basic NFT token bridge balance: %v", err)
       }
@@ -519,7 +498,7 @@ func (p *SmartContractMetricExporter) Start() error {
       }
       L2SpecialNFTSequencerBalance.Set(float64(specialNFTSequncerBalance.Int64()))
 
-      specialNFTBridgeBalance, err := p.SpecialERC721Contract.BalanceOf(nil, p.L1Comms.TokenBridgeContractAddress)
+      specialNFTBridgeBalance, err := p.SpecialERC721Contract.BalanceOf(nil, p.L1Comms.L1ContractAddressConfig.TokenBridgeContractAddress)
       if err != nil {
         log.Fatalf("Failed to get special NFT token bridge balance: %v", err)
       }
@@ -560,55 +539,46 @@ func (p *SmartContractMetricExporter) Start() error {
 func main() { os.Exit(mainImp()) }
 
 func mainImp() int {
+  osHomeDir, err := os.UserHomeDir()
   sequencer := flag.String("sequencer", "", "Sequencer address")
-  l1ContractAddress := flag.String("l1-tx-storage-address", "", "Main L1 contract address")
-  l1BridgeAddress := flag.String("l1-bridge-address", "", "Main L1 contract address")
-  l1TokenBridgeAddress := flag.String("l1-token-bridge-address", "", "Main L1 contract address")
-  l2TokenBridgeAddress := flag.String("l2-token-bridge-address", "", "Main L1 contract address")
-  l1Url := flag.String("l1-url", "http://localhost:8545", "L1 URL")
-  l1ChainId := flag.Int("l1-chainid", 505, "L1 chain ID")
-  l2ChainId := flag.Int("l2-chainid", 515, "L1 chain ID")
-  erc20Address := flag.String("erc20-address", "", "ERC20 address")
-  l2erc20Address := flag.String("l2-erc20-address", "", "ERC20 address on L2")
-  stableERC20Address := flag.String("stable-erc20-address", "", "Stable ERC20 address")
-  l2StableERC20Address := flag.String("l2-stable-erc20-address", "", "Stable ERC20 address on L2")
-  erc721Address := flag.String("erc721-address", "", "ERC721 address")
-  l2erc721Address := flag.String("l2-erc721-address", "", "ERC721 address on L2")
-  specialERC721Address := flag.String("special-erc721-address", "", "Special ERC721 address")
-  l2specialERC721Address := flag.String("l2-special-erc721-address", "", "Special ERC721 address on L2")
-  l2BridgeAddress := flag.String("l2-bridge-address", "", "Main L2 contract address")
-  l2IPCPath := flag.String("l2-ipc-path", "/home/brandon/naive-sequencer-data/naive-sequencer.ipc", "L2 IPC path")
+  configFile := flag.String("config", osHomeDir + "/naive-sequencer-data/sequencer.config.json", "Config file")
   flag.Parse()
 
-  log.Println("Got args:", "sequencer", *sequencer, "l1ContractAddress", *l1ContractAddress, "l1BridgeAddress", *l1BridgeAddress, "l1TokenBridgeAddress", *l1TokenBridgeAddress, "l2TokenBridgeAddress", *l2TokenBridgeAddress, "l1Url", *l1Url, "l1ChainId", *l1ChainId, "l2ChainId", *l2ChainId, "erc20Address", *erc20Address, "l2erc20Address", *l2erc20Address, "stableERC20Address", *stableERC20Address, "l2StableERC20Address", *l2StableERC20Address, "erc721Address", *erc721Address, "l2erc721Address", *l2erc721Address, "specialERC721Address", *specialERC721Address, "l2specialERC721Address", *l2specialERC721Address, "l2BridgeAddress", *l2BridgeAddress, "l2IPCPath", *l2IPCPath)
+  config, err := l2config.LoadNodeBaseConfig(*configFile)
+  if err != nil {
+    log.Fatalf("Failed to load config: %v", err)
+    return 1
+  }
+
+  tokenAddresses, err := l2utils.LoadTokenAddresses(config.Contracts)
+  if err != nil {
+    log.Fatalf("Failed to load token addresses: %v", err)
+    return 1
+  }
 
   if *sequencer == "" {
     log.Fatalf("Must provide sequencer address")
+    return 1
   }
   l2utils.SetSequencer(common.HexToAddress(*sequencer))
-  l1Comms, err := l2utils.NewL1Comms(*l1Url , common.HexToAddress(*l1ContractAddress), common.HexToAddress(*l1BridgeAddress), common.HexToAddress(*l1TokenBridgeAddress), big.NewInt(int64(*l1ChainId)), l2utils.L1TransactionConfig{
+
+  l1Comms, err := l2utils.NewL1Comms(config.L1URL, config.Contracts, big.NewInt(int64(config.L1ChainID)), l2utils.L1TransactionConfig{
     GasLimit: 3000000,
     GasPrice: big.NewInt(200),
   })
   if err != nil {
     log.Fatalf("Failed to create L1 comms: %v", err)
+    return 1
   }
 
-  rpcIPC, err := rpc.DialIPC(context.Background(), *l2IPCPath)
-  if err != nil {
-    log.Fatalf("Failed to dial ipc: %v", err)
-  }
-
-  backend := ethclient.NewClient(rpcIPC)
-
-  l2Comms, err := l2utils.NewL2Comms(common.HexToAddress(*l2BridgeAddress), common.HexToAddress(*l2TokenBridgeAddress), big.NewInt(int64(*l2ChainId)), backend, l2utils.GetDefaultL2TransactionConfig())
+  l2Comms, err := l2utils.NewL2Comms(config.DataDir + "/naive-sequencer.ipc", config.Contracts, big.NewInt(int64(config.L2ChainID)), l2utils.GetDefaultL2TransactionConfig())
   if err != nil {
     log.Fatalf("Failed to create L2 comms: %v", err)
   }
 
   SetupMetrics()
 
-  smartContractMetricExporter := NewSmartContractMetricExporter(l1Comms, l2Comms, common.HexToAddress(*erc20Address), common.HexToAddress(*l2erc20Address), common.HexToAddress(*stableERC20Address), common.HexToAddress(*l2StableERC20Address), common.HexToAddress(*erc721Address), common.HexToAddress(*l2erc721Address), common.HexToAddress(*specialERC721Address), common.HexToAddress(*l2specialERC721Address))
+  smartContractMetricExporter := NewSmartContractMetricExporter(l1Comms, l2Comms, tokenAddresses)
 
   fatalErrChan := make(chan error, 10)
   err = smartContractMetricExporter.Start()

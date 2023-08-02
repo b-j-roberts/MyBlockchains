@@ -7,11 +7,13 @@ PORT="8545"
 
 display_help() {
     echo "Usage: get-latest.sh [Options]... " >&2
+    echo "NOTE: Long form flags are not supported, but listed for reference" >&2
     echo
     echo "   -h, --help                 show help"
     echo "   -H, --host                 host (default: localhost)"
     echo "   -p, --port                 port (default: 8545)"
     echo
+    echo "Example: $0"
     exit 1
 }
 

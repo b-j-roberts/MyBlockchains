@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"math/big"
+	"os"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -12,8 +13,16 @@ import (
 )
 
 func CreateTransactOpts(account accounts.Account, chainID *big.Int) (*bind.TransactOpts, error) {
-  keystore := keystore.NewKeyStore(addressKeyStoreDirMap[account.Address], keystore.StandardScryptN, keystore.StandardScryptP)
-  keystore.Unlock(account, "password") //TODO: Hardcoded password
+  // Create a temporary keystore
+  osHomeDir := os.Getenv("HOME")
+  // Create transactor directory if it doesn't exist
+  if _, err := os.Stat(osHomeDir + "/.transactor"); os.IsNotExist(err) {
+    os.Mkdir(osHomeDir + "/.transactor", 0700)
+  }
+
+  keystore := keystore.NewKeyStore(osHomeDir + "/.transactor", keystore.StandardScryptN, keystore.StandardScryptP)
+  // Read password from environment variable
+  keystore.Unlock(account, os.Getenv("ACCOUNT_PASS"))
   return bind.NewKeyStoreTransactorWithChainID(keystore, account, chainID)
 }
 

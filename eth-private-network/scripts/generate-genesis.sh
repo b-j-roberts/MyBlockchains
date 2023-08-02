@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# This script generates a genesis.json file for a Clique PoA network.
+# This script generates a genesis.json file for a Clique PoA network w/ one PoA agent ( 1st address ).
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 WORK_DIR=$SCRIPT_DIR/..
@@ -12,20 +12,24 @@ gasLimit=300000000 # 300M gas per block ( ~10x mainnet )
 output=${WORK_DIR}/genesis.json
 
 display_help() {
-  echo "Usage: generate-genesis.sh [options...]"
+  echo "Usage: $0 [options...]" >&2
+  echo "NOTE: Long form flags are not supported, but they are listed for reference"
+  echo
   echo "Arguments:"
-  echo "  -h, --help: Display this help message"
+  echo
+  echo "  -h, --help               Show this help message and exit"
 
-  echo "  -c, --chain-id: The chain ID to use for the chain"
-  echo "  -p, --period: The period to use for the chain (# of seconds between blocks)"
-  echo "  -g, --gas-limit: The gas limit to use for the chain"
+  echo "  -c, --chain-id           The chain ID for the new private eth network (default: 505)"
+  echo "  -p, --period             The period - ie # of seconds per block - for the new private eth network (default: 1)"
+  echo "  -g, --gas-limit          The gas - ie most gas per block  (default: 300000000)"
 
-  echo "  -a, --addrs: The addresses to pre-fund with ether"
-  echo "  -b, --balances: The balances to pre-fund the addresses with"
+  echo "  -a, --addrs              A comma separated list of addresses to pre-fund"
+  echo "  -b, --balances           A comma separated list of balances to pre-fund ( must match the number & order of addresses )"
 
-  echo "  -o, --output: The output file to write the genesis.json to"
+  echo "  -o, --output             The output file for the genesis.json file (default: ${WORK_DIR}/genesis.json)"
 
-  echo "Example: ./scripts/generate-genesis.sh -a 0x00000000001 -b 100000000000000"
+  echo
+  echo "Example: $0 -a 0x00000000001 -b 100000000000000"
 }
 
 # Parse the command line arguments

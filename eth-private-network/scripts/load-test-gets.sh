@@ -4,24 +4,25 @@
 #
 # This script will load test basic get rpcs on a geth node
 
-HOST="localhost"
-PORT="8545"
+RPC=http://localhost:8545
 
 TXN_COUNT=100000
 THREAD_COUNT=1500
 
 display_help() {
-  echo "Usage: load-test-gets.sh [Options]"
+  echo "Usage: $0 [option...] " >&2
+  echo "NOTE: Long form flags are not supported, but listed for reference" >&2
+  echo "WARNING: You may need to increase the number of open files allowed using ulimit -n 10000" >&2
   echo
   echo "-h, --help            Display help"
-  echo "-t, --txn-count       Number of transactions to send"
-  echo "-c, --thread-count    Number of threads to use"
-  echo "-H, --host            Host to connect to"
-  echo "-p, --port            Port to connect to"
+  echo "-t, --txn-count       Number of transactions to send (default: 100000)"
+  echo "-c, --thread-count    Number of threads to use (default: 1500)"
+  echo "-r, --rpc             RPC endpoint to call (default: http://localhost:8545)"
   echo
+  echo "Example: $0 -t 100000 -c 1500 -r http://localhost:8545"
 }
 
-while getopts ":ht:c:H:p:" opt; do
+while getopts ":ht:c:r:" opt; do
   case $opt in
     h|help)
       display_help
@@ -33,11 +34,8 @@ while getopts ":ht:c:H:p:" opt; do
     c|thread-count)
       THREAD_COUNT=$OPTARG
       ;;
-    H|host)
-      HOST=$OPTARG
-      ;;
-    p|port)
-      PORT=$OPTARG
+    r|rpc)
+      RPC=$OPTARG
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -52,7 +50,7 @@ while getopts ":ht:c:H:p:" opt; do
   esac
 done
 
-FROM=$(geth --exec "web3.personal.listAccounts[0]" attach http://$HOST:$PORT)
+FROM=$(geth --exec "web3.personal.listAccounts[0]" attach $RPC)
 JSOM='
 {
     "jsonrpc": "2.0",
@@ -69,6 +67,5 @@ rm -f $TMP_SEND_GET
 touch $TMP_SEND_GET
 echo $JSOM > $TMP_SEND_GET
 
-ab -c $THREAD_COUNT -n $TXN_COUNT -p $TMP_SEND_GET -T application/json http://$HOST:$PORT/
-
+ab -c $THREAD_COUNT -n $TXN_COUNT -p $TMP_SEND_GET -T application/json $RPC
 rm -f $TMP_SEND_GET

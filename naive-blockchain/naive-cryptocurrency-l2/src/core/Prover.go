@@ -88,7 +88,7 @@ func unpackCalldata(tx *types.Transaction) (id *big.Int, root [32]byte, batchDat
 func (p *Prover) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [32]byte) {
   log.Println("Getting Batch Proof Params...")
 
-  batchL1Block, err := p.L1Comms.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(batchNumber)))
+  batchL1Block, err := p.L1Comms.L1Contracts.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get batch L1 block: %v", err)
     return nil, [32]byte{}, [32]byte{}
@@ -111,8 +111,8 @@ func (p *Prover) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [32]
 
     receipt_logs := l2utils.ReceiptLogsWithEvent(receipt, []byte("BatchStored(uint256, uint256, byte32)"))
     for _, receipt_log := range receipt_logs {
-      if common.HexToAddress(receipt_log.Address.Hex()) == p.L1Comms.TxStorageContractAddress {
-        batchStored, err := p.L1Comms.TxStorageContract.ParseBatchStored(*receipt_log)
+      if common.HexToAddress(receipt_log.Address.Hex()) == p.L1Comms.L1ContractAddressConfig.TxStorageContractAddress {
+        batchStored, err := p.L1Comms.L1Contracts.TxStorageContract.ParseBatchStored(*receipt_log)
         if err != nil {
           log.Fatalf("Failed to unpack log: %v", err)
           return nil, [32]byte{}, [32]byte{}
@@ -132,13 +132,13 @@ func (p *Prover) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [32]
     }
   }
 
-  batchPreStateRoot, err := p.L1Comms.TxStorageContract.GetBatchPreStateRoot(nil, big.NewInt(int64(batchNumber)))
+  batchPreStateRoot, err := p.L1Comms.L1Contracts.TxStorageContract.GetBatchPreStateRoot(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get batch pre state root: %v", err)
     return nil, [32]byte{}, [32]byte{}
   }
 
-  batchPostStateRoot, err := p.L1Comms.TxStorageContract.GetBatchPostStateRoot(nil, big.NewInt(int64(batchNumber)))
+  batchPostStateRoot, err := p.L1Comms.L1Contracts.TxStorageContract.GetBatchPostStateRoot(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get batch post state root: %v", err)
     return nil, [32]byte{}, [32]byte{}
@@ -200,7 +200,7 @@ func (p *Prover) Start() error {
 
   go func() {
   for {
-    lastBatchConfirmed, err := p.L1Comms.TxStorageContract.GetLastConfirmedBatch(nil)
+    lastBatchConfirmed, err := p.L1Comms.L1Contracts.TxStorageContract.GetLastConfirmedBatch(nil)
     if err != nil {
       log.Fatalf("Failed to get last confirmed batch: %v", err)
     }
@@ -225,7 +225,7 @@ func (p *Prover) Start() error {
       continue
     }
 
-    batchCount, err := p.L1Comms.TxStorageContract.GetBatchCount(nil)
+    batchCount, err := p.L1Comms.L1Contracts.TxStorageContract.GetBatchCount(nil)
     if err != nil {
       log.Fatalf("Failed to get batch count: %v", err)
     }
@@ -265,7 +265,7 @@ func (p *Prover) Start() error {
 func (p *Prover) VerifyBatchValid(batchNumber uint64) error {
   log.Println("Verifying Proof submitted on L1...")
 
-  isConfirmed, err := p.L1Comms.TxStorageContract.GetBatchConfirmed(nil, big.NewInt(int64(batchNumber)))
+  isConfirmed, err := p.L1Comms.L1Contracts.TxStorageContract.GetBatchConfirmed(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get batch confirmed: %v", err)
     return err
@@ -276,7 +276,7 @@ func (p *Prover) VerifyBatchValid(batchNumber uint64) error {
     p.TotalProofsVerifiedOnchain += 1
     TotalProofsVerified.Add(1)
 
-    reward, err := p.L1Comms.TxStorageContract.GetReward(nil, big.NewInt(int64(batchNumber)))
+    reward, err := p.L1Comms.L1Contracts.TxStorageContract.GetReward(nil, big.NewInt(int64(batchNumber)))
     if err != nil {
       log.Fatalf("Failed to get reward: %v", err)
       return err

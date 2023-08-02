@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -10,11 +11,15 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/txpool"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum/trie"
+
+	l2config "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/config"
 )
 
 type Node struct {
@@ -23,11 +28,85 @@ type Node struct {
   L2Blockchain *core.BlockChain
   Engine  consensus.Engine
   Eth     *eth.Ethereum
+  Config  *l2config.NodeBaseConfig
 }
 
-func NewNode(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockChain, engine consensus.Engine, config *ethconfig.Config, l1BridgeConfig *eth.L1BridgeConfig) (*Node, error) {
-  txPool := txpool.NewTxPool(config.TxPool, l2Blockchain.Config(), l2Blockchain)
-  naive_eth := eth.NewNaiveEthereum(l2Blockchain, chainDb, node, config, txPool, engine, l1BridgeConfig)
+func NewNode(rpcConfigFile string) (*Node, error) {
+  nodeBaseConfig, err := l2config.LoadNodeBaseConfig(rpcConfigFile)
+  if err != nil {
+    return nil, fmt.Errorf("failed to load node base config: %v", err)
+  }
+
+  // Setup Geth node/node
+  node, err := node.New(l2config.NodeConfig(nodeBaseConfig))
+  if err != nil {
+    return nil, fmt.Errorf("failed to create node: %v", err)
+  }
+
+  // Add Keystore to backend for unlocking accounts later on
+  am := node.AccountManager()
+  am.AddBackend(keystore.NewKeyStore(node.KeyStoreDir(), keystore.StandardScryptN, keystore.StandardScryptP))
+  backends := am.Backends(keystore.KeyStoreType)
+  if len(backends) == 0 {
+    return nil, fmt.Errorf("no key store backends found")
+  }
+  ks := backends[0].(*keystore.KeyStore)
+
+  if len(ks.Accounts()) == 0 {
+    return nil, fmt.Errorf("no accounts found in key store")
+  }
+  address := ks.Accounts()[0].Address//TODO: Is this just posterAddress?
+
+  // Setup Database
+  //TODO: chainDb more research on args
+  // Handles, Persistent Chain Dir, & Ancient from nitro/cmd/conf/database.go
+  // Caching from arbnode/execution/blockchain.go DatabaseCache
+  // Namespace is prefix for metrics
+  // Open rawdb from geth/core with ancients freezer & configs from arbitrum chainDb ( Disk based db )
+  chainDb, err := node.OpenDatabaseWithFreezer("l2-chain", 2048, 512, "", "naive-l2/chaindb", false)
+  if err != nil {
+    return nil, fmt.Errorf("failed to open chain database: %v", err)
+  }
+
+  // Setup Genesis
+  file, err := os.Open(nodeBaseConfig.Genesis)
+  if err != nil {
+    return nil, fmt.Errorf("failed to open genesis file: %v", err)
+  }
+  defer file.Close()
+
+  genesis := new(core.Genesis)
+  if err := json.NewDecoder(file).Decode(genesis); err != nil {
+    return nil, fmt.Errorf("invalid genesis file: %v", err)
+  }
+  trieDb := trie.NewDatabaseWithConfig(chainDb, &trie.Config{Preimages: true})
+  _, _, err = core.SetupGenesisBlock(chainDb, trieDb, genesis)
+  if err != nil {
+    return nil, fmt.Errorf("failed to setup genesis block: %v", err)
+  }
+
+  // Setup Consensus Engine
+  ethConfig := l2config.EthConfig(address)
+  cliqueConfig, err := core.LoadCliqueConfig(chainDb, genesis)
+  cliqueConfig.ContractsPath = nodeBaseConfig.Contracts
+  if err != nil {
+    return nil, fmt.Errorf("failed to load clique config: %v", err)
+  }
+
+  engine := ethconfig.CreateConsensusEngine(node, &ethConfig.Ethash, cliqueConfig, ethConfig.Miner.Notify, ethConfig.Miner.Noverify, chainDb)
+
+  // Setup L2 Blockchain
+  //TODO: l2blockchain more research on args
+  var overrides core.ChainOverrides
+  vmConfig := vm.Config{EnablePreimageRecording: false}
+  txLookupLimit := uint64(31536000) // 1 year at 1 block per second
+  l2Blockchain, err := core.NewBlockChain(chainDb, l2config.DefaultCacheConfigFor(node, false), genesis, &overrides, engine, vmConfig, l2config.ShouldPreserveFalse, &txLookupLimit)
+  if err != nil {
+    return nil, fmt.Errorf("failed to create L2 blockchain: %v", err)
+  }
+
+  txPool := txpool.NewTxPool(ethConfig.TxPool, l2Blockchain.Config(), l2Blockchain)
+  naive_eth := eth.NewNaiveEthereum(l2Blockchain, chainDb, node, ethConfig, txPool, engine)
   //TODO: Learn more about APIs & which to enable/disable based on public / ...?
   apis := eth.GetNaiveEthAPIs(naive_eth)
   apis = append(apis, engine.APIs(l2Blockchain)...)
@@ -54,6 +133,7 @@ func NewNode(node *node.Node, chainDb ethdb.Database, l2Blockchain *core.BlockCh
     L2Blockchain: l2Blockchain,
     Engine:  engine,
     Eth:     naive_eth,
+    Config:  nodeBaseConfig,
   }, nil
 }
 

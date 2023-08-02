@@ -4,29 +4,24 @@
 #
 # This script is used to load test the transaction throughput of a geth node.
 
-HOST="localhost"                                           
-PORT="8545"                                                
+RPC="http://localhost:8545"
                                                            
 display_help() {
   echo "Usage: send-transaction.sh [option...]"
   echo
   echo "-h, --help            Display help"
-  echo "-H, --host            Host to connect to"
-  echo "-p, --port            Port to connect to"
+  echo "-r, --rpc             RPC endpoint (default: http://localhost:8545)"
   echo
 }
 
-while getopts ":ht:c:H:p:" opt; do
+while getopts ":ht:c:r:" opt; do
   case $opt in
     h|help)
       display_help
       exit 0
       ;;
-    H|host)
-      HOST=$OPTARG
-      ;;
-    p|port)
-      PORT=$OPTARG
+    r|rpc)
+      RPC=$OPTARG
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -42,9 +37,9 @@ while getopts ":ht:c:H:p:" opt; do
 done
 
 # Unlock the account
-geth --exec "web3.personal.unlockAccount(web3.personal.listAccounts[0], \"password\", 10000)" attach http://$HOST:$PORT
+geth --exec "web3.personal.unlockAccount(web3.personal.listAccounts[0], \"password\", 10000)" attach $RPC
 
-FROM=$(geth --exec "web3.personal.listAccounts[0]" attach http://$HOST:$PORT)
+FROM=$(geth --exec "web3.personal.listAccounts[0]" attach $RPC)
 
 JSOM='
 {
@@ -67,6 +62,6 @@ rm -f $TMP_SEND_TX
 touch $TMP_SEND_TX
 echo $JSOM > $TMP_SEND_TX
 
-curl -H "Content-Type: application/json" -X POST --data @$TMP_SEND_TX http://$HOST:$PORT/
+curl -H "Content-Type: application/json" -X POST --data @$TMP_SEND_TX $RPC
 
 rm -f $TMP_SEND_TX

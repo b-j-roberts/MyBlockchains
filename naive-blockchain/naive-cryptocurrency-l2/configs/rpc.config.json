@@ -1,0 +1,16 @@
+{
+  "data-dir": "/home/brandon/naive-rpc-data/",
+  "genesis": "/home/brandon/naive-rpc-data/genesis.json",
+  "contracts": "/home/brandon/naive-rpc-data/contracts/",
+  "l2ChainId": 515,
+
+  "host": "localhost",
+  "port": 5056,
+  "modules": "eth,net,web3,admin,personal,debug,txpool",
+
+  "metrics": {
+    "enabled": true,
+    "host": "localhost",
+    "port": 6161
+  }
+}

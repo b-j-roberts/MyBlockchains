@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	l2config "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/config"
 	l2utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -60,7 +61,7 @@ func unpackProofCalldata(tx *types.Transaction) (id *big.Int, proof []byte, err 
 func (v *Verifier) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [32]byte) {
   log.Println("Getting Batch Proof Params...")
 
-  batchL1Block, err := v.L1Comms.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(batchNumber)))
+  batchL1Block, err := v.L1Comms.L1Contracts.TxStorageContract.GetBatchL1Block(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get batch L1 block: %v", err)
     return nil, [32]byte{}, [32]byte{}
@@ -84,8 +85,8 @@ func (v *Verifier) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [3
     receipt_logs := l2utils.ReceiptLogsWithEvent(receipt, []byte("BatchStored(uint256, uint256, byte32)"))
     for _, receipt_log := range receipt_logs {
       eventSignature := []byte("BatchStored(uint256, uint256, byte32)")
-      if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) && common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.TxStorageContractAddress {
-        batchStored, err := v.L1Comms.TxStorageContract.ParseBatchStored(*receipt_log)
+      if bytes.Equal(receipt_log.Topics[0].Bytes(), eventSignature) && common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.L1ContractAddressConfig.TxStorageContractAddress {
+        batchStored, err := v.L1Comms.L1Contracts.TxStorageContract.ParseBatchStored(*receipt_log)
         if err != nil {
           log.Fatalf("Failed to unpack log: %v", err)
           return nil, [32]byte{}, [32]byte{}
@@ -106,13 +107,13 @@ func (v *Verifier) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [3
   }
   
 
-  batchPreStateRoot, err := v.L1Comms.TxStorageContract.GetBatchPreStateRoot(nil, big.NewInt(int64(batchNumber)))
+  batchPreStateRoot, err := v.L1Comms.L1Contracts.TxStorageContract.GetBatchPreStateRoot(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get batch pre state root: %v", err)
     return nil, [32]byte{}, [32]byte{}
   }
 
-  batchPostStateRoot, err := v.L1Comms.TxStorageContract.GetBatchPostStateRoot(nil, big.NewInt(int64(batchNumber)))
+  batchPostStateRoot, err := v.L1Comms.L1Contracts.TxStorageContract.GetBatchPostStateRoot(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get batch post state root: %v", err)
     return nil, [32]byte{}, [32]byte{}
@@ -127,7 +128,7 @@ func (v *Verifier) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [3
 func (v *Verifier) GetProof(batchNumber uint64) []byte {
   log.Println("Getting Proof...")
 
-  proofL1Block, err := v.L1Comms.TxStorageContract.GetProofL1Block(nil, big.NewInt(int64(batchNumber)))
+  proofL1Block, err := v.L1Comms.L1Contracts.TxStorageContract.GetProofL1Block(nil, big.NewInt(int64(batchNumber)))
   if err != nil {
     log.Fatalf("Failed to get proof: %v", err)
     return nil
@@ -148,8 +149,8 @@ func (v *Verifier) GetProof(batchNumber uint64) []byte {
 
     receipt_logs := l2utils.ReceiptLogsWithEvent(receipt, []byte("BatchConfirmed(uint256, uint256, byte32)"))
     for _, receipt_log := range receipt_logs {
-      if common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.TxStorageContractAddress {
-        batchConfirmed, err := v.L1Comms.TxStorageContract.ParseBatchConfirmed(*receipt_log)
+      if common.HexToAddress(receipt_log.Address.Hex()) == v.L1Comms.L1ContractAddressConfig.TxStorageContractAddress {
+        batchConfirmed, err := v.L1Comms.L1Contracts.TxStorageContract.ParseBatchConfirmed(*receipt_log)
         if err != nil {
           log.Fatalf("Failed to unpack log: %v", err)
           return nil
@@ -197,18 +198,17 @@ func (v *Verifier) CheckProof(batchNumber uint64) error {
 func main() { os.Exit(mainImp()) }
 
 func mainImp() int {
-  l1ContractAddressFile := flag.String("l1-contract-address-file", "", "Path to file containing L1 contract address")
-  l1Url := flag.String("l1-url", "http://localhost:8545", "L1 URL")
-  l1ChainId := flag.Uint64("l1-chainid", 505, "L1 chain ID")
+  osHomeDir, err := os.UserHomeDir()
+  configFile := flag.String("config", osHomeDir + "/naive-sequencer-data/sequencer.config.json", "Path to config file")
   batchId := flag.Uint64("batch-id", 0, "Batch ID to verify")
   flag.Parse()
 
-  l1ContractAddress, err := l2utils.AddressFromFile(*l1ContractAddressFile)
+  config, err := l2config.LoadNodeBaseConfig(*configFile)
   if err != nil {
-    log.Fatalf("Failed to read address from file: %v", err)
+    log.Fatalf("Failed to load config: %v", err)
   }
 
-  l1Comms, err := l2utils.NewL1Comms(*l1Url , l1ContractAddress, common.HexToAddress("0x0"), common.HexToAddress("0x0"), big.NewInt(int64(*l1ChainId)), l2utils.L1TransactionConfig{
+  l1Comms, err := l2utils.NewL1Comms(config.L1URL, config.Contracts, big.NewInt(int64(config.L1ChainID)), l2utils.L1TransactionConfig{
     GasLimit: 3000000,
     GasPrice: big.NewInt(200),
   })

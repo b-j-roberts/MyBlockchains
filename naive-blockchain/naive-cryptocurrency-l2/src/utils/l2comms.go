@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/big"
@@ -11,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type L2TransactionConfig struct {
@@ -18,18 +20,56 @@ type L2TransactionConfig struct {
   GasPrice *big.Int
 }
 
-type L2Comms struct {
-  // L2 Bridge
-  L2BridgeContract *l2bridge.L2bridge
+type L2ContractAddressConfig struct {
   BridgeContractAddress common.Address
-
-  // L2 Token Bridge
-  L2TokenBridgeContract *l2tokenbridge.L2tokenbridge
   TokenBridgeContractAddress common.Address
+}
 
-  L2Backend *ethclient.Client
+type L2Contracts struct {
+  L2BridgeContract *l2bridge.L2bridge
+  L2TokenBridgeContract *l2tokenbridge.L2tokenbridge
+}
+
+func CreateL2ContractAddressConfig(contractsAddressDir string) L2ContractAddressConfig {
+  bridgeContractAddress, err := ReadContractAddressFromFile(contractsAddressDir + "/l2-bridge-address.txt")
+  if err != nil {
+    log.Fatal("CreateL2ContractAddressConfig ReadContractAddressFromFile error:", err)
+  }
+
+  tokenBridgeContractAddress, err := ReadContractAddressFromFile(contractsAddressDir + "/l2-token-bridge-address.txt")
+  if err != nil {
+    log.Fatal("CreateL2ContractAddressConfig ReadContractAddressFromFile error:", err)
+  }
+
+  return L2ContractAddressConfig{
+    BridgeContractAddress: bridgeContractAddress,
+    TokenBridgeContractAddress: tokenBridgeContractAddress,
+  }
+}
+
+func CreateL2Contracts(client *ethclient.Client, l2ContractAddressConfig L2ContractAddressConfig) L2Contracts {
+  l2BridgeContract, err := l2bridge.NewL2bridge(l2ContractAddressConfig.BridgeContractAddress, client)
+  if err != nil {
+    log.Fatal("CreateL2Contracts NewL2bridge error:", err)
+  }
+
+  l2TokenBridgeContract, err := l2tokenbridge.NewL2tokenbridge(l2ContractAddressConfig.TokenBridgeContractAddress, client)
+  if err != nil {
+    log.Fatal("CreateL2Contracts NewL2tokenbridge error:", err)
+  }
+
+  return L2Contracts{
+    L2BridgeContract: l2BridgeContract,
+    L2TokenBridgeContract: l2TokenBridgeContract,
+  }
+}
+
+type L2Comms struct {
+  L2Client *ethclient.Client
   L2ChainId *big.Int
   L2TransactionConfig L2TransactionConfig
+  L2ContractAddressConfig  L2ContractAddressConfig
+  L2Contracts L2Contracts
 }
 
 func GetDefaultL2TransactionConfig() L2TransactionConfig {
@@ -39,25 +79,21 @@ func GetDefaultL2TransactionConfig() L2TransactionConfig {
   }
 }
 
-func NewL2Comms(bridgeContractAddress common.Address, tokenBridgeContractAddress common.Address, l2ChainId *big.Int, l2Backend *ethclient.Client, l2TransactionConfig L2TransactionConfig) (*L2Comms, error) {
+func NewL2Comms(ipcFile string, contractsAddressDir string, l2ChainId *big.Int, l2TransactionConfig L2TransactionConfig) (*L2Comms, error) {
+  rawIPC, err := rpc.DialIPC(context.Background(), ipcFile)
+  if err != nil {
+    return nil, err
+  }
+
+  client := ethclient.NewClient(rawIPC)
+
   l2Comms := &L2Comms{
-    BridgeContractAddress: bridgeContractAddress,
-    TokenBridgeContractAddress: tokenBridgeContractAddress,
-    L2Backend: l2Backend,
+    L2Client: client,
     L2ChainId: l2ChainId,
     L2TransactionConfig: l2TransactionConfig,
+    L2ContractAddressConfig: CreateL2ContractAddressConfig(contractsAddressDir),
   }
-
-  var err error
-  l2Comms.L2BridgeContract, err = l2bridge.NewL2bridge(l2Comms.BridgeContractAddress, l2Comms.L2Backend)
-  if err != nil {
-    return nil, err
-  }
-
-  l2Comms.L2TokenBridgeContract, err = l2tokenbridge.NewL2tokenbridge(l2Comms.TokenBridgeContractAddress, l2Comms.L2Backend)
-  if err != nil {
-    return nil, err
-  }
+  l2Comms.L2Contracts = CreateL2Contracts(l2Comms.L2Client, l2Comms.L2ContractAddressConfig)
 
   return l2Comms, nil
 }
@@ -84,7 +120,7 @@ func (l2Comms *L2Comms) BridgeEthToL1(address common.Address, amount *big.Int) e
   }
 
   log.Println("BridgeEthToL1 transactOpts created w/ value:", transactOpts.From.Hex())
-  tx, err := l2Comms.L2BridgeContract.WithdrawEth(transactOpts)
+  tx, err := l2Comms.L2Contracts.L2BridgeContract.WithdrawEth(transactOpts)
   if err != nil {
     log.Println("BridgeEthToL1 WithdrawEth error:", err)
     return err
@@ -104,7 +140,7 @@ func (l2Comms *L2Comms) BridgeTokenToL1(tokenAddress common.Address, address com
   }
 
   log.Println("BridgeTokenToL1 transactOpts created w/ value:", transactOpts.From.Hex())
-  tx, err := l2Comms.L2TokenBridgeContract.WithdrawTokens(transactOpts, tokenAddress, amount)
+  tx, err := l2Comms.L2Contracts.L2TokenBridgeContract.WithdrawTokens(transactOpts, tokenAddress, amount)
   if err != nil {
     log.Println("BridgeTokenToL1 WithdrawToken error:", err)
     return err

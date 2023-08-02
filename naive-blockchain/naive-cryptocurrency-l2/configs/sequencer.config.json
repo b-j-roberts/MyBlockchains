@@ -1,0 +1,20 @@
+{
+  "data-dir": "/home/brandon/naive-sequencer-data/",
+  "genesis": "/home/brandon/naive-sequencer-data/genesis.json",
+  "contracts": "/home/brandon/naive-sequencer-data/contracts/",
+  "l2ChainId": 515,
+
+  "host": "localhost",
+  "port": 5055,
+  "modules": "eth,net,web3,admin,personal,debug,txpool",
+
+  "l1Url": "http://localhost:8545",
+  "l1ChainId": 505,
+
+  "miningThreads": 4,
+  "metrics": {
+    "enabled": true,
+    "host": "localhost",
+    "port": 6160
+  }
+}
