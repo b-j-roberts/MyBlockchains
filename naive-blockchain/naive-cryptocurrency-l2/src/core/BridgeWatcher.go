@@ -77,7 +77,7 @@ func (bw *BridgeWatcher) WatchL1() error {
             return err
           }
 
-          l2Comms, err := l2utils.NewL2Comms(bw.Config.DataDir + "/naive-sequencer.ipc", bw.Config.Contracts, big.NewInt(int64(bw.Config.L2ChainID)), l2utils.GetDefaultL2TransactionConfig())
+          l2Comms, err := l2utils.NewL2Comms(bw.Config, l2utils.GetDefaultL2TransactionConfig())
           if err != nil {
             log.Fatalf("Failed to create L2 Comms: %v", err)
             return err
@@ -123,7 +123,7 @@ func (bw *BridgeWatcher) WatchL1() error {
             return err
           }
 
-          l2Comms, err := l2utils.NewL2Comms(bw.Config.DataDir + "/naive-sequencer.ipc", bw.Config.Contracts, big.NewInt(int64(bw.Config.L2ChainID)), l2utils.GetDefaultL2TransactionConfig())
+          l2Comms, err := l2utils.NewL2Comms(bw.Config, l2utils.GetDefaultL2TransactionConfig())
           if err != nil {
             log.Fatalf("Failed to create L2 Comms: %v", err)
             return err

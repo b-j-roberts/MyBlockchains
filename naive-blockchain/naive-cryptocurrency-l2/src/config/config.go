@@ -72,6 +72,7 @@ type NodeBaseConfig struct {
   L2ChainID    int    `json:"l2ChainId"`
   Host         string `json:"host"`
   Port         int    `json:"port"`
+  P2PPort      int    `json:"p2pport"`
   Modules      string `json:"modules"`
   L1URL        string `json:"l1Url"`
   L1ChainID    int    `json:"l1ChainId"`
@@ -120,7 +121,7 @@ func NodeConfig(nodeBaseConfig *NodeBaseConfig) *node.Config {
   //nodeConfig.P2P.ListenAddr = ""                            
   //nodeConfig.P2P.NoDial = true                              
   //nodeConfig.P2P.NoDiscovery = true
-  nodeConfig.P2P.ListenAddr = ":30313"
+  nodeConfig.P2P.ListenAddr = ":" + fmt.Sprintf("%d", nodeBaseConfig.P2PPort)
   nodeConfig.IPCPath = "naive-sequencer.ipc"
   nodeConfig.HTTPHost = nodeBaseConfig.Host
   nodeConfig.HTTPPort = nodeBaseConfig.Port

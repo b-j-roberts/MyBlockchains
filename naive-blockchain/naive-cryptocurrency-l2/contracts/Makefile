@@ -1,5 +1,7 @@
 build:
 	npm run build
+	npm run build-bridge
+	npm run build-tokens
 	npm run go-gen
 
 deploy-private:

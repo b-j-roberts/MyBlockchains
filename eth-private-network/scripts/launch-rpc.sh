@@ -125,10 +125,13 @@ PASSWORD_FILE=$DATA_DIR/password.txt
 
 if [ $STATE_RESET -eq 1 ]; then
   # Create Geth Account for RPC node
-  ACCOUNT_PASS=${ACCOUNT_PASS:-password}
-  touch $PASSWORD_FILE
-  echo $ACCOUNT_PASS > $PASSWORD_FILE
-  geth account new --datadir $DATA_DIR --password $PASSWORD_FILE
+  if [ ! -d "${HOME}/.eth-accounts" ]; then
+    echo "No accounts found, creating new account"
+    $WORK_DIR/scripts/generate-account.sh -d ${DATA_DIR} -x
+  fi
+ 
+  cp -r ${HOME}/.eth-accounts/ $DATA_DIR/keystore
+  mv $DATA_DIR/keystore/password.txt $PASSWORD_FILE
 fi
 ACCOUNT1=$(cat $DATA_DIR/keystore/* | jq -r '.address' | head -n 1)
 

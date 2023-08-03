@@ -114,7 +114,7 @@ run-sequencer-noclean:
 	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -k ~/l1-miner-data/keystore/ -C ./contracts/builds/
 
 run-rpc:
-	./scripts/start-rpc.sh -d ~/naive-rpc-data/ -x -k ~/l1-miner-data/keystore/ -o ${OUTPUT_FILE}
+	./scripts/start-rpc.sh -f configs/rpc.config.json -x -o ~/naive-rpc-data/log.txt
 
 run-rpc-noclean:
 	./scripts/start-rpc.sh -d ~/naive-rpc-data/ -k ~/l1-miner-data/keystore/ -o ~/naive-rpc-data/rpc.log

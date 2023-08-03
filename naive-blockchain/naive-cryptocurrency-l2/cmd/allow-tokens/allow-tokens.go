@@ -117,7 +117,7 @@ func mainImpl() int {
     return 1
   }
 
-  l2Comms, err := l2utils.NewL2Comms(config.DataDir + "/naive-sequencer.ipc", config.Contracts, big.NewInt(int64(config.L2ChainID)), l2utils.GetDefaultL2TransactionConfig())
+  l2Comms, err := l2utils.NewL2Comms(config, l2utils.GetDefaultL2TransactionConfig())
   if err != nil {
     log.Println("Failed to create L2 comms", "error", err)
     return 1

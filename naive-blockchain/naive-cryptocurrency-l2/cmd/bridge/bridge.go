@@ -58,7 +58,7 @@ func mainImpl() int {
     } else {
       log.Println("Sending erc20 to l1")
 
-      l2Comms, err := l2utils.NewL2Comms(config.DataDir + "/naive-sequencer.ipc", config.Contracts, big.NewInt(int64(config.L2ChainID)), l2utils.GetDefaultL2TransactionConfig())
+      l2Comms, err := l2utils.NewL2Comms(config, l2utils.GetDefaultL2TransactionConfig())
       if err != nil {
         panic(err)
       }
@@ -90,7 +90,7 @@ func mainImpl() int {
 
       log.Println("Success")
     } else {
-      l2BridgeComms, err := l2utils.NewL2Comms(config.DataDir + "/naive-sequencer.ipc", config.Contracts, big.NewInt(int64(config.L2ChainID)), l2utils.GetDefaultL2TransactionConfig())
+      l2BridgeComms, err := l2utils.NewL2Comms(config, l2utils.GetDefaultL2TransactionConfig())
       if err != nil {
         panic(err)
       }

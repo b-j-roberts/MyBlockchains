@@ -4,7 +4,7 @@ pragma solidity >=0.8.2 <0.9.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "./L2TokenMinter.sol";
+import "../L2TokenMinter.sol";
 
 contract L2TokenBridge {
     address public sequencer;

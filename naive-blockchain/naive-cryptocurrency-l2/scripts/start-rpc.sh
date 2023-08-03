@@ -2,6 +2,9 @@
 #
 # This script starts the sequencer in a docker container.
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+WORK_DIR="${SCRIPT_DIR}/.."
+
 STATE_RESET=0
 
 # Defaults give theoretical max throughput of 1800 TPS = ~15 tx/sec ( mainnet ) X 12 X 10
@@ -9,15 +12,15 @@ CHAIN_ID=515
 PERIOD=1 # 1 second per block ( 12x faster than Ethereum mainnet )
 GAS_LIMIT=300000000 # 300M gas limit ( 10x Ethereum mainnet )
 
+PEER_SERVER="http://localhost:5055"
+
 display_help() {
   echo "Usage: $0 [option...] " >&2
   echo
   echo "  -h, --help                 Show help message"
 
-  echo "  -d, --datadir              Data directory (Required)"
-  echo "  -k, --keystore             Keystore directory for l1 address (Required)"
-  echo "  -B, --l1-bridge-address    L1 Bridge contract address (Required)"
-
+  echo "  -f, --config               Config file (default: $WORK_DIR/configs/rpc.config.json)"
+  echo "  -p, --peer                 Peer server (default: http://localhost:5055)"
   echo "  -x, --clear                Clear state before starting"
   echo "  -o, --output               Output file -- If outfile selected, run task as daemon ( default: console )"
   echo
@@ -31,20 +34,19 @@ clear_data() {
 }
 
 # Parse command line arguments
-while getopts ":hd:k:B:xo:" opt; do
+while getopts ":hf::xo:" opt; do
   case ${opt} in
     h|--help )
       display_help
       exit 0
       ;;
-    d|--datadir )
-      NAIVE_RPC_DATA=$OPTARG
+    f|--config )
+      CONFIG_FILE=$OPTARG
+      NAIVE_RPC_DATA=$(jq '."data-dir"' -r $CONFIG_FILE)
+      NAIVE_SEQUENCER_DATA="${NAIVE_RPC_DATA}/../naive-sequencer-data"
       ;;
-    k|--keystore )
-      L1_KEYSTORE=$OPTARG
-      ;;
-    B|--l1-bridge-address )
-      L1_BRIDGE_ADDRESS=$OPTARG
+    p|--peer )
+      PEER_SERVER=$OPTARG
       ;;
     x|--clear )
       clear_data
@@ -66,13 +68,10 @@ while getopts ":hd:k:B:xo:" opt; do
   esac
 done
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-WORK_DIR="${SCRIPT_DIR}/.."
-NAIVE_SEQUENCER_DATA="${NAIVE_RPC_DATA}/../naive-sequencer-data"
 
 # Check if required arguments are present
-if [[ -z "${NAIVE_RPC_DATA}" || -z ${L1_KEYSTORE} ]]; then
-  echo "Missing required argument: --datadir or --keystore" 1>&2
+if [[ -z "${NAIVE_RPC_DATA}" ]]; then
+  echo "Missing required argument: --config" 1>&2
   display_help
   exit 1
 fi
@@ -91,19 +90,6 @@ if [ ! -d "${NAIVE_RPC_DATA}/rpc" ]; then
   STATE_RESET=1
 fi
 
-if [ -z "${L1_BRIDGE_ADDRESS}" ]; then
-  # Copy over the contract address
-  cp ${WORK_DIR}/contracts/builds/l1-bridge-address.txt ${NAIVE_RPC_DATA}/l1-bridge-address.txt
-
-  if [ ! -f "${NAIVE_RPC_DATA}/l1-bridge-address.txt" ]; then
-    echo "Missing required argument: --l1-bridge-address" 1>&2
-    display_help
-    exit 1
-  fi
-
-  L1_BRIDGE_ADDRESS=$(cat "${NAIVE_RPC_DATA}/l1-bridge-address.txt" | jq -r '.address')
-fi
-
 PASSWORD_FILE="${NAIVE_RPC_DATA}/password.txt"
 
 if [ $STATE_RESET -eq 1 ]; then
@@ -120,16 +106,15 @@ cp ${NAIVE_SEQUENCER_DATA}/genesis.json ${GENESIS_FILE}
 #$WORK_DIR/go-ethereum/build/bin/geth init --datadir ${NAIVE_RPC_DATA} ${GENESIS_FILE}
 
 # Copy over the sequencer l1 address
-for p in  ${L1_KEYSTORE}/*; do cp $p ${NAIVE_RPC_DATA}/sequencer-l1-address.txt; break; done
-SEQUENCER_L1_ADDRESS=$(cat "${NAIVE_RPC_DATA}/sequencer-l1-address.txt" | jq -r '.address')
+SEQUENCER_L1_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/sequencer-l1-address.txt" | jq -r '.address')
 
 echo "Starting RPC Node with L1 address: ${SEQUENCER_L1_ADDRESS}"
 
 if [ -z $OUTPUT_FILE ]; then
   #$WORK_DIR/build/rpc --datadir ${NAIVE_RPC_DATA} --metrics
-  $WORK_DIR/build/rpc --datadir ${NAIVE_RPC_DATA} --addr ${SEQUENCER_L1_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS}
+  $WORK_DIR/build/rpc --config ${CONFIG_FILE}
 else
-  $WORK_DIR/build/rpc --datadir ${NAIVE_RPC_DATA} --addr ${SEQUENCER_L1_ADDRESS} --l1bridgecontract ${L1_BRIDGE_ADDRESS} > $OUTPUT_FILE 2>&1 &
+  $WORK_DIR/build/rpc --config ${CONFIG_FILE} > $OUTPUT_FILE 2>&1 &
   echo "Waiting for rpc to start..."
   while true; do
     if grep -q "self=enode://" "${OUTPUT_FILE}"; then
@@ -138,9 +123,10 @@ else
     sleep 1
   done
   
-  ENODE=$(geth attach --exec admin.nodeInfo.enode ${NAIVE_RPC_DATA}/naive-rpc.ipc)
+  RPC_SERVER=http://$(cat ${CONFIG_FILE} | jq -r '.host'):$(cat ${CONFIG_FILE} | jq -r '.port')
+  ENODE=$(geth attach --exec admin.nodeInfo.enode $RPC_SERVER)
   echo "ENODE: ${ENODE}"
   
-  geth attach --exec "admin.addPeer(${ENODE})" ${NAIVE_SEQUENCER_DATA}/naive-sequencer.ipc
-  geth attach --exec "admin.peers" ${NAIVE_SEQUENCER_DATA}/naive-sequencer.ipc
+  geth attach --exec "admin.addPeer(${ENODE})" ${PEER_SERVER}
+  geth attach --exec "admin.peers" ${PEER_SERVER}
 fi

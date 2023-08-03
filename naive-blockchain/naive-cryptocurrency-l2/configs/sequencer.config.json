@@ -6,6 +6,7 @@
 
   "host": "localhost",
   "port": 5055,
+  "p2pport": 30313,
   "modules": "eth,net,web3,admin,personal,debug,txpool",
 
   "l1Url": "http://localhost:8545",

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -143,13 +144,15 @@ func (batcher *Batcher) Start() error {
         batcher.TxBatch = append(batcher.TxBatch, tx)
 
         //TODO: To function
-        rpcIPC, err := rpc.DialIPC(context.Background(), batcher.BatcherConfig.NodeConfig.DataDir + "/naive-sequencer.ipc")
-        if err != nil {
-          log.Fatalf("Failed to dial ipc: %v", err)
-          panic(err)
-        }
+        //rpcIPC, err := rpc.DialIPC(context.Background(), batcher.BatcherConfig.NodeConfig.DataDir + "/naive-sequencer.ipc")
+        //if err != nil {
+        //  log.Fatalf("Failed to dial ipc: %v", err)
+        //  panic(err)
+        //}
+        seqURL := "http://" + batcher.BatcherConfig.NodeConfig.Host + ":" + strconv.Itoa(batcher.BatcherConfig.NodeConfig.Port)
+        rpc, err := rpc.Dial(seqURL)
 
-        backend := ethclient.NewClient(rpcIPC)                                                                                    
+        backend := ethclient.NewClient(rpc)                                                                                    
         receipt, err := backend.TransactionReceipt(context.Background(), tx.Hash())
         if err != nil {
           log.Printf("Batcher got error: %v\n", err)

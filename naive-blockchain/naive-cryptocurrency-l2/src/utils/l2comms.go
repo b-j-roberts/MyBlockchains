@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"math/big"
@@ -13,6 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	l2config "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/config"
 )
 
 type L2TransactionConfig struct {
@@ -79,19 +80,23 @@ func GetDefaultL2TransactionConfig() L2TransactionConfig {
   }
 }
 
-func NewL2Comms(ipcFile string, contractsAddressDir string, l2ChainId *big.Int, l2TransactionConfig L2TransactionConfig) (*L2Comms, error) {
-  rawIPC, err := rpc.DialIPC(context.Background(), ipcFile)
+func NewL2Comms(nodeConfig *l2config.NodeBaseConfig, l2TransactionConfig L2TransactionConfig) (*L2Comms, error) {
+  //rawIPC, err := rpc.DialIPC(context.Background(), ipcFile)
+  //if err != nil {
+  //  return nil, err
+  //}
+  l2Url := fmt.Sprintf("http://%s:%d", nodeConfig.Host, nodeConfig.Port)
+  rpc, err := rpc.Dial(l2Url)
   if err != nil {
     return nil, err
   }
-
-  client := ethclient.NewClient(rawIPC)
+  client := ethclient.NewClient(rpc)
 
   l2Comms := &L2Comms{
     L2Client: client,
-    L2ChainId: l2ChainId,
+    L2ChainId: big.NewInt(int64(nodeConfig.L2ChainID)),
     L2TransactionConfig: l2TransactionConfig,
-    L2ContractAddressConfig: CreateL2ContractAddressConfig(contractsAddressDir),
+    L2ContractAddressConfig: CreateL2ContractAddressConfig(nodeConfig.Contracts),
   }
   l2Comms.L2Contracts = CreateL2Contracts(l2Comms.L2Client, l2Comms.L2ContractAddressConfig)
 

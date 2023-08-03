@@ -26,10 +26,14 @@ export const deploy = async (contractName, args, url, from, gas) => {
   }
   console.log(`deploying ${contractName}`)
 
-  const abiPath = `./builds/contracts_${contractName}_sol_${contractName}.abi`
-  const abi = JSON.parse(fs.readFileSync(abiPath, 'utf8'))
-  const bytecodePath = `./builds/contracts_${contractName}_sol_${contractName}.bin`
-  const bytecode = fs.readFileSync(bytecodePath, 'utf8')
+  // Load contract from builds folder using grep to find the right file with contract name
+  const abiPath = fs.readdirSync('./builds').filter(file => file.match(new RegExp(`contracts_.*${contractName}_sol_${contractName}.abi`)))
+
+  //const abiPath = `./builds/contracts_${contractName}_sol_${contractName}.abi`
+  const abi = JSON.parse(fs.readFileSync("./builds/" + abiPath[0], 'utf8'))
+  //const bytecodePath = `./builds/contracts_${contractName}_sol_${contractName}.bin`
+  const bytecodePath = fs.readdirSync('./builds').filter(file => file.match(new RegExp(`contracts_.*${contractName}_sol_${contractName}.bin`)))
+  const bytecode = fs.readFileSync("./builds/" + bytecodePath[0], 'utf8')
   console.log('bytecode', bytecode)
 
   const contract = new web3.eth.Contract(abi)
