@@ -78,7 +78,7 @@ touch $L2_SEQUENCER_LOGS
 
 while true; do
   cd ${WORK_DIR} && OUTPUT_FILE=${L2_SEQUENCER_LOGS} make run-sequencer-daemon
-  sleep 5
+  sleep 20
   if cat ${L2_SEQUENCER_LOGS} | grep Commit\ new\ sealing\ work | grep -q number=5; then
     break
   fi
