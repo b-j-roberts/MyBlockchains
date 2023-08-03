@@ -13,13 +13,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
 
 	l2config "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/config"
+	l2consensus "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/consensus"
 )
 
 type Node struct {
@@ -29,6 +29,11 @@ type Node struct {
   Engine  consensus.Engine
   Eth     *eth.Ethereum
   Config  *l2config.NodeBaseConfig
+}
+
+func CreateL2ConsensusEngine(config *l2consensus.L2ConsensusConfig, db ethdb.Database) (consensus.Engine, error) {
+  engine := l2consensus.New(config, db)
+  return engine, nil
 }
 
 func NewNode(rpcConfigFile string) (*Node, error) {
@@ -88,12 +93,18 @@ func NewNode(rpcConfigFile string) (*Node, error) {
   // Setup Consensus Engine
   ethConfig := l2config.EthConfig(address)
   cliqueConfig, err := core.LoadCliqueConfig(chainDb, genesis)
-  cliqueConfig.ContractsPath = nodeBaseConfig.Contracts
+  l2ConsenusConfig := l2consensus.L2ConsensusConfig{
+    CliqueConfig: cliqueConfig,
+    ContractsPath: nodeBaseConfig.Contracts,
+  }
   if err != nil {
     return nil, fmt.Errorf("failed to load clique config: %v", err)
   }
 
-  engine := ethconfig.CreateConsensusEngine(node, &ethConfig.Ethash, cliqueConfig, ethConfig.Miner.Notify, ethConfig.Miner.Noverify, chainDb)
+  engine, err := CreateL2ConsensusEngine(&l2ConsenusConfig, chainDb)
+  if err != nil {
+    return nil, fmt.Errorf("failed to create consensus engine: %v", err)
+  }
 
   // Setup L2 Blockchain
   //TODO: l2blockchain more research on args

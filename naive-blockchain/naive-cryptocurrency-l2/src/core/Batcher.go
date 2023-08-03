@@ -134,7 +134,6 @@ func UnpackTokenWithdraw(receiptLog types.Log) (nonce *big.Int, addr common.Addr
 func (batcher *Batcher) Start() error {
   runFunc := func() {
   for {
-    l2AddressConfig := l2utils.CreateL2ContractAddressConfig(batcher.BatcherConfig.NodeConfig.Contracts)
     //TODO: Use similar only finalized block logic for this
     block := batcher.L2Blockchain.GetBlockByNumber(batcher.CurrL2BlockNumber)
     if block != nil {
@@ -160,6 +159,7 @@ func (batcher *Batcher) Start() error {
         log.Printf("Batcher got Receipt: %v\n", receipt)
         receipt_logs := l2utils.ReceiptLogsWithEvent(receipt, crypto.Keccak256Hash([]byte("EthWithdraw(uint256,address,uint256)")).Bytes())
         for _, receipt_log := range receipt_logs {
+          l2AddressConfig := l2utils.CreateL2ContractAddressConfig(batcher.BatcherConfig.NodeConfig.Contracts)
           if common.HexToAddress(receipt_log.Address.Hex()) == l2AddressConfig.BridgeContractAddress {
 
             nonce, addr, amount, err := UnpackEthWithdraw(*receipt_log)
@@ -200,6 +200,7 @@ func (batcher *Batcher) Start() error {
         receipt_logs = l2utils.ReceiptLogsWithEvent(receipt, crypto.Keccak256Hash([]byte("TokensWithdrawn(uint256,address,address,uint256)")).Bytes())
         log.Println("Got receipt logs:", len(receipt_logs))
         for _, receipt_log := range receipt_logs {
+          l2AddressConfig := l2utils.CreateL2ContractAddressConfig(batcher.BatcherConfig.NodeConfig.Contracts)
           if common.HexToAddress(receipt_log.Address.Hex()) == l2AddressConfig.TokenBridgeContractAddress {
             log.Printf("Got token withdrawal: %v\n", receipt_log)
             nonce, from, token, amount, err := UnpackTokenWithdraw(*receipt_log)

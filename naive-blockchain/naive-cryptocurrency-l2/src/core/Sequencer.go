@@ -3,8 +3,10 @@ package core
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 
+	l2consensus "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/consensus"
 	l2utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 )
 
@@ -50,6 +52,27 @@ func (sequencer *Sequencer) Start() error {
     return fmt.Errorf("failed to start l2 node: %v", err)
   }
 
+  // Setup mining signer
+  eb, err := sequencer.L2Node.Eth.Etherbase()
+  if err != nil {
+    return fmt.Errorf("failed to get etherbase: %v", err)
+  }
+  var consensus *l2consensus.L2Consensus
+  if c, ok := sequencer.L2Node.Eth.Engine().(*l2consensus.L2Consensus); ok {
+    consensus = c
+  } else {
+    return fmt.Errorf("failed to get consensus 1")
+  }
+  if consensus == nil {
+    return fmt.Errorf("failed to get consensus 2")
+  }
+  wallet, err := sequencer.L2Node.Eth.AccountManager().Find(accounts.Account{Address: eb})
+  if wallet == nil || err != nil {
+    return fmt.Errorf("failed to find account: %v", err)
+  }
+  consensus.Authorize(eb, wallet.SignData)
+
+
   if err := sequencer.L2Node.Eth.APIBackend.StartMining(sequencer.MiningThreads); err != nil {
     return fmt.Errorf("failed to start mining: %v", err)
   }
@@ -59,7 +82,7 @@ func (sequencer *Sequencer) Start() error {
   }
   
 
-  err := sequencer.L2Node.Eth.StartNaive()
+  err = sequencer.L2Node.Eth.StartNaive()
   if err != nil {
     return fmt.Errorf("failed to start eth: %v", err)
   }
