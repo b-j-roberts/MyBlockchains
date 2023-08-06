@@ -25,7 +25,7 @@ jobs:
 
       - name: Run Miner Node
         working-directory: ./eth-private-network/
-        run: timeout 30s make run-miner &> out.txt
+        run: timeout 30s make run-miner &> out.txt || true
 
       - name: Confirm Miner Mined 10 Blocks
         uses: GuillaumeFalourd/assert-command-line-output@v2.2
