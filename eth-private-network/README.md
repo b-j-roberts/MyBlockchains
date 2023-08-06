@@ -8,7 +8,7 @@ Project containing scripts to launch private clique networks using geth.
 - Local, Docker, & Kubernetes setups + quick launch commands thru make
 - Contains various load tests / other testing scripts ( transactions work )
 
-![Load Test Transactions](http://github.com/b-j-roberts/MyBlockchains/blob/master/media/load-test-transactions.png?raw=true)
+![Load Test Transactions](https://github.com/b-j-roberts/MyBlockchains/blob/master/eth-private-network/media/load-test-transactions.png)
 
 ---
 
@@ -50,8 +50,9 @@ Then reset or start prometheus using something like `sudo systemctl start promet
 **Grafana Setup (optional)**
 This repo contains a grafana dashboard with useful views of the running Miner & RPC nodes. That is contained at `../dashboards/grafana/`. See the instructions there for more info.
 
-![Grafana Dash Miner](http://github.com/b-j-roberts/MyBlockchains/blob/master/media/grafana-dash-miner.png?raw=true)
-![Grafana Dash RPC](http://github.com/b-j-roberts/MyBlockchains/blob/master/media/grafana-dash-rpc.png?raw=true)
+![Grafana Dash Miner](https://github.com/b-j-roberts/MyBlockchains/blob/master/eth-private-network/media/grafana-dash-miner.png)
+
+![Grafana Dash RPC](https://github.com/b-j-roberts/MyBlockchains/blob/master/eth-private-network/media/grafana-dash-rpc.png)
 
 ## How to Run
 
@@ -195,7 +196,7 @@ make kube-clean-all
 
 ### Useful links & Resources
 
-https://medium.com/swlh/how-to-set-up-a-private-ethereum-blockchain-c0e74260492c
-https://geth.ethereum.org/docs/fundamentals/private-network
-https://brodan.biz/blog/how-to-run-a-private-local-ethereum-network-with-geth/
-https://eips.ethereum.org/EIPS/eip-225
+- https://medium.com/swlh/how-to-set-up-a-private-ethereum-blockchain-c0e74260492c
+- https://geth.ethereum.org/docs/fundamentals/private-network
+- https://brodan.biz/blog/how-to-run-a-private-local-ethereum-network-with-geth/
+- https://eips.ethereum.org/EIPS/eip-225
