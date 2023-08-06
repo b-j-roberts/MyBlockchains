@@ -15,5 +15,11 @@ jobs:
       - name: Go into Eth Private Network Dir
         run: cd eth-private-network/
 
+      - name: Ls
+        run: ls
+
+      - name: Pwd
+        run: pwd
+
       - name: Build Eth Private Network
         run: make build
