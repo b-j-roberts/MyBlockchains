@@ -1,8 +1,8 @@
 name: GitHub Actions
-run-name: ${{ github.actor }} is running GitHub Actions 🚀
+run-name: ${{ github.actor }} is running GitHub Actions to test & deploy MyBlockchains 🚀
 on: [push]
 jobs:
-  Build-Eth-Private-Network:
+  Run-Eth-Private-Network-Miner:
     runs-on: ubuntu-latest
     steps:
       - uses : actions/checkout@v3
@@ -25,7 +25,11 @@ jobs:
 
       - name: Run Miner Node
         working-directory: ./eth-private-network/
-        run: timeout 30s make run-miner &> out.txt || true
+        run: OUTPUT_FILE=out.txt make run-miner-daemon && sleep 30s
+
+      - name: Show Miner Logs
+        working-directory: ./eth-private-network/
+        run: cat out.txt
 
       - name: Confirm Miner Mined 10 Blocks
         uses: GuillaumeFalourd/assert-command-line-output@v2.2
@@ -33,3 +37,7 @@ jobs:
           command_line: cat eth-private-network/out.txt
           contains: number=10
           expected_result: PASSED
+
+      - name: Run RPC Node
+        working-directory: ./eth-private-network/
+        run: make run-rpc
