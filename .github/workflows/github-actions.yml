@@ -21,12 +21,12 @@ jobs:
 
       - name: List files
         working-directory: ./eth-private-network/
-        run: ls eth-private-network/go-ethereum/
+        run: ls go-ethereum/
 
       - name: Run Miner Node
         uses: GuillaumeFalourd/assert-command-line-output@v2.2
         with:
-          working-directory: ./eth-private-network
+          working-directory: ./eth-private-network/
           command_line: timeout 30s make run-miner
           contains: number=10
           expected_result: PASSED
