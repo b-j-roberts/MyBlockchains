@@ -1,18 +1,62 @@
 name: GitHub Actions
-run-name: ${{ github.actor }} is running GitHub Actions 🚀
+run-name: ${{ github.actor }} is running GitHub Actions to test & deploy MyBlockchains 🚀
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  Run-Eth-Private-Network:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+      - uses : actions/checkout@v3
+        with:
+          submodules: 'true'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+          cache-dependency-path: eth-private-network/go-ethereum/go.sum
+
+      - name: Build Eth Private Network
+        working-directory: ./eth-private-network/
+        run: make build
+
+      - name: List files
+        working-directory: ./eth-private-network/
+        run: ls go-ethereum/
+
+      - name: Add geth to PATH
+        working-directory: ./eth-private-network/
+        run: echo "$(pwd)/go-ethereum/build/bin/" >> $GITHUB_PATH
+
+      - name: Run Miner Node
+        working-directory: ./eth-private-network/
+        run: OUTPUT_FILE=out-miner.txt make run-miner-daemon && sleep 30s
+
+      - name: Show Miner Logs
+        working-directory: ./eth-private-network/
+        run: cat out-miner.txt
+
+      - name: Confirm Miner Mined 10 Blocks
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/out-miner.txt
+          contains: number=10
+          expected_result: PASSED
+
+      - name: Run RPC Node
+        working-directory: ./eth-private-network/
+        run: OUTPUT_FILE=out-rpc.txt make run-rpc-daemon && sleep 15s
+
+      - name: Connect Miner & RPC as peers
+        working-directory: ./eth-private-network/
+        run: make connect-peers && sleep 15s
+
+      - name: Show RPC Logs
+        working-directory: ./eth-private-network/
+        run: cat out-rpc.txt
+
+      - name: Confirm RPC Node Downloading blocks from Miner
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/out-rpc.txt
+          contains: Imported new chain segment
+          expected_result: PASSED
