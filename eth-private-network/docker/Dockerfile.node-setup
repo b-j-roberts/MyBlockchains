@@ -19,12 +19,14 @@ FROM alpine:latest
 
 RUN apk add --no-cache ca-certificates bash jq
 COPY --from=builder /go-ethereum/build/bin/geth /usr/local/bin/
-COPY --from=builder /go-ethereum/build/bin/geth /app/go-ethereum/build/bin/
-COPY scripts/ /app/scripts/
+COPY --from=builder /go-ethereum/build/bin/geth /app/go-ethereum/build/bin/geth
 
 # Expose the ports we're interested in ( Ports setup on different addresses to allow --network host )
 EXPOSE 8548 8550 30306 30306/udp 6061
 
 WORKDIR /app
 
-CMD ["./scripts/run-rpc.sh", "-d", "/l1-rpc-data/", "-g", "/l1-rpc-data/genesis.json", "-m", "30306", "-r", "8550", "-H", "8548"]
+# Copy over scripts
+COPY scripts/ /app/scripts/
+
+CMD ["./scripts/setup-rpc.sh", "-d", "/l1-rpc-data", "-g", "/root/genesis.json"]

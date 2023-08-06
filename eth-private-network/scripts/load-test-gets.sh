@@ -4,7 +4,7 @@
 #
 # This script will load test basic get rpcs on a geth node
 
-RPC=http://localhost:8545
+RPC=http://localhost:8545/
 
 TXN_COUNT=100000
 THREAD_COUNT=1500
@@ -67,5 +67,6 @@ rm -f $TMP_SEND_GET
 touch $TMP_SEND_GET
 echo $JSOM > $TMP_SEND_GET
 
+echo "ab -c $THREAD_COUNT -n $TXN_COUNT -p $TMP_SEND_GET -T application/json $RPC"
 ab -c $THREAD_COUNT -n $TXN_COUNT -p $TMP_SEND_GET -T application/json $RPC
 rm -f $TMP_SEND_GET

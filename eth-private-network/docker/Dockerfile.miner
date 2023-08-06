@@ -19,14 +19,12 @@ FROM alpine:latest
 
 RUN apk add --no-cache ca-certificates bash jq
 COPY --from=builder /go-ethereum/build/bin/geth /usr/local/bin/
-COPY --from=builder /go-ethereum/build/bin/geth /go-ethereum/go-ethereum/build/bin/
+COPY --from=builder /go-ethereum/build/bin/geth /app/go-ethereum/build/bin/
+COPY scripts/ /app/scripts/
 
 # Expose the ports we're interested in
 EXPOSE 8545 8551 30303 30303/udp 6060
 
-WORKDIR /go-ethereum
+WORKDIR /app
 
-# Copy over scripts
-COPY scripts/ /go-ethereum/scripts/
-
-CMD ["./scripts/launch-miner.sh", "-d", "/l1-miner-data/"]
+CMD ["./scripts/run-miner.sh", "-d", "/l1-miner-data/"]

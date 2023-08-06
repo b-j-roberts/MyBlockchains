@@ -4,7 +4,7 @@
 #
 # This script is used to load test the transaction throughput of a geth node.
 
-RPC="http://localhost:8545"
+RPC="http://localhost:8545/"
                                                            
 TXN_COUNT=100000                                           
 THREAD_COUNT=1500

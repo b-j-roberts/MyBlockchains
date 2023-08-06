@@ -25,6 +25,8 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /l1-miner-data/
+        - name: account
+          mountPath: /root/.eth-accounts/
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -33,6 +35,13 @@ spec:
         resources:
           requests:
             storage: 10Gi
+    - metadata:
+        name: account
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
 ---
 apiVersion: v1
 kind: Service

@@ -13,6 +13,18 @@ spec:
       labels:
         app: eth-private-rpc-app
     spec:
+      initContainers:
+      - name: setup-rpc
+        image: brandonjroberts/eth-private-node-setup:latest
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: data
+          mountPath: /l1-rpc-data/
+        - name: account
+          mountPath: /root/.eth-accounts/
+        - name: genesis-volume
+          mountPath: /root/genesis.json
+          subPath: genesis.json
       containers:
       - name: eth-private-rpc-app
         image: brandonjroberts/eth-private-rpc:latest
@@ -21,12 +33,12 @@ spec:
         - containerPort: 8548
         - containerPort: 8550
         - containerPort: 30306
+        - containerPort: 6061
         volumeMounts:
         - name: data
           mountPath: /l1-rpc-data/
-        - name: genesis-volume
-          mountPath: /genesis.json
-          subPath: genesis.json
+        - name: account
+          mountPath: /root/.eth-accounts/
       volumes:
       - name: genesis-volume
         configMap:
@@ -39,11 +51,21 @@ spec:
         resources:
           requests:
             storage: 10Gi
+    - metadata:
+        name: account
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: eth-private-rpc-app-service
+  annotations:
+    prometheus.io/port: "6061"
+    prometheus.io/scrape: "true"
 spec:
   selector:
     app: eth-private-rpc-app
@@ -60,3 +82,6 @@ spec:
     protocol: UDP
     port: 30306
     targetPort: 30306
+  - name: metrics
+    protocol: TCP
+    port: 6061

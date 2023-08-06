@@ -2,8 +2,6 @@
 #
 # This script launches an rpc node ( Normal Geth Node for Clique PoA network )
 
-STATE_RESET=0
-
 # Defaults give theoretical max throughput of 1800 TPS = ~15 tx/sec ( mainnet ) X 12 X 10
 CHAIN_ID=505
 PERIOD=1 # 1 second per block ( 12x faster than Ethereum mainnet )
@@ -14,12 +12,11 @@ HTTP_PORT=8545
 RPC_PORT=8551
 
 display_help() {
-  echo "Usage: launch-rpc.sh -d <data-dir> -g <genesis-file> [options]"
+  echo "Usage: $0 [option...] {arguments...}"
+  echo "WARNING: Requires the datadir be set up prior w/ genesis file. Use ./scripts/setup-rpc.sh for this"
   echo
   echo "   -h, --help                 show help"
   echo "   -d, --data                 Geth node data dir (required)"
-  echo "   -g, --genesis              Genesis file (required)"
-  echo "   -x, --clear                Clear & Reset data dir before starting"
 
   echo "   -c, --chain-id             Chain ID"
   echo "   -p, --period               Block period ( in seconds )"
@@ -31,30 +28,18 @@ display_help() {
   echo "   -o, --output               Output file -- If outfile selected, run task as daemon ( default: console )"
 
   echo
-  echo "Example: ./scripts/launch-rpc.sh -d ~/l1-rpc-data/ -g build/genesis.json -x -m 30306 -r 8550 -H 8548"
-}
-
-clear_data() {
-  rm -rf $DATA_DIR
-  mkdir -p $DATA_DIR
+  echo "Example: $0 -m 30306 -r 8550 -H 8548"
 }
 
 # Parse command line arguments
-while getopts ":hd:g:xc:p:g:m:H:r:o:" opt; do
+while getopts ":hd:c:p:g:m:H:r:o:" opt; do
   case ${opt} in
     d|--data )
       DATA_DIR=$OPTARG
       ;;
-    g|--genesis )
-      GENESIS_FILE=$OPTARG
-      ;;
     h|--help )
       display_help
       exit 0
-      ;;
-    x|--clear )
-      clear_data
-      STATE_RESET=1
       ;;
     c|--chain-id )
       CHAIN_ID=$OPTARG
@@ -91,7 +76,7 @@ while getopts ":hd:g:xc:p:g:m:H:r:o:" opt; do
 done
 
 # Check if required arguments are set
-if [[ -z "$DATA_DIR" || -z "$GENESIS_FILE" ]]; then
+if [[ -z "$DATA_DIR" ]]; then
   echo "Missing required arguments" 1>&2
   display_help
   exit 1
@@ -99,22 +84,7 @@ fi
 
 # Check if data dir exists
 if [ ! -d "$DATA_DIR" ]; then
-  echo "Data dir does not exist: $DATA_DIR, setting mode to STATE_RESET=1"
-  clear_data
-  STATE_RESET=1
-fi
-
-# Also check data dir has data
-if [ ! -d "$DATA_DIR/geth" ]; then
-  echo "Data dir does not contain data: $DATA_DIR, setting mode to STATE_RESET=1"
-  clear_data
-  STATE_RESET=1
-fi
-
-
-# Check if genesis file exists
-if [ ! -f "$GENESIS_FILE" ]; then
-  echo "Genesis file does not exist: $GENESIS_FILE" 1>&2
+  echo "Data dir does not exist: $DATA_DIR, it must be setup first"
   display_help
   exit 1
 fi
@@ -123,22 +93,15 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 WORK_DIR=$SCRIPT_DIR/..
 PASSWORD_FILE=$DATA_DIR/password.txt
 
-if [ $STATE_RESET -eq 1 ]; then
-  # Create Geth Account for RPC node
-  if [ ! -d "${HOME}/.eth-accounts" ]; then
-    echo "No accounts found, creating new account"
-    $WORK_DIR/scripts/generate-account.sh -d ${DATA_DIR} -x
-  fi
- 
-  cp -r ${HOME}/.eth-accounts/ $DATA_DIR/keystore
-  mv $DATA_DIR/keystore/password.txt $PASSWORD_FILE
+# Create Geth Account for RPC node
+if [ -z "$(ls -A ${HOME}/.eth-accounts)" ]; then
+  echo "No accounts found, creating new account"
+  $WORK_DIR/scripts/generate-account.sh -d ${DATA_DIR} -x
 fi
-ACCOUNT1=$(cat $DATA_DIR/keystore/* | jq -r '.address' | head -n 1)
 
-if [ $STATE_RESET -eq 1 ]; then
-  # Create Geth Genesis & Init Chain
-  geth init --datadir $DATA_DIR $GENESIS_FILE
-fi
+cp -r ${HOME}/.eth-accounts/* $DATA_DIR/keystore/
+mv $DATA_DIR/keystore/password.txt $PASSWORD_FILE
+ACCOUNT1=$(cat $DATA_DIR/keystore/* | jq -r '.address' | head -n 1)
 
 if [ -z "$OUTPUT_FILE" ]; then
   ${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool,admin" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --allow-insecure-unlock --password $PASSWORD_FILE --port $PEER_PORT --authrpc.port $RPC_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6061
