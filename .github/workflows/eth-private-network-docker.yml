@@ -28,8 +28,7 @@ jobs:
           tags: |
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
             type=semver,pattern={{raw}}
-            type=raw,value={{branch}}-{{sha}},enable=${{ github.branch != '' }}
-            type=raw,value={{sha}}-{{date 'YYYYMMDD.HHmmss'}},enable=${{ github.branch == '' }}
+            type=raw,value={{branch}}-{{sha}}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
