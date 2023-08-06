@@ -18,7 +18,7 @@ jobs:
           submodules: 'true'
 
       - name: Info
-        run: echo "Parameters. ${{ github.ref }}, ${{ github.branch }}, ${{ github.sha }}"
+        run: echo "Parameters. ${{ github.ref }}, ${{ github.sha }}"
 
       - name: Docker metadata
         id: metadata
