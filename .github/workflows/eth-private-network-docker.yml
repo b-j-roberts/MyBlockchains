@@ -6,7 +6,7 @@ on:
       - "eth-private-network/**"
       - ".github/workflows/eth-private-network-docker.yml"
 jobs:
-  Docker-Build:
+  Docker-Build-Miner:
     runs-on: ubuntu-latest
     env:
       IMG_NAME: ${{ secrets.DOCKER_USERNAME }}/eth-private-miner
@@ -28,7 +28,7 @@ jobs:
           tags: |
             type=raw,value=latest,priority=1000,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
             type=semver,pattern={{raw}},priority=900
-            type=raw,value={{branch}}-{{sha}},priority=800
+            type=raw,value={{branch}}-{{sha}},priority=800,enable=${{ github.ref != format('refs/heads/{0}', 'master') }}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -44,3 +44,81 @@ jobs:
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
           file: ./eth-private-network/docker/Dockerfile.miner
+
+  Docker-Build-RPC:
+    runs-on: ubuntu-latest
+    env:
+      IMG_NAME: ${{ secrets.DOCKER_USERNAME }}/eth-private-rpc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'true'
+
+      - name: Info
+        run: echo "Parameters. ${{ github.ref }}, ${{ github.sha }}"
+
+      - name: Docker metadata
+        id: metadata
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.IMG_NAME }}
+          tags: |
+            type=raw,value=latest,priority=1000,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
+            type=semver,pattern={{raw}},priority=900
+            type=raw,value={{branch}}-{{sha}},priority=800,enable=${{ github.ref != format('refs/heads/{0}', 'master') }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push RPC Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./eth-private-network/
+          push: 'true'
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          file: ./eth-private-network/docker/Dockerfile.rpc
+
+  Docker-Build-Node-Setup:
+    runs-on: ubuntu-latest
+    env:
+      IMG_NAME: ${{ secrets.DOCKER_USERNAME }}/eth-private-node-setup
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'true'
+
+      - name: Info
+        run: echo "Parameters. ${{ github.ref }}, ${{ github.sha }}"
+
+      - name: Docker metadata
+        id: metadata
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.IMG_NAME }}
+          tags: |
+            type=raw,value=latest,priority=1000,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
+            type=semver,pattern={{raw}},priority=900
+            type=raw,value={{branch}}-{{sha}},priority=800,enable=${{ github.ref != format('refs/heads/{0}', 'master') }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Node Setup Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./eth-private-network/
+          push: 'true'
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          file: ./eth-private-network/docker/Dockerfile.node-setup
