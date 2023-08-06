@@ -18,7 +18,7 @@ jobs:
           submodules: 'true'
 
       - name: Info
-        run: echo "Parameters. ${{ github.event.base_ref }}, ${{ github.ref_type }}, ${{ github.ref }}"
+        run: echo "Parameters. ${{ github.ref }}, ${{ github.branch }}, ${{ github.sha }}"
 
       - name: Docker metadata
         id: metadata
@@ -29,7 +29,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
             type=semver,pattern={{raw}}
             type=raw,value={{branch}}-{{sha}},enable=${{ github.branch != '' }}
-            type=raw,value={{sha}}-{{date 'YYYYMMDD-HHmmss'}}
+            type=raw,value={{sha}}-{{date 'YYYYMMDD.HHmmss'}},enable=${{ github.branch == '' }}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
