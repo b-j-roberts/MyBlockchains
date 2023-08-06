@@ -1,5 +1,5 @@
 name: Ethereum Private Network Actions
-run-name: ${{ github.actor }} is running Actions to test & deploy MyBlockchains/eth-private-network 🚀
+run-name: ${{ github.actor }} is Running Actions to Deploy & Test MyBlockchains/eth-private-network 🚀
 on:
   push:
     paths:
