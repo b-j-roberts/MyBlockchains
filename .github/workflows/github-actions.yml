@@ -21,4 +21,8 @@ jobs:
         run: ls eth-private-network
 
       - name: Run Miner Node
-        run: cd eth-private-network && make run-miner
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cd eth-private-network && timeout 30s make run-miner
+          contains: number=10
+          expected_result: PASSED
