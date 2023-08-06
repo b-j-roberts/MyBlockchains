@@ -25,19 +25,27 @@ jobs:
 
       - name: Run Miner Node
         working-directory: ./eth-private-network/
-        run: OUTPUT_FILE=out.txt make run-miner-daemon && sleep 30s
+        run: OUTPUT_FILE=out-miner.txt make run-miner-daemon && sleep 30s
 
       - name: Show Miner Logs
         working-directory: ./eth-private-network/
-        run: cat out.txt
+        run: cat out-miner.txt
 
       - name: Confirm Miner Mined 10 Blocks
         uses: GuillaumeFalourd/assert-command-line-output@v2.2
         with:
-          command_line: cat eth-private-network/out.txt
+          command_line: cat eth-private-network/out-miner.txt
           contains: number=10
           expected_result: PASSED
 
       - name: Run RPC Node
         working-directory: ./eth-private-network/
-        run: make run-rpc
+        run: OUTPUT_FILE=out-rpc.txt make run-rpc-daemon && sleep 15s
+
+      - name: Connect Miner & RPC as peers
+        working-directory: ./eth-private-network/
+        run: make connect-peers && sleep 15s
+
+      - name: Show RPC Logs
+        working-directory: ./eth-private-network/
+        run: cat out-rpc.txt
