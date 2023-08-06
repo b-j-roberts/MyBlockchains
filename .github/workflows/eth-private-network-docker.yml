@@ -9,7 +9,7 @@ jobs:
   Docker-Build:
     runs-on: ubuntu-latest
     env:
-      IMG_NAME: brandonjroberts/eth-private-miner
+      IMG_NAME: eth-private-miner
 
     steps:
       - name: Checkout
