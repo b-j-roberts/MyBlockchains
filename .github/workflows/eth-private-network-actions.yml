@@ -1,0 +1,136 @@
+name: Ethereum Private Network Actions
+run-name: ${{ github.actor }} is Running Actions to Deploy & Test MyBlockchains/eth-private-network 🚀
+on:
+  push:
+    paths:
+      - "eth-private-network/**"
+      - ".github/workflows/eth-private-network-actions.yml"
+jobs:
+  Run-Eth-Private-Network:
+    runs-on: ubuntu-latest
+    steps:
+      - uses : actions/checkout@v3
+        with:
+          submodules: 'true'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+          cache-dependency-path: eth-private-network/go-ethereum/go.sum
+
+      - name: Build Eth Private Network
+        working-directory: ./eth-private-network/
+        run: make build
+
+      - name: List files
+        working-directory: ./eth-private-network/
+        run: ls go-ethereum/
+
+      - name: Add geth to PATH
+        working-directory: ./eth-private-network/
+        run: echo "$(pwd)/go-ethereum/build/bin/" >> $GITHUB_PATH
+
+      - name: Run Miner Node
+        working-directory: ./eth-private-network/
+        run: OUTPUT_FILE=out-miner.txt make run-miner-daemon && sleep 30s
+
+      - name: Show Miner Logs
+        working-directory: ./eth-private-network/
+        run: cat out-miner.txt
+
+      - name: Confirm Miner Mined 10 Blocks
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/out-miner.txt
+          contains: number=10
+          expected_result: PASSED
+
+      - name: Run RPC Node
+        working-directory: ./eth-private-network/
+        run: OUTPUT_FILE=out-rpc.txt make run-rpc-daemon && sleep 15s
+
+      - name: Connect Miner & RPC as peers
+        working-directory: ./eth-private-network/
+        run: make connect-peers && sleep 15s
+
+      - name: Show RPC Logs
+        working-directory: ./eth-private-network/
+        run: cat out-rpc.txt
+
+      - name: Confirm RPC Node Downloading blocks from Miner
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/out-rpc.txt
+          contains: Imported new chain segment
+          expected_result: PASSED
+
+      - name: Get Starting Balance on Miner
+        working-directory: ./eth-private-network/
+        run: ./scripts/get-balance.sh > miner-balance-1.txt
+
+      - name: Confirm Starting Balance on Miner
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/miner-balance-1.txt
+          contains: "0x8ac7230489e80000"
+          expected_result: PASSED
+
+      - name: Get Starting Balance on RPC
+        working-directory: ./eth-private-network/
+        run: ./scripts/get-balance.sh -r http://localhost:8548 > rpc-balance-1.txt
+
+      - name: Confirm Starting Balance on RPC
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/rpc-balance-1.txt
+          contains: "0x8ac7230489e80000"
+          expected_result: PASSED
+
+      - name: Send a Transaction
+        working-directory: ./eth-private-network/
+        run: ./scripts/send-transaction.sh && sleep 5s
+
+      - name: Get Post Tx Balance on Miner
+        working-directory: ./eth-private-network/
+        run: ./scripts/get-balance.sh > miner-balance-2.txt
+
+      - name: Confirm Post Tx Balance on Miner
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/miner-balance-2.txt
+          contains: "0x8ac7230489e7fc18"
+          expected_result: PASSED
+
+      - name: Get Post Tx Balance on RPC
+        working-directory: ./eth-private-network/
+        run: ./scripts/get-balance.sh -r http://localhost:8548 > rpc-balance-2.txt
+
+      - name: Confirm Post Tx Balance on RPC
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/rpc-balance-2.txt
+          contains: "0x8ac7230489e7fc18"
+          expected_result: PASSED
+
+      - name: Get Post Tx Balance on Miner for Receiver
+        working-directory: ./eth-private-network/
+        run: ./scripts/get-balance.sh -a "0xc0ffee254729296a45a3885639AC7E10F9d54979" > miner-balance-3.txt
+
+      - name: Confirm Post Tx Balance on Miner for Receiver
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/miner-balance-3.txt
+          contains: "0x3e8"
+          expected_result: PASSED
+
+      - name: Get Post Tx Balance on RPC for Receiver
+        working-directory: ./eth-private-network/
+        run: ./scripts/get-balance.sh -r http://localhost:8548 -a "0xc0ffee254729296a45a3885639AC7E10F9d54979" > rpc-balance-3.txt
+
+      - name: Confirm Post Tx Balance on RPC for Receiver
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/rpc-balance-3.txt
+          contains: "0x3e8"
+          expected_result: PASSED
