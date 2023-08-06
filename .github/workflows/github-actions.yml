@@ -2,7 +2,7 @@ name: GitHub Actions
 run-name: ${{ github.actor }} is running GitHub Actions to test & deploy MyBlockchains 🚀
 on: [push]
 jobs:
-  Run-Eth-Private-Network-Miner:
+  Run-Eth-Private-Network:
     runs-on: ubuntu-latest
     steps:
       - uses : actions/checkout@v3
@@ -53,3 +53,10 @@ jobs:
       - name: Show RPC Logs
         working-directory: ./eth-private-network/
         run: cat out-rpc.txt
+
+      - name: Confirm RPC Node Downloading blocks from Miner
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/out-rpc.txt
+          contains: Imported new chain segment
+          expected_result: PASSED
