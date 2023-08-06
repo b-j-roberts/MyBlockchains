@@ -23,6 +23,10 @@ jobs:
         working-directory: ./eth-private-network/
         run: ls go-ethereum/
 
+      - name: Add geth to PATH
+        working-directory: ./eth-private-network/
+        run: echo "$(pwd)/go-ethereum/build/bin/" >> $GITHUB_PATH
+
       - name: Run Miner Node
         working-directory: ./eth-private-network/
         run: OUTPUT_FILE=out-miner.txt make run-miner-daemon && sleep 30s
