@@ -131,7 +131,7 @@ jobs:
 
       - name: Bridge Eth To L1
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
-        run: make bridge-eth-to-l1-github-actions
+        run: make bridge-eth-to-l1-github-actions && sleep 15
 
       - name: Check Post Bridge L1 Balance
         uses: GuillaumeFalourd/assert-command-line-output@v2.2
