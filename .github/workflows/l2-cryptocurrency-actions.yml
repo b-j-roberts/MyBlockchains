@@ -69,4 +69,4 @@ jobs:
 
       - name: Run L2 Sequencer
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
-        run: make run-sequencer
+        run: make run-sequencer-github-actions

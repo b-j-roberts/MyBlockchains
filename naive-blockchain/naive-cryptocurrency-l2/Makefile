@@ -37,6 +37,13 @@ deploy-l1-contracts:
 
 
 
+run-sequencer:
+	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x
+
+run-sequencer-github-actions:
+	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x -f configs/github-actions-sequencer.config.json
+
+
 deploy-contracts-l2:
 	cd contracts && make deploy-l2
 	cp contracts/builds/l2-bridge-address.txt ~/naive-sequencer-data/contracts/l2-bridge-address.txt
@@ -111,9 +118,6 @@ local-docker-run-smart-contract-metrics:
 	mkdir -p ~/tmp/l1-docker-data-for-smart-contract-metrics/
 	docker cp naive-sequencer:/sequencer-data/keystore/ ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/
 	L1_CONTRACT_ADDRESS=$(shell cat contracts/builds/tx-storage-address.txt | jq -r .address) SEQUENCER_ADDRESS=$(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/* | jq -r .address) L2_IPC_PATH=/sequencer-data/naive-sequencer.ipc make docker-run-smart-contract-metrics
-
-run-sequencer:
-	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x
 
 run-sequencer-daemon:
 	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x -o ${OUTPUT_FILE}
