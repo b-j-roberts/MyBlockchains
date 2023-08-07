@@ -1,0 +1,28 @@
+name: Naive L2 Cryptocurrency Actions
+run-name: ${{ github.actor }} is Running Actions to Deploy & Test MyBlockchains/naive-blockchain/naive-cryptocurrency-l2 🚀
+on:
+  push:
+    paths:
+      - "naive-blockchain/naive-cryptocurrency-l2/**"
+      - ".github/workflows/l2-cryptocurrency-actions.yml"
+jobs:
+  Run-Eth-Private-Network:
+    runs-on: ubuntu-latest
+    steps:
+      - uses : actions/checkout@v3
+        with:
+          submodules: 'true'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+          cache-dependency-path: naive-blockchain/naive-cryptocurrency-l2/go.sum
+
+      - name: Build All Contracts & L2
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make all
+
+      - name: List files
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: ls build/
