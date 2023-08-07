@@ -147,6 +147,20 @@ jobs:
           contains: "0x8ad1b94fdb564000"
           expected_result: PASSED
 
+      - name: Check Pre Basic ERC20 Bridge L1 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:8545 -c $(cat ~/sequencer-data/contracts/basic-erc20-address.txt | jq -r '.address')
+          contains: "0x00000000000000000000000000000000000000000000000000005af3107a4000"
+          expected_result: PASSED
+
+      - name: Check Pre Basic ERC20 Bridge L2 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./eth-private-network/scripts/get-balance.sh -r http://localhost:5055
+          contains: "0x8ac7230489e80000"
+          expected_result: PASSED
+
       - name: Bridge Basic ERC20 To L2
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
         run: make bridge-basic-erc20-to-l2-github-actions
