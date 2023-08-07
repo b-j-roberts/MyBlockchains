@@ -43,3 +43,30 @@ jobs:
       - name: List files
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
         run: ls build/
+
+      - name: Build Eth Private Network to run as L1
+        working-directory: ./eth-private-network/
+        run: make build
+
+      - name: Run L1 Miner Node
+        working-directory: ./eth-private-network/
+        run: OUTPUT_FILE=out-miner.txt make run-miner-daemon && sleep 30
+
+      - name: Show L1 Miner Logs
+        working-directory: ./eth-private-network/
+        run: cat out-miner.txt
+
+      - name: Confirm Miner is running ( Mined 10 blocks )
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/out-miner.txt
+          contains: number=10
+          expected_result: PASSED 
+
+      - name: Deploy Contracts onto L1
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make deploy-l1-contracts
+
+      - name: Run L2 Sequencer
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make run-sequencer
