@@ -20,7 +20,7 @@ jobs:
           cache-dependency-path: naive-blockchain/naive-cryptocurrency-l2/go.sum
 
       - name: Install solcjs
-        run: npm install -g solc
+        run: npm install -g solc@0.8.18
 
       - name: solcjs version
         run: solcjs --version
@@ -28,6 +28,13 @@ jobs:
       - name: NPM Install Dependencies
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/contracts/
         run: npm install
+
+      - name: Build Geth Devtools
+        working-directory: ./eth-private-network/go-ethereum
+        run: make devtools
+
+      - name: abigen version
+        run: abigen --version
 
       - name: Build All Contracts & L2
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
