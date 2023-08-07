@@ -72,4 +72,22 @@ jobs:
 
       - name: Run L2 Sequencer
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
-        run: make run-sequencer-github-actions
+        run: OUTPUT_FILE=out-sequencer.txt make run-sequencer-github-actions && sleep 30s
+
+      - name: Confirm Sequencer Stored Genesis on L1
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat ./naive-blockchain/naive-cryptocurrency-l2/out-sequencer.txt
+          contains: Stored genesis state on L1
+          expected_result: PASSED
+
+      - name: Confirm Sequencer is running ( Mined 10 blocks )
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat ./naive-blockchain/naive-cryptocurrency-l2/out-sequencer.txt
+          contains: number=10
+          expected_result: PASSED
+
+      - name: Deploy Contracts onto L2
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make deploy-l2-contracts-github-actions

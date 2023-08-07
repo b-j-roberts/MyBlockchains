@@ -16,20 +16,26 @@ deploy-l1-contracts:
 	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-l1-contracts
 	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-l1-tokens
 
+deploy-l2-contracts:
+	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) IPC_PATH=/home/brandon/naive-sequencer-data/naive-sequencer.ipc npm run deploy-l2-contracts
 
+deploy-l2-contracts-github-actions:
+	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) IPC_PATH=/home/runner/work/sequencer-data/naive-sequencer.ipc npm run deploy-l2-contracts
+
+deploy-l2-tokens:
+	L2_TOKEN_BRIDGE_ADDRESS=$(shell cat builds/l2-token-bridge-address.txt  | jq -r .address) SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) IPC_PATH=/home/brandon/naive-sequencer-data/naive-sequencer.ipc npm run deploy-l2-tokens
+
+deploy-l2-tokens-github-actions:
+	L2_TOKEN_BRIDGE_ADDRESS=$(shell cat builds/l2-token-bridge-address.txt  | jq -r .address) SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) IPC_PATH=/home/runner/work/sequencer-data/naive-sequencer.ipc npm run deploy-l2-tokens
+	
 
 
 deploy-goerli:
 	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-goerli
 
-deploy-l2:
-	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) IPC_PATH=/home/brandon/naive-sequencer-data/naive-sequencer.ipc npm run deploy-l2
-
 docker-deploy-l2:
 	SEQUENCER_ADDRESS=$(shell cat /sequencer-data/keystore/*  | jq -r .address) IPC_PATH=/sequencer-data/naive-sequencer.ipc npm run deploy-l2
 
-deploy-l2-tokens:
-	L2_TOKEN_BRIDGE_ADDRESS=$(shell cat builds/l2-token-bridge-address.txt  | jq -r .address) SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) IPC_PATH=/home/brandon/naive-sequencer-data/naive-sequencer.ipc npm run deploy-l2-tokens
 
 docker-deploy-l2-tokens:
 	L2_TOKEN_BRIDGE_ADDRESS=$(shell cat builds/l2-token-bridge-address.txt  | jq -r .address) SEQUENCER_ADDRESS=$(shell cat /sequencer-data/keystore/*  | jq -r .address) IPC_PATH=/sequencer-data/naive-sequencer.ipc npm run deploy-l2-tokens

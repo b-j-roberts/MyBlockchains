@@ -34,23 +34,29 @@ deploy-l1-contracts:
 	rm -f contracts/builds/*-address.txt
 	cd contracts && make deploy-l1-contracts
 
-
-
-
 run-sequencer:
 	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x
 
 run-sequencer-github-actions:
-	./scripts/start-sequencer.sh -f configs/github-actions-sequencer.config.json -x
+	./scripts/start-sequencer.sh -f configs/github-actions-sequencer.config.json -x -o ${OUTPUT_FILE}
 
-
-deploy-contracts-l2:
-	cd contracts && make deploy-l2
+deploy-l2-contracts:
+	cd contracts && make deploy-l2-contracts
 	cp contracts/builds/l2-bridge-address.txt ~/naive-sequencer-data/contracts/l2-bridge-address.txt
 	cp contracts/builds/l2-token-bridge-address.txt ~/naive-sequencer-data/contracts/l2-token-bridge-address.txt
 	cd contracts && make deploy-l2-tokens
 	cp contracts/builds/*-address.txt ~/naive-sequencer-data/contracts/
 	cd contracts && make allow-tokens
+
+deploy-l2-contracts-github-actions:
+	cd contracts && make deploy-l2-contracts-github-actions
+	cp contracts/builds/l2-bridge-address.txt /home/runner/work/sequencer-data/contracts/l2-bridge-address.txt
+	cp contracts/builds/l2-token-bridge-address.txt /home/runner/work/sequencer-data/contracts/l2-token-bridge-address.txt
+	cd contracts && make deploy-l2-tokens
+	cp contracts/builds/*-address.txt ~/naive-sequencer-data/contracts/
+	cd contracts && make allow-tokens
+
+
 
 docker-deploy-contracts-l2:
 	ls contracts/builds/*-address.txt | xargs -I {} docker cp {} naive-sequencer:/app/contracts/builds/
