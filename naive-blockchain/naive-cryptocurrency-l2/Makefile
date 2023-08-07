@@ -224,7 +224,7 @@ bridge-basic-erc721-to-l1:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc --to-l1
 
 bridge-basic-erc721-to-l1-github-actions:
-	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 0 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc --to-l1
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) --value 0 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc --to-l1
 
 bridge-special-erc721-to-l2:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/special-erc721-address.txt | jq -r .address) --is-erc
