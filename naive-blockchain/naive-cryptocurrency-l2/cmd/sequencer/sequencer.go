@@ -2,27 +2,19 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/metrics"
 
 	l2config "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/config"
 	l2core "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/core"
+	l2utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 )
-
-func StartMetrics() error {
-  go metrics.CollectProcessMetrics(3 * time.Second)
-
-  return nil
-}
 
 func main() { os.Exit(mainImpl()) }
 
@@ -67,10 +59,7 @@ func mainImpl() int {
 
   if naiveNode.L2Node.Config.Metrics.Enabled {
     log.Println("Starting Metrics Server")
-    err = StartMetrics()
-    if err != nil {                                                                          
-       fatalErrChan <- fmt.Errorf("failed to start metrics: %v", err)                                  
-    }
+    l2utils.StartSystemMetrics()
   }
 
   sigint := make(chan os.Signal, 1)

@@ -8,16 +8,14 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "solcjs --base-path . --include-path node_modules/ --bin --abi --optimize -o builds/ contracts/*.sol",
-    "build-bridge": "solcjs --base-path . --include-path node_modules/ --bin --abi --optimize -o builds/ contracts/bridge/*.sol",
-    "build-tokens": "solcjs --base-path . --include-path node_modules/ --bin --abi --optimize -o builds/ contracts/tokens/*/*.sol",
-    "deploy-private": "node scripts/deploy_private.js",
+    "deploy-l1-contracts": "node scripts/deploy_l1_contracts.js",
+    "deploy-l1-tokens": "node scripts/deploy_l1_tokens.js",
+
     "deploy-goerli": "node scripts/deploy_goerli.js",
     "deploy-l2": "node scripts/deploy_l2.js",
     "deploy-l2-tokens": "node scripts/deploy_l2_tokens.js",
     "test-private": "mocha tests/transaction-storage.private.test.js --timeout 30000",
-    "test-goerli": "mocha tests/transaction-storage.goerli.test.js --timeout 30000",
-    "go-gen": "./scripts/go-gen.sh"
+    "test-goerli": "mocha tests/transaction-storage.goerli.test.js --timeout 30000"
   },
   "author": "",
   "license": "ISC",

@@ -1,9 +1,10 @@
-.PHONY: all contracts sequencer prover rpc verifier allow-tokens clean smart-contract-metrics bridge
+.PHONY: all contracts sequencer prover rpc verifier allow-tokens clean smart-contract-metrics bridge metrics-test
+.DEFAULT_GOAL := all
 
 all: contracts sequencer prover rpc verifier smart-contract-metrics allow-tokens bridge
 
 contracts:
-	cd contracts && make
+	cd contracts && make build
 
 sequencer:
 	go build -o build/sequencer ./cmd/sequencer
@@ -26,9 +27,15 @@ allow-tokens:
 bridge:
 	go build -o build/bridge ./cmd/bridge
 
-deploy-private-l1:
+metrics-test:
+	go build -o build/metrics-test ./cmd/metrics-test
+
+deploy-l1-contracts:
 	rm -f contracts/builds/*-address.txt
-	cd contracts && make deploy-private
+	cd contracts && make deploy-l1-contracts
+
+
+
 
 deploy-contracts-l2:
 	cd contracts && make deploy-l2
@@ -70,10 +77,11 @@ docker-run-sequencer:
 	rm -rf ~/tmp/l1-docker-data-for-sequencer/
 	mkdir -p ~/tmp/l1-docker-data-for-sequencer/
 	docker cp eth-private-miner:/root/.eth-accounts/ ~/tmp/l1-docker-data-for-sequencer/
-	echo "Running sequencer w/ " ${L1_CONTRACT_ADDRESS}
-	docker run -it -p 5055:5055 -p 6160:6160 -v ~/docker-sequencer/:/sequencer-data --network host --rm --name naive-sequencer -e L1_CONTRACT_ADDRESS=${L1_CONTRACT_ADDRESS} \
-	  -e L1_BRIDGE_ADDRESS=${L1_BRIDGE_ADDRESS} -e L1_TOKEN_BRIDGE_ADDRESS=${L1_TOKEN_BRIDGE_ADDRESS} -e CONTRACTS_DIR=/app/contracts/builds/ \
-		--mount type=bind,source="$(shell echo ${HOME})"/tmp/l1-docker-data-for-sequencer/.eth-accounts/,target=/root/.eth-accounts/ \
+	cp contracts/builds/*-address.txt ~/tmp/l1-docker-data-for-sequencer/
+	mkdir -p ~/docker-sequencer/
+	cp configs/docker-sequencer.config.json ~/docker-sequencer/sequencer.config.json
+	docker run -it -p 5055:5055 -p 6160:6160 -v ~/docker-sequencer/:/sequencer-data --network host --rm --name naive-sequencer \
+		--mount type=bind,source="$(shell echo ${HOME})"/tmp/l1-docker-data-for-sequencer/,target=/root/ \
 		brandonjroberts/naive-l2-sequencer:latest
 	rm -rf ~/tmp/l1-docker-data-for-sequencer/
 
@@ -111,7 +119,7 @@ run-sequencer-daemon:
 	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x -o ${OUTPUT_FILE}
 
 run-sequencer-noclean:
-	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -k ~/l1-miner-data/keystore/ -C ./contracts/builds/
+	./scripts/start-sequencer.sh -f configs/sequencer.config.json
 
 run-rpc:
 	./scripts/start-rpc.sh -f configs/rpc.config.json -x -o ~/naive-rpc-data/log.txt

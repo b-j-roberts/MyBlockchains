@@ -19,7 +19,7 @@ const (
   ERC721Type = 2
 )
 
-func AddL1Token(l1Comms *l2utils.L1Comms, tokenAddr common.Address, tokenType TokenType) error {
+func AllowL1Token(l1Comms *l2utils.L1Comms, tokenAddr common.Address, tokenType TokenType) error {
   log.Println("Adding allowed token", "tokenAddr", tokenAddr.Hex(), "sender", Sender.Hex())
   l1TransactionOpts, err := l1Comms.CreateL1TransactionOpts(Sender, big.NewInt(0))
   tx, err := l1Comms.L1Contracts.TokenBridgeContract.AddAllowedToken(l1TransactionOpts, tokenAddr, uint8(tokenType))
@@ -31,7 +31,7 @@ func AddL1Token(l1Comms *l2utils.L1Comms, tokenAddr common.Address, tokenType To
   return nil
 }
 
-func AddL2Token(l2Comms *l2utils.L2Comms, l1TokenAddr common.Address, l2TokenAddr common.Address) error {
+func AllowL2Token(l2Comms *l2utils.L2Comms, l1TokenAddr common.Address, l2TokenAddr common.Address) error {
   l2TransactionOpts, err := l2Comms.CreateL2TransactionOpts(Sender, big.NewInt(0))
   tx, err := l2Comms.L2Contracts.L2TokenBridgeContract.AddAllowedToken(l2TransactionOpts, l1TokenAddr, l2TokenAddr)
   if err != nil {
@@ -42,40 +42,40 @@ func AddL2Token(l2Comms *l2utils.L2Comms, l1TokenAddr common.Address, l2TokenAdd
   return nil
 }
 
-func AddL1Tokens(tokenAddresses l2utils.TokenAddresses, l1Comms *l2utils.L1Comms) error {
-  err := AddL1Token(l1Comms, tokenAddresses.Erc20Address, ERC20Type)
+func AllowL1Tokens(tokenAddresses l2utils.TokenAddresses, l1Comms *l2utils.L1Comms) error {
+  err := AllowL1Token(l1Comms, tokenAddresses.Erc20Address, ERC20Type)
   if err != nil {
     return err
   }
-  err = AddL1Token(l1Comms, tokenAddresses.StableErc20Address, ERC20Type)
+  err = AllowL1Token(l1Comms, tokenAddresses.StableErc20Address, ERC20Type)
   if err != nil {
     return err
   }
-  err = AddL1Token(l1Comms, tokenAddresses.Erc721Address, ERC721Type)
+  err = AllowL1Token(l1Comms, tokenAddresses.Erc721Address, ERC721Type)
   if err != nil {
     return err
   }
-  err = AddL1Token(l1Comms, tokenAddresses.SpecialErc721Address, ERC721Type)
+  err = AllowL1Token(l1Comms, tokenAddresses.SpecialErc721Address, ERC721Type)
   if err != nil {
     return err
   }
   return nil
 }
 
-func AddL2Tokens(tokenAddresses l2utils.TokenAddresses, l2Comms *l2utils.L2Comms) error {
-  err := AddL2Token(l2Comms, tokenAddresses.Erc20Address, tokenAddresses.L2Erc20Address)
+func AllowL2Tokens(tokenAddresses l2utils.TokenAddresses, l2Comms *l2utils.L2Comms) error {
+  err := AllowL2Token(l2Comms, tokenAddresses.Erc20Address, tokenAddresses.L2Erc20Address)
   if err != nil {
     return err
   }
-  err = AddL2Token(l2Comms, tokenAddresses.StableErc20Address, tokenAddresses.L2StableErc20Address)
+  err = AllowL2Token(l2Comms, tokenAddresses.StableErc20Address, tokenAddresses.L2StableErc20Address)
   if err != nil {
     return err
   }
-  err = AddL2Token(l2Comms, tokenAddresses.Erc721Address, tokenAddresses.L2Erc721Address)
+  err = AllowL2Token(l2Comms, tokenAddresses.Erc721Address, tokenAddresses.L2Erc721Address)
   if err != nil {
     return err
   }
-  err = AddL2Token(l2Comms, tokenAddresses.SpecialErc721Address, tokenAddresses.L2SpecialErc721Address)
+  err = AllowL2Token(l2Comms, tokenAddresses.SpecialErc721Address, tokenAddresses.L2SpecialErc721Address)
   if err != nil {
     return err
   }
@@ -123,13 +123,13 @@ func mainImpl() int {
     return 1
   }
 
-  err = AddL1Tokens(tokenAddresses, l1Comms)
+  err = AllowL1Tokens(tokenAddresses, l1Comms)
   if err != nil {
     log.Println("Failed to add L1 tokens", "error", err)
     return 1
   }
 
-  err = AddL2Tokens(tokenAddresses, l2Comms)
+  err = AllowL2Tokens(tokenAddresses, l2Comms)
   if err != nil {
     log.Println("Failed to add L2 tokens", "error", err)
     return 1

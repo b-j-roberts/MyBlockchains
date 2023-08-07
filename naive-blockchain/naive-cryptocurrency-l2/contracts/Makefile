@@ -1,11 +1,23 @@
-build:
-	npm run build
-	npm run build-bridge
-	npm run build-tokens
-	npm run go-gen
+build-contracts:
+	solcjs --base-path . --include-path node_modules/ --bin --abi --optimize -o builds/ contracts/*.sol
 
-deploy-private:
-	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-private
+build-bridge:
+	solcjs --base-path . --include-path node_modules/ --bin --abi --optimize -o builds/ contracts/bridge/*.sol
+
+build-tokens:
+	solcjs --base-path . --include-path node_modules/ --bin --abi --optimize -o builds/ contracts/tokens/erc20/*.sol
+	solcjs --base-path . --include-path node_modules/ --bin --abi --optimize -o builds/ contracts/tokens/erc721/*.sol
+
+build: build-contracts build-bridge build-tokens
+	./scripts/go-gen.sh
+
+deploy-l1-contracts:
+	echo "Deploying contracts to L1 chain"
+	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-l1-contracts
+	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-l1-tokens
+
+
+
 
 deploy-goerli:
 	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-goerli

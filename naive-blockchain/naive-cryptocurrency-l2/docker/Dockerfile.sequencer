@@ -70,9 +70,6 @@ VOLUME /sequencer-data
 WORKDIR /app
 
 COPY scripts/ scripts/
+COPY configs/docker-sequencer.config.json /sequencer-data/sequencer.config.json
 
-ENV L1_CONTRACT_ADDRESS=
-ENV L1_BRIDGE_ADDRESS=
-ENV L1_TOKEN_BRIDGE_ADDRESS=
-
-ENTRYPOINT ["./scripts/start-sequencer.sh", "-d", "/sequencer-data", "-k", "/l1-data/keystore/"]
+ENTRYPOINT ["./scripts/start-sequencer.sh", "-f", "/sequencer-data/sequencer.config.json"]

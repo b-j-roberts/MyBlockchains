@@ -68,7 +68,7 @@ func NewNode(rpcConfigFile string) (*Node, error) {
   // Caching from arbnode/execution/blockchain.go DatabaseCache
   // Namespace is prefix for metrics
   // Open rawdb from geth/core with ancients freezer & configs from arbitrum chainDb ( Disk based db )
-  chainDb, err := node.OpenDatabaseWithFreezer("l2-chain", 2048, 512, "", "naive-l2/chaindb", false)
+  chainDb, err := node.OpenDatabaseWithFreezer("l2-chain", 2048, 512, "", "naive_l2/chaindb", false)
   if err != nil {
     return nil, fmt.Errorf("failed to open chain database: %v", err)
   }
