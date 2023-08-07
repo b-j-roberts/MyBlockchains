@@ -55,9 +55,9 @@ deploy-l2-contracts-github-actions:
 	cd contracts && make deploy-l2-contracts-github-actions
 	cp contracts/builds/l2-bridge-address.txt /home/runner/work/sequencer-data/contracts/l2-bridge-address.txt
 	cp contracts/builds/l2-token-bridge-address.txt /home/runner/work/sequencer-data/contracts/l2-token-bridge-address.txt
-	cd contracts && make deploy-l2-tokens
-	cp contracts/builds/*-address.txt ~/naive-sequencer-data/contracts/
-	cd contracts && make allow-tokens
+	cd contracts && make deploy-l2-tokens-github-actions
+	cp contracts/builds/*-address.txt /home/runner/work/sequencer-data/contracts/
+	cd contracts && make allow-tokens-github-actions
 
 
 
