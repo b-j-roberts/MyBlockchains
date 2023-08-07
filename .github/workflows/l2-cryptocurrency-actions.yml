@@ -76,7 +76,7 @@ jobs:
 
       - name: Run L2 Sequencer
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
-        run: OUTPUT_FILE=out-sequencer.txt make run-sequencer-github-actions-retry && sleep 120s
+        run: OUTPUT_FILE=out-sequencer.txt timeout 120s make run-sequencer-github-actions-retry
 
       - name: Confirm Sequencer Stored Genesis on L1
         uses: GuillaumeFalourd/assert-command-line-output@v2.2
@@ -95,3 +95,58 @@ jobs:
       - name: Deploy Contracts onto L2
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
         run: make deploy-l2-contracts-github-actions
+
+      - name: Run Prover
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: OUTPUT_FILE=out-prover.txt make run-prover-github-actions && sleep 20
+
+      - name: Confirm Prover Finalizing on L1
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat ./naive-blockchain/naive-cryptocurrency-l2/out-prover.txt
+          contains: Proof verified on L1!
+          expected_result: PASSED
+
+      - name: Check Pre Bridge L1 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./eth-private-network/scripts/get-balance.sh -r http://localhost:8545
+          contains: "0x8ac7230489e80000"
+          expected_result: PASSED
+
+      - name: Check Pre Bridge L2 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./eth-private-network/scripts/get-balance.sh -r http://localhost:5055
+          contains: "0x8ac7230489e80000"
+          expected_result: PASSED
+
+      - name: Bridge Eth To L2
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make bridge-eth-to-l2-github-actions
+
+      - name: Bridge Eth To L1
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make bridge-eth-to-l1-github-actions
+
+      - name: Check Post Bridge L1 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./eth-private-network/scripts/get-balance.sh -r http://localhost:8545
+          contains: "0x8abc8cb93879c000"
+          expected_result: PASSED
+
+      - name: Check Post Bridge L2 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./eth-private-network/scripts/get-balance.sh -r http://localhost:5055
+          contains: "0x8ad1b94fdb564000"
+          expected_result: PASSED
+
+      - name: Bridge Basic ERC20 To L2
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make bridge-basic-erc20-to-l2-github-actions
+
+      - name: Bridge Basic ERC20 To L1
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make bridge-basic-erc20-to-l2-github-actions
