@@ -2,11 +2,13 @@
 
 Project containing scripts to launch private clique networks using geth.
 
+**Cool Features**
 - Dynamically generates `genesis.json`
 - Launch a miner ( POA ) node, optionally launch peer rpc nodes and connect as peers
 - Exposes unlocked accounts on nodes for testing
 - Local, Docker, & Kubernetes setups + quick launch commands thru make
 - Contains various load tests / other testing scripts ( transactions work )
+- Github Actions automatically tests Miner, RPC, transactions, and build + pushes docker images to [dockerhub](https://hub.docker.com/repositories/brandonjroberts).
 
 ![Load Test Transactions](https://github.com/b-j-roberts/MyBlockchains/blob/master/eth-private-network/media/load-test-transactions.png)
 
@@ -123,6 +125,11 @@ There is no need to build & push the docker image for a typical user, but if you
 make docker-build
 make docker-push
 ```
+When pushing your branch changes to Github, Github Actions will build and push a docker image to dockerhub. The tag will be something like `branchname-commitsha`. When merging into master, it will update the `latest` tag image in dockerhub.
+https://hub.docker.com/repositories/brandonjroberts
+- https://hub.docker.com/repository/docker/brandonjroberts/eth-private-miner/general
+- https://hub.docker.com/repository/docker/brandonjroberts/eth-private-rpc/general
+- https://hub.docker.com/repository/docker/brandonjroberts/eth-private-node-setup/general
 
 **Running**
 You can also use docker images pushed to dockerhub ( or built locally ) to run the miner & rpc nodes :
