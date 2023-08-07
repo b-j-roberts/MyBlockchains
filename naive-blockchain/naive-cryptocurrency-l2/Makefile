@@ -41,7 +41,7 @@ run-sequencer:
 	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x
 
 run-sequencer-github-actions:
-	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x -f configs/github-actions-sequencer.config.json
+	./scripts/start-sequencer.sh -f configs/github-actions-sequencer.config.json -x
 
 
 deploy-contracts-l2:

@@ -1,0 +1,21 @@
+{
+  "data-dir": "/sequencer-data/",
+  "genesis": "/sequencer-data/genesis.json",
+  "contracts": "/sequencer-data/contracts/",
+  "l2ChainId": 515,
+
+  "host": "localhost",
+  "port": 5055,
+  "p2pport": 30313,
+  "modules": "eth,net,web3,admin,personal,debug,txpool",
+
+  "l1Url": "http://localhost:8545",
+  "l1ChainId": 505,
+
+  "miningThreads": 4,
+  "metrics": {
+    "enabled": true,
+    "host": "localhost",
+    "port": 6160
+  }
+}
