@@ -51,6 +51,10 @@ jobs:
         working-directory: ./eth-private-network/
         run: make build
 
+      - name: Build Geth for L2 Sequencer
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/go-ethereum
+        run: make geth
+
       - name: Run L1 Miner Node
         working-directory: ./eth-private-network/
         run: OUTPUT_FILE=out-miner.txt make run-miner-daemon && sleep 30
