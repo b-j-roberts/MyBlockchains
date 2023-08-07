@@ -51,6 +51,10 @@ jobs:
         working-directory: ./eth-private-network/
         run: make build
 
+      - name: Add Geth to PATH
+        working-directory: ./eth-private-network/
+        run: echo "$(pwd)/go-ethereum/build/bin/" >> $GITHUB_PATH
+
       - name: Build Geth for L2 Sequencer
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/go-ethereum
         run: make geth
