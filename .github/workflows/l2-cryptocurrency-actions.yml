@@ -20,7 +20,7 @@ jobs:
           cache-dependency-path: naive-blockchain/naive-cryptocurrency-l2/go.sum
 
       - name: Install solcjs
-        run: npm install -g solcjs
+        run: npm install -g solc
 
       - name: Build All Contracts & L2
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
