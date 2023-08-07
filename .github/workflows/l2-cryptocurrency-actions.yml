@@ -25,6 +25,9 @@ jobs:
       - name: solcjs version
         run: solcjs --version
 
+      - name: PWD
+        run: pwd
+
       - name: NPM Install Dependencies
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/contracts/
         run: npm install
