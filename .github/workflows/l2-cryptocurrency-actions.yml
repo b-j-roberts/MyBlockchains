@@ -150,7 +150,7 @@ jobs:
       - name: Check Pre Basic ERC20 Bridge L1 Balance
         uses: GuillaumeFalourd/assert-command-line-output@v2.2
         with:
-          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:8545 -c $(cat ../sequencer-data/contracts/basic-erc20-address.txt | jq -r '.address')
+          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:8545 -c $(cat /home/runner/work/sequencer-data/contracts/basic-erc20-address.txt | jq -r '.address')
           contains: "0x00000000000000000000000000000000000000000000000000005af3107a4000"
           expected_result: PASSED
 
