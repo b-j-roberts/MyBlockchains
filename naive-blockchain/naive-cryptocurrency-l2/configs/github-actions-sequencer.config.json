@@ -1,7 +1,7 @@
 {
-  "data-dir": "/sequencer-data/",
-  "genesis": "/sequencer-data/genesis.json",
-  "contracts": "/sequencer-data/contracts/",
+  "data-dir": "/home/runner/work/sequencer-data/",
+  "genesis": "/home/runner/work/sequencer-data/genesis.json",
+  "contracts": "/home/runner/work/sequencer-data/contracts/",
   "l2ChainId": 515,
 
   "host": "localhost",
