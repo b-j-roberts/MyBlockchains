@@ -179,7 +179,7 @@ bridge-eth-to-l1:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --config configs/sequencer.config.json --to-l1
 
 bridge-eth-to-l1-github-actions:
-	ACCOUNT_PASS=password ./build/bridge --address $(shell cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --config configs/github-actions-sequencer.config.json
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --config configs/github-actions-sequencer.config.json --to-l1
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --config configs/github-actions-sequencer.config.json --to-l1
 
 docker-bridge-eth-to-l1:
