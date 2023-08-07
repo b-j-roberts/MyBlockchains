@@ -40,6 +40,9 @@ run-sequencer:
 run-sequencer-github-actions:
 	./scripts/start-sequencer.sh -f configs/github-actions-sequencer.config.json -x -o ${OUTPUT_FILE}
 
+run-sequencer-github-actions-retry:
+	./scripts/start-sequencer-retry-github-actions.sh
+
 deploy-l2-contracts:
 	cd contracts && make deploy-l2-contracts
 	cp contracts/builds/l2-bridge-address.txt ~/naive-sequencer-data/contracts/l2-bridge-address.txt

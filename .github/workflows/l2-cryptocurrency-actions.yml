@@ -76,7 +76,7 @@ jobs:
 
       - name: Run L2 Sequencer
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
-        run: OUTPUT_FILE=out-sequencer.txt make run-sequencer-github-actions && sleep 30s
+        run: OUTPUT_FILE=out-sequencer.txt make run-sequencer-github-actions-retry && sleep 120s
 
       - name: Confirm Sequencer Stored Genesis on L1
         uses: GuillaumeFalourd/assert-command-line-output@v2.2
