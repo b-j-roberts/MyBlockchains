@@ -98,7 +98,7 @@ jobs:
 
       - name: Run Prover
         working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
-        run: OUTPUT_FILE=out-prover.txt make run-prover-github-actions && sleep 20
+        run: OUTPUT_FILE=out-prover.txt make run-prover-github-actions && sleep 60
 
       - name: Confirm Prover Finalizing on L1
         uses: GuillaumeFalourd/assert-command-line-output@v2.2
