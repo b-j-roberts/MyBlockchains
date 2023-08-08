@@ -577,26 +577,20 @@ func (c *L2Consensus) Prepare(chain consensus.ChainHeaderReader, header *types.H
 // consensus rules in clique, do nothing here.
 func (c *L2Consensus) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, withdrawals []*types.Withdrawal) {
 
-  log.Info("Checking for L1 Bridge deposits")
-
   eventSignature := crypto.Keccak256Hash([]byte("EthDeposited(uint256,address,uint256)"))
 
   for _, tx := range txs {
     txLogs := state.GetLogs(tx.Hash(), header.Number.Uint64(), header.Hash())
      for _, receiptLog := range txLogs {
       if bytes.Equal(receiptLog.Topics[0].Bytes(), eventSignature.Bytes()) {
-        log.Info("Found EthDeposited event")
         l2ContractAddresses := l2utils.CreateL2ContractAddressConfig(c.config.ContractsPath)
         if common.HexToAddress(receiptLog.Address.Hex()) == l2ContractAddresses.BridgeContractAddress {
-          log.Info("Unpacking Eth Dep")
           // TEMP: Add balance to state
           nonce, addr, amount, err := l2utils.UnpackEthDeposited(*receiptLog)
           if err != nil {
             log.Error("Error unpacking EthDeposited event", "err", err)
             return
           }
-
-          log.Info("Unpacked Eth Dep", "nonce", nonce, "addr", addr.Hex(), "amount", amount)
 
           // Compare if nonce is greater than engine nonce ( comparing 2 big ints )
           if state.GetNonce(common.HexToAddress("0x505")) < nonce.Uint64() {
@@ -605,7 +599,9 @@ func (c *L2Consensus) Finalize(chain consensus.ChainHeaderReader, header *types.
               return
             }
 
-            log.Info("Bridging Eth to L2", "to", addr.Hex(), "amount", amount, "nonce", nonce.Uint64())
+            log.Info("Found Eth Deposit: Bridging Eth to L2",
+                     "to", addr.Hex(), "amount", amount, "nonce", nonce.Uint64())
+
             // Update nonce
             state.AddBalance(addr, amount)
             state.SetNonce(common.HexToAddress("0x505"), nonce.Uint64())
@@ -665,7 +661,6 @@ func (c *L2Consensus) Seal(chain consensus.ChainHeaderReader, block *types.Block
 	}
 	// Don't hold the signer fields for the entire sealing procedure
 	c.lock.RLock()
-  log.Info("Sealing", "signer", c.signer.Hex(), "number", number)
 	signer, signFn := c.signer, c.signFn
 	c.lock.RUnlock()
 

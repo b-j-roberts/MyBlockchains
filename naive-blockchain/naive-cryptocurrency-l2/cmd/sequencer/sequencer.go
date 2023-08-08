@@ -55,7 +55,6 @@ func mainImpl() int {
   if err != nil {
     fatalErrChan <- err
   }
-  log.Println("Naive Sequencer Node started", naiveNode)
 
   if naiveNode.L2Node.Config.Metrics.Enabled {
     log.Println("Starting Metrics Server")

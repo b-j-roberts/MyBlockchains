@@ -104,17 +104,9 @@ func (batcher *Batcher) Start() error {
     //TODO: Use similar only finalized block logic for this
     block := batcher.L2Blockchain.GetBlockByNumber(batcher.CurrL2BlockNumber)
     if block != nil {
-      log.Printf("Batcher block %d has %d txs\n", batcher.CurrL2BlockNumber, len(block.Transactions()))
       for _, tx := range block.Transactions() {
-        log.Printf("Batcher got tx: %v\n", tx)
         batcher.TxBatch = append(batcher.TxBatch, tx)
 
-        //TODO: To function
-        //rpcIPC, err := rpc.DialIPC(context.Background(), batcher.BatcherConfig.NodeConfig.DataDir + "/naive-sequencer.ipc")
-        //if err != nil {
-        //  log.Fatalf("Failed to dial ipc: %v", err)
-        //  panic(err)
-        //}
         seqURL := "http://" + batcher.BatcherConfig.NodeConfig.Host + ":" + strconv.Itoa(batcher.BatcherConfig.NodeConfig.Port)
         rpc, err := rpc.Dial(seqURL)
 
@@ -125,12 +117,10 @@ func (batcher *Batcher) Start() error {
           panic(err)
         }
 
-        log.Printf("Batcher got Receipt: %v\n", receipt)
         receipt_logs := l2utils.ReceiptLogsWithEvent(receipt, crypto.Keccak256Hash([]byte("EthWithdraw(uint256,address,uint256)")).Bytes())
         for _, receipt_log := range receipt_logs {
           l2AddressConfig := l2utils.CreateL2ContractAddressConfig(batcher.BatcherConfig.NodeConfig.Contracts)
           if common.HexToAddress(receipt_log.Address.Hex()) == l2AddressConfig.BridgeContractAddress {
-
             nonce, addr, amount, err := l2utils.UnpackEthWithdraw(*receipt_log)
             if err != nil {
               log.Printf("Batcher got error: %v\n", err)
@@ -167,11 +157,9 @@ func (batcher *Batcher) Start() error {
         }
 
         receipt_logs = l2utils.ReceiptLogsWithEvent(receipt, crypto.Keccak256Hash([]byte("TokensWithdrawn(uint256,address,address,uint256)")).Bytes())
-        log.Println("Got receipt logs:", len(receipt_logs))
         for _, receipt_log := range receipt_logs {
           l2AddressConfig := l2utils.CreateL2ContractAddressConfig(batcher.BatcherConfig.NodeConfig.Contracts)
           if common.HexToAddress(receipt_log.Address.Hex()) == l2AddressConfig.TokenBridgeContractAddress {
-            log.Printf("Got token withdrawal: %v\n", receipt_log)
             nonce, from, token, amount, err := l2utils.UnpackTokenWithdraw(*receipt_log)
             if err != nil {
               log.Printf("Batcher got error: %v\n", err)
@@ -189,7 +177,6 @@ func (batcher *Batcher) Start() error {
               continue
             }
 
-            log.Printf("Token withdrawal: %v %v %v %v\n", nonce, from, token, amount)
             transactOpts, err := batcher.L1Comms.CreateL1TransactionOpts(batcher.BatcherConfig.PosterAddress, big.NewInt(0))
             if err != nil {
               log.Printf("Batcher got error: %v\n", err)
@@ -201,7 +188,7 @@ func (batcher *Batcher) Start() error {
               log.Printf("Batcher got error: %v\n", err)
               panic(err)
             }
-            log.Printf("Token withdrawal tx to l1: %s\n", tx.Hash().Hex())
+            log.Printf("Token withdrawal: %v %v %v %v %v\n", nonce, from, token, amount, tx.Hash().Hex())
           }
         }
       }

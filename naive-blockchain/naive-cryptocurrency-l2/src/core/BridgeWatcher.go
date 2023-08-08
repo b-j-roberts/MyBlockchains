@@ -36,14 +36,12 @@ func (bw *BridgeWatcher) WatchL1() error {
     return err
   }
 
-  log.Printf("Latest L1 block number: %v   %v", latestBlockNumber, bw.L1BlockNumber)
   if latestBlockNumber <= bw.L1BlockNumber {
     time.Sleep(1 * time.Second)
     return err
   }
 
   for i := bw.L1BlockNumber + 1; i <= latestBlockNumber; i++ {
-    log.Printf("Watching L1 block %v", i)
     newBlock, err := bw.L1Comms.L1Client.BlockByNumber(context.Background(), big.NewInt(int64(i)))
     if err != nil {
       log.Fatalf("Failed to get block: %v", err)
@@ -105,10 +103,8 @@ func (bw *BridgeWatcher) WatchL1() error {
       }
 
       receipt_logs = l2utils.ReceiptLogsWithEvent(receipt, crypto.Keccak256Hash([]byte("TokensDeposited(uint256,address,address,uint256)")).Bytes())
-      log.Println("found x receipt logs: ", len(receipt_logs))
       for _, receipt_log := range receipt_logs { 
         //TODO: nonce check
-        log.Printf("Watcher found Receipt log: %v", receipt_log)
         if common.HexToAddress(receipt_log.Address.Hex()) == bw.L1Comms.L1ContractAddressConfig.TokenBridgeContractAddress {
           tokenDep, err := bw.L1Comms.L1Contracts.TokenBridgeContract.ParseTokensDeposited(*receipt_log)
           if err != nil {
@@ -140,7 +136,6 @@ func (bw *BridgeWatcher) WatchL1() error {
             continue
           }
 
-          log.Println("Using args: ", tokenDep.TokenAddress.Hex(), tokenDep.From.Hex(), tokenDep.Value)
           //TODO: Check if token is already deployed on L2 by allowedTokens
           tx, err := l2Comms.L2Contracts.L2TokenBridgeContract.MintTokens(transactOpts, tokenDep.TokenAddress, tokenDep.From, tokenDep.Value)
           if err != nil {
@@ -153,7 +148,6 @@ func (bw *BridgeWatcher) WatchL1() error {
       }
     }
 
-    log.Println("Done processing block: ", i)
     bw.L1BlockNumber = i
   }
 
