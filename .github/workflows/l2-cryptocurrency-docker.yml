@@ -122,4 +122,4 @@ jobs:
           push: 'true'
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
-          file: ./eth-private-network/docker/Dockerfile.smart-contract-exporter
+          file: ./naive-blockchain/naive-cryptocurrency-l2/docker/Dockerfile.smart-contract-exporter

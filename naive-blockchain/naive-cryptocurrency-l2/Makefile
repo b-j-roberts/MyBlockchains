@@ -91,6 +91,7 @@ docker-build:
 docker-push:
 	docker push brandonjroberts/naive-l2-sequencer:latest
 	docker push brandonjroberts/naive-l2-prover:latest
+	docker push brandonjroberts/naive-l2-smart-contract-exporter:latest
 
 local-docker-run-sequencer:
 	L1_CONTRACT_ADDRESS=$(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) L1_BRIDGE_ADDRESS=$(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) L1_TOKEN_BRIDGE_ADDRESS=$(shell cat contracts/builds/l1-token-bridge-address.txt | jq -r .address) make docker-run-sequencer
