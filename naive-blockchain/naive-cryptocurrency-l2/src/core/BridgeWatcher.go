@@ -68,7 +68,7 @@ func (bw *BridgeWatcher) WatchL1() error {
             return err
           }
 
-          log.Printf("L1 Deposit: %v", bridgeDep)
+          log.Printf("L1 Deposit:  %v %v %v", bridgeDep.Addr.Hex(), bridgeDep.Amount, bridgeDep.Nonce)
           transactOpts, err := l2utils.CreateTransactOpts(accounts.Account{Address: l2utils.GetSequencer()}, big.NewInt(int64(bw.Config.L2ChainID)))
           if err != nil {
             log.Fatalf("Failed to create transact opts: %v", err)
@@ -112,7 +112,7 @@ func (bw *BridgeWatcher) WatchL1() error {
             return err
           }
 
-          log.Printf("L1 Token Deposit: %v", tokenDep)
+          log.Printf("L1 Token Deposit: %v %v %v %v", tokenDep.TokenAddress.Hex(), tokenDep.Value, tokenDep.Nonce, tokenDep.From)
           transactOpts, err := l2utils.CreateTransactOpts(accounts.Account{Address: l2utils.GetSequencer()}, big.NewInt(int64(bw.Config.L2ChainID)))
           if err != nil {
             log.Fatalf("Failed to create transact opts: %v", err)
