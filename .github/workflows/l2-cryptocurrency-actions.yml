@@ -1,0 +1,223 @@
+name: Naive L2 Cryptocurrency Actions
+run-name: ${{ github.actor }} is Running Actions to Deploy & Test MyBlockchains/naive-blockchain/naive-cryptocurrency-l2 🚀
+on:
+  push:
+    paths:
+      - "naive-blockchain/naive-cryptocurrency-l2/**"
+      - ".github/workflows/l2-cryptocurrency-actions.yml"
+jobs:
+  Run-Eth-Private-Network:
+    runs-on: ubuntu-latest
+    steps:
+      - uses : actions/checkout@v3
+        with:
+          submodules: 'true'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+          cache-dependency-path: naive-blockchain/naive-cryptocurrency-l2/go.sum
+
+      - name: Install solcjs
+        run: npm install -g solc@0.8.18
+
+      - name: solcjs version
+        run: solcjs --version
+
+      - name: PWD
+        run: pwd
+
+      - name: NPM Install Dependencies
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/contracts/
+        run: npm install
+
+      - name: Build Geth Devtools
+        working-directory: ./eth-private-network/go-ethereum
+        run: make devtools
+
+      - name: abigen version
+        run: abigen --version
+
+      - name: Build All Contracts & L2
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make all
+
+      - name: List files
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: ls build/
+
+      - name: Build Eth Private Network to run as L1
+        working-directory: ./eth-private-network/
+        run: make build
+
+      - name: Add Geth to PATH
+        working-directory: ./eth-private-network/
+        run: echo "$(pwd)/go-ethereum/build/bin/" >> $GITHUB_PATH
+
+      - name: Build Geth for L2 Sequencer
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/go-ethereum
+        run: make geth
+
+      - name: Run L1 Miner Node
+        working-directory: ./eth-private-network/
+        run: OUTPUT_FILE=out-miner.txt make run-miner-daemon && sleep 30
+
+      - name: Show L1 Miner Logs
+        working-directory: ./eth-private-network/
+        run: cat out-miner.txt
+
+      - name: Confirm Miner is running ( Mined 10 blocks )
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat eth-private-network/out-miner.txt
+          contains: number=10
+          expected_result: PASSED 
+
+      - name: Deploy Contracts onto L1
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make deploy-l1-contracts
+
+      - name: Run L2 Sequencer
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: OUTPUT_FILE=out-sequencer.txt timeout 120s make run-sequencer-github-actions-retry
+
+      - name: Confirm Sequencer Stored Genesis on L1
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat ./naive-blockchain/naive-cryptocurrency-l2/out-sequencer.txt
+          contains: Stored genesis state on L1
+          expected_result: PASSED
+
+      - name: Confirm Sequencer is running ( Mined 10 blocks )
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat ./naive-blockchain/naive-cryptocurrency-l2/out-sequencer.txt
+          contains: number=10
+          expected_result: PASSED
+
+      - name: Deploy Contracts onto L2
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make deploy-l2-contracts-github-actions
+
+      - name: Run Prover
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: OUTPUT_FILE=out-prover.txt make run-prover-github-actions && sleep 60
+
+      - name: Confirm Prover Finalizing on L1
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: cat ./naive-blockchain/naive-cryptocurrency-l2/out-prover.txt
+          contains: Proof verified on L1!
+          expected_result: PASSED
+
+      - name: Check Pre Bridge L1 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./eth-private-network/scripts/get-balance.sh -r http://localhost:8545
+          contains: "0x8ac7230489e80000"
+          expected_result: PASSED
+
+      - name: Check Pre Bridge L2 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./eth-private-network/scripts/get-balance.sh -r http://localhost:5055
+          contains: "0x8ac7230489e80000"
+          expected_result: PASSED
+
+      - name: Bridge Eth To L2
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make bridge-eth-to-l2-github-actions
+
+      - name: Bridge Eth To L1
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make bridge-eth-to-l1-github-actions && sleep 15
+
+      - name: Check Post Bridge L1 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./eth-private-network/scripts/get-balance.sh -r http://localhost:8545
+          contains: "0x8abc8cb93879c000"
+          expected_result: PASSED
+
+      - name: Check Post Bridge L2 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./eth-private-network/scripts/get-balance.sh -r http://localhost:5055
+          contains: "0x8ad1b94fdb564000"
+          expected_result: PASSED
+
+      - name: Check Pre Basic ERC20 Bridge L1 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:8545 -c $(cat /home/runner/work/sequencer-data/contracts/basic-erc20-address.txt | jq -r '.address')
+          contains: "0x00000000000000000000000000000000000000000000000000005af3107a4000"
+          expected_result: PASSED
+
+      - name: Check Pre Bridge Basic ERC20 L2 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:5055 -c $(cat /home/runner/work/sequencer-data/contracts/l2-basic-erc20-address.txt | jq -r '.address')
+          contains: "0x0000000000000000000000000000000000000000000000000000000000000000"
+          expected_result: PASSED
+
+      - name: Check Pre Bridge Basic ERC721 L1 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:8545 -c $(cat /home/runner/work/sequencer-data/contracts/basic-erc721-address.txt | jq -r '.address')
+          contains: "0x0000000000000000000000000000000000000000000000000000000000000005"
+          expected_result: PASSED
+
+      - name: Check Pre Bridge Basic ERC721 L2 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:5055 -c $(cat /home/runner/work/sequencer-data/contracts/l2-basic-erc721-address.txt | jq -r '.address')
+          contains: "0x0000000000000000000000000000000000000000000000000000000000000000"
+          expected_result: PASSED
+
+      - name: Bridge Basic ERC20 To L2
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make bridge-basic-erc20-to-l2-github-actions
+
+      - name: Bridge Basic ERC20 To L1
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make bridge-basic-erc20-to-l1-github-actions
+
+      - name: Bridge Basic ERC721 To L2
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make bridge-basic-erc721-to-l2-github-actions
+
+      - name: Bridge Basic ERC721 To L1
+        working-directory: ./naive-blockchain/naive-cryptocurrency-l2/
+        run: make bridge-basic-erc721-to-l1-github-actions && sleep 15
+
+      - name: Check Post Bridge Basic ERC20 L1 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:8545 -c $(cat /home/runner/work/sequencer-data/contracts/basic-erc20-address.txt | jq -r '.address')
+          contains: "0x00000000000000000000000000000000000000000000000000005af31075b3f0"
+          expected_result: PASSED
+
+      - name: Check Post Bridge Basic ERC20 L2 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:5055 -c $(cat /home/runner/work/sequencer-data/contracts/l2-basic-erc20-address.txt | jq -r '.address')
+          contains: "0x0000000000000000000000000000000000000000000000000000000000048c10"
+          expected_result: PASSED
+
+      - name: Check Post Bridge Basic ERC721 L1 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:8545 -c $(cat /home/runner/work/sequencer-data/contracts/basic-erc721-address.txt | jq -r '.address')
+          contains: "0x0000000000000000000000000000000000000000000000000000000000000003"
+          expected_result: PASSED
+
+      - name: Check Post Bridge Basic ERC721 L2 Balance
+        uses: GuillaumeFalourd/assert-command-line-output@v2.2
+        with:
+          command_line: ./naive-blockchain/naive-cryptocurrency-l2/scripts/get-erc-balance.sh -r http://localhost:5055 -c $(cat /home/runner/work/sequencer-data/contracts/l2-basic-erc721-address.txt | jq -r '.address')
+          contains: "0x0000000000000000000000000000000000000000000000000000000000000002"
+          expected_result: PASSED
+
+      #TODO: Check nonces, bridge burn balances, bridge balances, ...
+      #TODO: Check other ERC20 & ERC721

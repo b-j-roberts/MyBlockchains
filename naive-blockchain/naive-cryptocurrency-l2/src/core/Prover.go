@@ -2,14 +2,12 @@ package core
 
 import (
 	"context"
-	"errors"
 	"log"
 	"math/big"
 	"time"
 
 	l2utils "github.com/b-j-roberts/MyBlockchains/naive-blockchain/naive-cryptocurrency-l2/src/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -70,20 +68,6 @@ func NewProver(l1Comms *l2utils.L1Comms, proverL1Address common.Address) *Prover
 
   return prover
 }
-  
-func unpackCalldata(tx *types.Transaction) (id *big.Int, root [32]byte, batchData []byte, err error) {
-    data := tx.Data()
-    if len(data) < 4 {
-        err = errors.New("Invalid calldata length")
-        return
-    }
-
-    id = new(big.Int).SetBytes(data[4:36])
-    copy(root[:], data[36:68])
-    batchData = data[68:]
-
-    return
-}
 
 func (p *Prover) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [32]byte) {
   log.Println("Getting Batch Proof Params...")
@@ -120,7 +104,7 @@ func (p *Prover) GetBatchProofParams(batchNumber uint64) ([]byte, [32]byte, [32]
 
         if batchStored.Id == big.NewInt(int64(batchNumber)) {
           //This is the correct event / transaction / batch
-          id, root, batchData, err := unpackCalldata(tx)
+          id, root, batchData, err := l2utils.UnpackBatchStoredCalldata(tx)
           if err != nil {
             log.Fatalf("Failed to unpack calldata: %v", err)
             return nil, [32]byte{}, [32]byte{}

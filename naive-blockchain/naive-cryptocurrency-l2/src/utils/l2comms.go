@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 
@@ -32,6 +33,7 @@ type L2Contracts struct {
 }
 
 func CreateL2ContractAddressConfig(contractsAddressDir string) L2ContractAddressConfig {
+  //TODO: Load into memeory and cache
   bridgeContractAddress, err := ReadContractAddressFromFile(contractsAddressDir + "/l2-bridge-address.txt")
   if err != nil {
     log.Fatal("CreateL2ContractAddressConfig ReadContractAddressFromFile error:", err)
@@ -153,4 +155,49 @@ func (l2Comms *L2Comms) BridgeTokenToL1(tokenAddress common.Address, address com
 
   fmt.Println("BridgeTokenToL1 tx sent:", tx.Hash().Hex())
   return nil
+}
+
+func UnpackEthDeposited(receiptLog types.Log) (nonce *big.Int, addr common.Address, amount *big.Int, err error) {
+    data := receiptLog.Data
+    if len(data) < 10 {
+        err = fmt.Errorf("invalid data")
+        return
+    }
+
+    offset := 12
+    nonce = new(big.Int).SetBytes(data[:32])
+    addr = common.BytesToAddress(data[32:52+offset])
+    amount = new(big.Int).SetBytes(data[52+offset:84+offset])
+
+    return
+}
+
+func UnpackEthWithdraw(receiptLog types.Log) (nonce *big.Int, addr common.Address, amount *big.Int, err error) {
+    data := receiptLog.Data
+    if len(data) < 96 {
+        err = fmt.Errorf("invalid data")
+        return 
+    }
+
+    offset := 12
+    nonce = new(big.Int).SetBytes(data[:32])
+    addr = common.BytesToAddress(data[32:52+offset])
+    amount = new(big.Int).SetBytes(data[52+offset:84+offset])
+
+    return
+}
+
+func UnpackTokenWithdraw(receiptLog types.Log) (nonce *big.Int, addr common.Address, tokenAddr common.Address, amount *big.Int, err error) {
+  data := receiptLog.Data
+  if len(data) < 128 {  
+    err = fmt.Errorf("invalid data")
+    return 
+  }
+
+  nonce = new(big.Int).SetBytes(data[:32])
+  addr = common.BytesToAddress(data[32:64])
+  tokenAddr = common.BytesToAddress(data[64:96])
+  amount = new(big.Int).SetBytes(data[96:128])
+             
+  return
 }

@@ -4,9 +4,15 @@ import (
 	"bufio"
 	"encoding/json"
 	"os"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/metrics"
 )
+
+func StartSystemMetrics() {
+  go metrics.CollectProcessMetrics(3 * time.Second)
+}
 
 func readJsonValue(jsonStr string, key string) string {
   jsonMap := make(map[string]interface{})

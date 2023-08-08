@@ -1,9 +1,10 @@
-.PHONY: all contracts sequencer prover rpc verifier allow-tokens clean smart-contract-metrics bridge
+.PHONY: all contracts sequencer prover rpc verifier allow-tokens clean smart-contract-metrics bridge metrics-test
+.DEFAULT_GOAL := all
 
 all: contracts sequencer prover rpc verifier smart-contract-metrics allow-tokens bridge
 
 contracts:
-	cd contracts && make
+	cd contracts && make build
 
 sequencer:
 	go build -o build/sequencer ./cmd/sequencer
@@ -26,17 +27,45 @@ allow-tokens:
 bridge:
 	go build -o build/bridge ./cmd/bridge
 
-deploy-private-l1:
-	rm -f contracts/builds/*-address.txt
-	cd contracts && make deploy-private
+metrics-test:
+	go build -o build/metrics-test ./cmd/metrics-test
 
-deploy-contracts-l2:
-	cd contracts && make deploy-l2
+deploy-l1-contracts:
+	rm -f contracts/builds/*-address.txt
+	cd contracts && make deploy-l1-contracts
+
+run-sequencer:
+	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x
+
+run-sequencer-github-actions:
+	./scripts/start-sequencer.sh -f configs/github-actions-sequencer.config.json -x -o ${OUTPUT_FILE}
+
+run-sequencer-github-actions-retry:
+	./scripts/start-sequencer-retry-github-actions.sh
+
+deploy-l2-contracts:
+	cd contracts && make deploy-l2-contracts
 	cp contracts/builds/l2-bridge-address.txt ~/naive-sequencer-data/contracts/l2-bridge-address.txt
 	cp contracts/builds/l2-token-bridge-address.txt ~/naive-sequencer-data/contracts/l2-token-bridge-address.txt
 	cd contracts && make deploy-l2-tokens
 	cp contracts/builds/*-address.txt ~/naive-sequencer-data/contracts/
 	cd contracts && make allow-tokens
+
+deploy-l2-contracts-github-actions:
+	cd contracts && make deploy-l2-contracts-github-actions
+	cp contracts/builds/l2-bridge-address.txt /home/runner/work/sequencer-data/contracts/l2-bridge-address.txt
+	cp contracts/builds/l2-token-bridge-address.txt /home/runner/work/sequencer-data/contracts/l2-token-bridge-address.txt
+	cd contracts && make deploy-l2-tokens-github-actions
+	cp contracts/builds/*-address.txt /home/runner/work/sequencer-data/contracts/
+	cd contracts && make allow-tokens-github-actions
+
+run-prover:
+	ACCOUNT_PASS=password ./scripts/start-prover.sh
+
+run-prover-github-actions:
+	ACCOUNT_PASS=password ./scripts/start-prover.sh -o ${OUTPUT_FILE} -c configs/github-actions-sequencer.config.json
+
+
 
 docker-deploy-contracts-l2:
 	ls contracts/builds/*-address.txt | xargs -I {} docker cp {} naive-sequencer:/app/contracts/builds/
@@ -70,10 +99,11 @@ docker-run-sequencer:
 	rm -rf ~/tmp/l1-docker-data-for-sequencer/
 	mkdir -p ~/tmp/l1-docker-data-for-sequencer/
 	docker cp eth-private-miner:/root/.eth-accounts/ ~/tmp/l1-docker-data-for-sequencer/
-	echo "Running sequencer w/ " ${L1_CONTRACT_ADDRESS}
-	docker run -it -p 5055:5055 -p 6160:6160 -v ~/docker-sequencer/:/sequencer-data --network host --rm --name naive-sequencer -e L1_CONTRACT_ADDRESS=${L1_CONTRACT_ADDRESS} \
-	  -e L1_BRIDGE_ADDRESS=${L1_BRIDGE_ADDRESS} -e L1_TOKEN_BRIDGE_ADDRESS=${L1_TOKEN_BRIDGE_ADDRESS} -e CONTRACTS_DIR=/app/contracts/builds/ \
-		--mount type=bind,source="$(shell echo ${HOME})"/tmp/l1-docker-data-for-sequencer/.eth-accounts/,target=/root/.eth-accounts/ \
+	cp contracts/builds/*-address.txt ~/tmp/l1-docker-data-for-sequencer/
+	mkdir -p ~/docker-sequencer/
+	cp configs/docker-sequencer.config.json ~/docker-sequencer/sequencer.config.json
+	docker run -it -p 5055:5055 -p 6160:6160 -v ~/docker-sequencer/:/sequencer-data --network host --rm --name naive-sequencer \
+		--mount type=bind,source="$(shell echo ${HOME})"/tmp/l1-docker-data-for-sequencer/,target=/root/ \
 		brandonjroberts/naive-l2-sequencer:latest
 	rm -rf ~/tmp/l1-docker-data-for-sequencer/
 
@@ -104,23 +134,17 @@ local-docker-run-smart-contract-metrics:
 	docker cp naive-sequencer:/sequencer-data/keystore/ ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/
 	L1_CONTRACT_ADDRESS=$(shell cat contracts/builds/tx-storage-address.txt | jq -r .address) SEQUENCER_ADDRESS=$(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/* | jq -r .address) L2_IPC_PATH=/sequencer-data/naive-sequencer.ipc make docker-run-smart-contract-metrics
 
-run-sequencer:
-	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x
-
 run-sequencer-daemon:
 	./scripts/start-sequencer.sh -f configs/sequencer.config.json -x -o ${OUTPUT_FILE}
 
 run-sequencer-noclean:
-	./scripts/start-sequencer.sh -d ~/naive-sequencer-data/ -k ~/l1-miner-data/keystore/ -C ./contracts/builds/
+	./scripts/start-sequencer.sh -f configs/sequencer.config.json
 
 run-rpc:
 	./scripts/start-rpc.sh -f configs/rpc.config.json -x -o ~/naive-rpc-data/log.txt
 
 run-rpc-noclean:
 	./scripts/start-rpc.sh -d ~/naive-rpc-data/ -k ~/l1-miner-data/keystore/ -o ~/naive-rpc-data/rpc.log
-
-run-prover:
-	ACCOUNT_PASS=password ./scripts/start-prover.sh
 
 run-prover-daemon:
 	ACCOUNT_PASS=password ./scripts/start-prover.sh -o ${OUTPUT_FILE}
@@ -143,12 +167,20 @@ docker-own:
 bridge-eth-to-l2:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --value 1000000000000000 --config configs/sequencer.config.json
 
+bridge-eth-to-l2-github-actions:
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --value 1000000000000000 --config configs/github-actions-sequencer.config.json
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --value 1000000000000000 --config configs/github-actions-sequencer.config.json
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --value 1000000000000000 --config configs/github-actions-sequencer.config.json
+
 docker-bridge-eth-to-l2:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/*  | jq -r .address) --bridgeAddress $(shell cat contracts/builds/l1-bridge-address.txt | jq -r .address) --rpc http://localhost:8545 --value 1000000000000000 --keystore ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/
 
 bridge-eth-to-l1:
-	#ACCOUNT_PASS=password go run ./scripts/bridge-eth.go --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000 --bridgeAddress $(shell cat contracts/builds/l2-bridge-address.txt | jq -r .address) --keystore ~/naive-sequencer-data/keystore/ --chainId 515 --to-l1 true
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --config configs/sequencer.config.json --to-l1
+
+bridge-eth-to-l1-github-actions:
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --config configs/github-actions-sequencer.config.json --to-l1
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) --value 10000000000000 --config configs/github-actions-sequencer.config.json --to-l1
 
 docker-bridge-eth-to-l1:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/* | jq -r .address) --value 10000000000000 --bridgeAddress $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/builds/l2-bridge-address.txt | jq -r .address) --keystore ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/ --chainId 515 --to-l1 --ipc ~/docker-sequencer/naive-sequencer.ipc
@@ -157,11 +189,20 @@ docker-bridge-eth-to-l1:
 bridge-basic-erc20-to-l2:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc
 
+bridge-basic-erc20-to-l2-github-actions:
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc
+
 docker-bridge-basic-erc20-to-l2:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/* | jq -r .address) --value 100000 --bridgeAddress $(shell cat contracts/builds/l1-token-bridge-address.txt | jq -r .address) --keystore ~/tmp/l1-docker-data-for-smart-contract-metrics/keystore/ --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc
 
 bridge-basic-erc20-to-l1:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 1000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc --to-l1
+
+bridge-basic-erc20-to-l1-github-actions:
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) --value 1000 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc --to-l1
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) --value 1000 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc20-address.txt | jq -r .address) --is-erc --to-l1
 
 bridge-stable-erc20-to-l2:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 100000 --config configs/sequencer.config.json --token $(shell cat contracts/builds/stable-erc20-address.txt | jq -r .address) --is-erc
@@ -174,8 +215,16 @@ bridge-basic-erc721-to-l2:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 1 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 2 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
 
+bridge-basic-erc721-to-l2-github-actions:
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 0 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 1 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 2 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc
+
 bridge-basic-erc721-to-l1:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/naive-sequencer-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc --to-l1
+
+bridge-basic-erc721-to-l1-github-actions:
+	ACCOUNT_PASS=password ./build/bridge --address $(shell cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) --value 0 --config configs/github-actions-sequencer.config.json --token $(shell cat contracts/builds/basic-erc721-address.txt | jq -r .address) --is-erc --to-l1
 
 bridge-special-erc721-to-l2:
 	ACCOUNT_PASS=password ./build/bridge --address $(shell cat ~/l1-miner-data/keystore/* | jq -r .address) --value 0 --config configs/sequencer.config.json --token $(shell cat contracts/builds/special-erc721-address.txt | jq -r .address) --is-erc

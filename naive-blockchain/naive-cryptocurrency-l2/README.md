@@ -4,7 +4,14 @@ This project serves as a learning exercise, practice, and a simple example of an
 
 A minimal Geth fork is used to provide EVM compatibility and tons of useful cryptocurrency primitives, such as RPC, Blockchain, state DB, ...
 
-The L2 Blockchain uses geth functionality to run the execution layer thru a Sequencer node. The network relies on a Clique base POA consensus, where the sequencer node(s) act as the authority agents. Other nodes can send transactions to RPC nodes or the seuqencer nodes to add them to the mempool.
+The L2 Blockchain uses geth functionality to run the execution layer thru a Sequencer node. The network uses a modified Clique POA consensus, where the sequencer node(s) act as the authority agents. The primary modification to Clique is baking bridging into the consensus layer.
+
+Users can send transactions to RPC nodes or the seuqencer nodes to add them to the mempool.
+
+- TODO: List useful and cool things
+
+
+
 
 ## Types of Nodes
 

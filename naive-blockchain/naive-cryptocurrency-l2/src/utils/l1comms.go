@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"log"
 	"math/big"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 
@@ -270,4 +272,31 @@ func (l1BridgeComms *L1Comms) BridgeTokenToL1(tokenAddress common.Address, toAdd
 
   log.Println("Bridge transaction created: ", bridgeTx.Hash().Hex())
   return nil
+}
+
+func UnpackBatchStoredCalldata(tx *types.Transaction) (id *big.Int, root [32]byte, batchData []byte, err error) {
+    data := tx.Data()
+    if len(data) < 4 {
+        err = errors.New("Invalid calldata length")
+        return
+    }
+
+    id = new(big.Int).SetBytes(data[4:36])
+    copy(root[:], data[36:68])
+    batchData = data[68:]
+
+    return
+}
+
+func UnpackProofCalldata(tx *types.Transaction) (id *big.Int, proof []byte, err error) {
+    data := tx.Data()
+    if len(data) < 4 {
+        err = errors.New("Invalid calldata length")
+        return
+    }
+
+    id = new(big.Int).SetBytes(data[4:36])
+    copy(proof[:], data[36:])
+
+    return
 }

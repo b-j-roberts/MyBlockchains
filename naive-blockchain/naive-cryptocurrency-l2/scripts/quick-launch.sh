@@ -51,7 +51,7 @@ mkdir -p ${OUTPUT_DIR}
 echo "Launching L1"
 L1_MINER_LOGS=${OUTPUT_DIR}/l1-miner.logs
 touch $L1_MINER_LOGS
-cd ${WORK_DIR}/../../eth-private-network/ && OUTPUT_FILE=${L1_MINER_LOGS} make launch-miner-local-daemon
+cd ${WORK_DIR}/../../eth-private-network/ && OUTPUT_FILE=${L1_MINER_LOGS} make run-miner-local-daemon
 
 # Wait for miner to be ready
 sleep 5

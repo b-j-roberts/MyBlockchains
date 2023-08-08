@@ -98,40 +98,6 @@ func (batcher *Batcher) PostBatch() error {
   return nil
 }
 
-func UnpackEthWithdraw(receiptLog types.Log) (nonce *big.Int, addr common.Address, amount *big.Int, err error) {
-    data := receiptLog.Data
-    if len(data) < 96 {
-        err = fmt.Errorf("invalid data")
-        return 
-    }
-
-    offset := 12
-    nonce = new(big.Int).SetBytes(data[:32])
-    addr = common.BytesToAddress(data[32:52+offset])
-    amount = new(big.Int).SetBytes(data[52+offset:84+offset])
-
-    return
-}
-
-func UnpackTokenWithdraw(receiptLog types.Log) (nonce *big.Int, addr common.Address, tokenAddr common.Address, amount *big.Int, err error) {
-  data := receiptLog.Data
-  if len(data) < 128 {
-    err = fmt.Errorf("invalid data")
-    return 
-  }
-
-  nonce = new(big.Int).SetBytes(data[:32])
-  log.Println("Got nonce:", nonce)
-  addr = common.BytesToAddress(data[32:64])
-  log.Println("Got addr:", addr)
-  tokenAddr = common.BytesToAddress(data[64:96])
-  log.Println("Got tokenAddr:", tokenAddr)
-  amount = new(big.Int).SetBytes(data[96:128])
-  log.Println("Got amount:", amount)
-
-  return
-}
-
 func (batcher *Batcher) Start() error {
   runFunc := func() {
   for {
@@ -165,7 +131,7 @@ func (batcher *Batcher) Start() error {
           l2AddressConfig := l2utils.CreateL2ContractAddressConfig(batcher.BatcherConfig.NodeConfig.Contracts)
           if common.HexToAddress(receipt_log.Address.Hex()) == l2AddressConfig.BridgeContractAddress {
 
-            nonce, addr, amount, err := UnpackEthWithdraw(*receipt_log)
+            nonce, addr, amount, err := l2utils.UnpackEthWithdraw(*receipt_log)
             if err != nil {
               log.Printf("Batcher got error: %v\n", err)
               panic(err)
@@ -206,7 +172,7 @@ func (batcher *Batcher) Start() error {
           l2AddressConfig := l2utils.CreateL2ContractAddressConfig(batcher.BatcherConfig.NodeConfig.Contracts)
           if common.HexToAddress(receipt_log.Address.Hex()) == l2AddressConfig.TokenBridgeContractAddress {
             log.Printf("Got token withdrawal: %v\n", receipt_log)
-            nonce, from, token, amount, err := UnpackTokenWithdraw(*receipt_log)
+            nonce, from, token, amount, err := l2utils.UnpackTokenWithdraw(*receipt_log)
             if err != nil {
               log.Printf("Batcher got error: %v\n", err)
               panic(err)

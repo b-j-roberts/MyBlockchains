@@ -590,7 +590,7 @@ func (c *L2Consensus) Finalize(chain consensus.ChainHeaderReader, header *types.
         if common.HexToAddress(receiptLog.Address.Hex()) == l2ContractAddresses.BridgeContractAddress {
           log.Info("Unpacking Eth Dep")
           // TEMP: Add balance to state
-          nonce, addr, amount, err := UnpackEthDeposited(*receiptLog)
+          nonce, addr, amount, err := l2utils.UnpackEthDeposited(*receiptLog)
           if err != nil {
             log.Error("Error unpacking EthDeposited event", "err", err)
             return
@@ -614,22 +614,6 @@ func (c *L2Consensus) Finalize(chain consensus.ChainHeaderReader, header *types.
       }
     }
   }
-}
-
-func UnpackEthDeposited(receiptLog types.Log) (nonce *big.Int, addr common.Address, amount *big.Int, err error) {
-    data := receiptLog.Data
-    if len(data) < 10 {
-        err = fmt.Errorf("invalid data")
-        return
-    }
-
-    offset := 12
-    nonce = new(big.Int).SetBytes(data[:32])
-    addr = common.BytesToAddress(data[32:52+offset])
-    amount = new(big.Int).SetBytes(data[52+offset:84+offset])
-    log.Info("Unpacked Eth Deposit", "nonce", nonce, "addr", addr, "amount", amount)
-
-    return
 }
 
 // FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set,
