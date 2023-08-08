@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"log"
 	"math/big"
@@ -83,12 +82,11 @@ func (batcher *Batcher) PostBatch() error {
     return err
   }
 
-  var byteDataHash [32]byte
-  byteDataHash = sha256.Sum256(transactionByteData)
-  log.Printf("Batch %d: %x\n", batcher.BatchId, byteDataHash)
+  //var byteDataHash [32]byte
+  //byteDataHash = sha256.Sum256(transactionByteData)
+  //log.Printf("Batch %d: %x\n", batcher.BatchId, byteDataHash)
 
   blockchainRootHash := batcher.L2Blockchain.GetBlockByNumber(batcher.CurrL2BlockNumber).Root()
-  log.Printf("Blockchain root: %x\n", blockchainRootHash)
 
   err = batcher.L1Comms.PostBatch(compressedTransactionByteData, batcher.BatchId, blockchainRootHash, batcher.BatcherConfig.PosterAddress)
   if err != nil {
