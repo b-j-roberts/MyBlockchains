@@ -204,7 +204,7 @@ jobs:
         run: |
           SEQUENCER_ADDRESS=$(cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) \
           SEQUENCER_CONFIG_FILE=configs/github-actions-sequencer.config.json \
-          make bridge-basic-erc721-to-l1-github-actions && sleep 15
+          make bridge-basic-erc721-to-l1 && sleep 15
 
       - name: Check Post Bridge Basic ERC20 L1 Balance
         uses: GuillaumeFalourd/assert-command-line-output@v2.2
