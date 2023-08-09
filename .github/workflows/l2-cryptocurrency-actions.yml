@@ -137,7 +137,7 @@ jobs:
         run: |
           for i in {1..2}; do \
           SEQUENCER_CONFIG_FILE=configs/github-actions-sequencer.config.json \
-          SEQUENCER_ADDRESS=$(cat /home/runner/work/sequencer-data/keystore* | jq -r .address) \
+          SEQUENCER_ADDRESS=$(cat /home/runner/work/sequencer-data/keystore/* | jq -r .address) \
           make bridge-eth-to-l1; done && sleep 15
 
       - name: Check Post Bridge L1 Balance
@@ -235,4 +235,4 @@ jobs:
           expected_result: PASSED
 
       #TODO: Check nonces, bridge burn balances, bridge balances, ...
-      #TODO: Check other ERC20 & ERC721
+      #TODO: Check other ERC20 & ERC721 ( run metrics test ? )
