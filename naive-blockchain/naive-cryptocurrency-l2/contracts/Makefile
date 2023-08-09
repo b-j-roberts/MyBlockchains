@@ -13,42 +13,33 @@ build: build-contracts build-bridge build-tokens
 
 deploy-l1-contracts:
 	echo "Deploying contracts to L1 chain"
-	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-l1-contracts
-	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-l1-tokens
+	SEQUENCER_ADDRESS=${SEQUENCER_ADDRESS} npm run deploy-l1-contracts
+	SEQUENCER_ADDRESS=${SEQUENCER_ADDRESS} npm run deploy-l1-tokens
+
+#TODO: Consider moving these up a level to the outer Makefile
+SEQUENCER_CONFIG_FILE ?= ../configs/sequencer.config.json
+SEQUENCER_DATA_DIR ?= ~/naive-sequencer-data
+SEQUENCER_ADDRESS ?= $(shell cat ${SEQUENCER_DATA_DIR}/sequencer-l1-address.txt  | jq -r .address)
 
 deploy-l2-contracts:
-	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) IPC_PATH=/home/brandon/naive-sequencer-data/naive-sequencer.ipc npm run deploy-l2-contracts
+	SEQUENCER_ADDRESS=${SEQUENCER_ADDRESS} IPC_PATH=${SEQUENCER_DATA_DIR}/naive-sequencer.ipc npm run deploy-l2-contracts
+	cp builds/l2-bridge-address.txt ${SEQUENCER_DATA_DIR}/contracts/l2-bridge-address.txt
+	cp builds/l2-token-bridge-address.txt ${SEQUENCER_DATA_DIR}/contracts/l2-token-bridge-address.txt
 
-deploy-l2-contracts-github-actions:
-	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) IPC_PATH=/home/runner/work/sequencer-data/naive-sequencer.ipc npm run deploy-l2-contracts
+L2_TOKEN_BRIDGE_ADDRESS ?= $(shell cat ${SEQUENCER_DATA_DIR}/contracts/l2-token-bridge-address.txt  | jq -r .address)
 
 deploy-l2-tokens:
-	L2_TOKEN_BRIDGE_ADDRESS=$(shell cat builds/l2-token-bridge-address.txt  | jq -r .address) SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) IPC_PATH=/home/brandon/naive-sequencer-data/naive-sequencer.ipc npm run deploy-l2-tokens
+	SEQUENCER_ADDRESS=${SEQUENCER_ADDRESS} L2_TOKEN_BRIDGE_ADDRESS=${L2_TOKEN_BRIDGE_ADDRESS} IPC_PATH=${SEQUENCER_DATA_DIR}/naive-sequencer.ipc npm run deploy-l2-tokens
+	cp builds/*-address.txt ${SEQUENCER_DATA_DIR}/contracts/
 
-deploy-l2-tokens-github-actions:
-	L2_TOKEN_BRIDGE_ADDRESS=$(shell cat builds/l2-token-bridge-address.txt  | jq -r .address) SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) IPC_PATH=/home/runner/work/sequencer-data/naive-sequencer.ipc npm run deploy-l2-tokens
-	
+allow-tokens:
+	ACCOUNT_PASS=password ../build/allow-tokens --sender ${SEQUENCER_ADDRESS} --config ${SEQUENCER_CONFIG_FILE}
 
-
+#TODO: Test on goerli with latest contracts
 deploy-goerli:
 	SEQUENCER_ADDRESS=$(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) npm run deploy-goerli
 
-docker-deploy-l2:
-	SEQUENCER_ADDRESS=$(shell cat /sequencer-data/keystore/*  | jq -r .address) IPC_PATH=/sequencer-data/naive-sequencer.ipc npm run deploy-l2
-
-
-docker-deploy-l2-tokens:
-	L2_TOKEN_BRIDGE_ADDRESS=$(shell cat builds/l2-token-bridge-address.txt  | jq -r .address) SEQUENCER_ADDRESS=$(shell cat /sequencer-data/keystore/*  | jq -r .address) IPC_PATH=/sequencer-data/naive-sequencer.ipc npm run deploy-l2-tokens
-
-allow-tokens:
-	ACCOUNT_PASS=password ../build/allow-tokens --sender $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --config ../configs/sequencer.config.json
-
-allow-tokens-github-actions:
-	ACCOUNT_PASS=password ../build/allow-tokens --sender $(shell cat ~/l1-miner-data/keystore/*  | jq -r .address) --config ../configs/github-actions-sequencer.config.json
-
-docker-allow-tokens:
-	../build/allow-tokens --sender $(shell cat /sequencer-data/keystore/*  | jq -r .address) --erc20 $(shell cat builds/basic-erc20-address.txt | jq -r .address) --l2erc20 $(shell cat builds/l2-basic-erc20-address.txt | jq -r .address) --tokenBridge $(shell cat builds/l1-token-bridge-address.txt | jq -r .address) --l2tokenBridge $(shell cat builds/l2-token-bridge-address.txt | jq -r .address)  --keystore /sequencer-data/keystore/ --stableErc20 $(shell cat builds/stable-erc20-address.txt | jq -r .address) --l2stableErc20 $(shell cat builds/l2-stable-erc20-address.txt | jq -r .address) --erc721 $(shell cat builds/basic-erc721-address.txt | jq -r .address) --l2erc721 $(shell cat builds/l2-basic-erc721-address.txt | jq -r .address) --specialErc721 $(shell cat builds/special-erc721-address.txt | jq -r .address) --l2specialErc721 $(shell cat builds/l2-special-erc721-address.txt | jq -r .address)
-
+#TODO: Update to test with latest contracts
 test-private:
 	npm run test-private
 
@@ -56,7 +47,7 @@ test-goerli:
 	npm run test-goerli
 
 go-gen:
-	npm run go-gen
+	./scripts/go-gen.sh
 
 clean:
 	rm -rf builds/ go/

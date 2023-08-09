@@ -60,7 +60,7 @@ func NewNode(rpcConfigFile string) (*Node, error) {
   if len(ks.Accounts()) == 0 {
     return nil, fmt.Errorf("no accounts found in key store")
   }
-  address := ks.Accounts()[0].Address//TODO: Is this just posterAddress?
+  address := ks.Accounts()[0].Address
 
   // Setup Database
   //TODO: chainDb more research on args
@@ -117,6 +117,7 @@ func NewNode(rpcConfigFile string) (*Node, error) {
   }
 
   txPool := txpool.NewTxPool(ethConfig.TxPool, l2Blockchain.Config(), l2Blockchain)
+  //TODO: Find a way to pull this out of geth fork to minimalize changes
   naive_eth := eth.NewNaiveEthereum(l2Blockchain, chainDb, node, ethConfig, txPool, engine)
   //TODO: Learn more about APIs & which to enable/disable based on public / ...?
   apis := eth.GetNaiveEthAPIs(naive_eth)
@@ -137,7 +138,6 @@ func NewNode(rpcConfigFile string) (*Node, error) {
   node.RegisterProtocols(naive_eth.Protocols())
   node.RegisterLifecycle(naive_eth)
 
-  //TODO: APIs / RPC
   return &Node{
     ChainDb: chainDb,
     Node:    node,

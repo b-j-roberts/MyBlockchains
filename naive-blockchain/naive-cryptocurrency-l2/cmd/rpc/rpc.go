@@ -25,8 +25,8 @@ func mainImpl() int {
   if err != nil {
     utils.Fatalf("Failed to create naive rpc node: %v", err)
   }
+  defer naiveNode.Stop()
 
-  ////TODO: close dbs & stop blockchain defers
   fatalErrChan := make(chan error, 10)
 
   err = naiveNode.Start()

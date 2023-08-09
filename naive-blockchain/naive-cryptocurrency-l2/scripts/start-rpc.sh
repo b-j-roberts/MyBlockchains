@@ -41,8 +41,8 @@ while getopts ":hf::xo:" opt; do
       exit 0
       ;;
     f|--config )
-      CONFIG_FILE=$OPTARG
-      NAIVE_RPC_DATA=$(jq '."data-dir"' -r $CONFIG_FILE)
+      RPC_CONFIG_FILE=$OPTARG
+      NAIVE_RPC_DATA=$(jq '."data-dir"' -r $RPC_CONFIG_FILE)
       NAIVE_SEQUENCER_DATA="${NAIVE_RPC_DATA}/../naive-sequencer-data"
       ;;
     p|--peer )
@@ -53,7 +53,7 @@ while getopts ":hf::xo:" opt; do
       STATE_RESET=1
       ;;
     o|--output )
-      OUTPUT_FILE=$OPTARG
+      RPC_OUTPUT_FILE=$OPTARG
       ;;
     \? )
       echo "Invalid Option: -$OPTARG" 1>&2
@@ -110,20 +110,20 @@ SEQUENCER_L1_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/sequencer-l1-address.txt" | 
 
 echo "Starting RPC Node with L1 address: ${SEQUENCER_L1_ADDRESS}"
 
-if [ -z $OUTPUT_FILE ]; then
+if [ -z $RPC_OUTPUT_FILE ]; then
   #$WORK_DIR/build/rpc --datadir ${NAIVE_RPC_DATA} --metrics
-  $WORK_DIR/build/rpc --config ${CONFIG_FILE}
+  $WORK_DIR/build/rpc --config ${RPC_CONFIG_FILE}
 else
-  $WORK_DIR/build/rpc --config ${CONFIG_FILE} > $OUTPUT_FILE 2>&1 &
+  $WORK_DIR/build/rpc --config ${RPC_CONFIG_FILE} > $RPC_OUTPUT_FILE 2>&1 &
   echo "Waiting for rpc to start..."
   while true; do
-    if grep -q "self=enode://" "${OUTPUT_FILE}"; then
+    if grep -q "self=enode://" "${RPC_OUTPUT_FILE}"; then
       break
     fi
     sleep 1
   done
   
-  RPC_SERVER=http://$(cat ${CONFIG_FILE} | jq -r '.host'):$(cat ${CONFIG_FILE} | jq -r '.port')
+  RPC_SERVER=http://$(cat ${RPC_CONFIG_FILE} | jq -r '.host'):$(cat ${RPC_CONFIG_FILE} | jq -r '.port')
   ENODE=$(geth attach --exec admin.nodeInfo.enode $RPC_SERVER)
   echo "ENODE: ${ENODE}"
   

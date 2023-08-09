@@ -143,8 +143,6 @@ func (batcher *Batcher) Start() error {
               panic(err)
             }
 
-            //TODO: Check nonce
-            //TODO: WHat happens if briding more than has / exists? & try and start state with 0 extra tokens / eth
             tx, err := batcher.L1Comms.L1Contracts.BridgeContract.WithdrawEth(transactOpts, addr, amount)
             if err != nil {
               log.Printf("Batcher got error: %v\n", err)

@@ -576,6 +576,7 @@ func (c *L2Consensus) Prepare(chain consensus.ChainHeaderReader, header *types.H
 // Finalize implements consensus.Engine. There is no post-transaction
 // consensus rules in clique, do nothing here.
 func (c *L2Consensus) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, withdrawals []*types.Withdrawal) {
+  //TODO: Figure out why quick launch can leave bridge balance on L1 and balances on L2 as different
 
   eventSignature := crypto.Keccak256Hash([]byte("EthDeposited(uint256,address,uint256)"))
 
@@ -627,8 +628,7 @@ func (c *L2Consensus) FinalizeAndAssemble(chain consensus.ChainHeaderReader, hea
 
 func (c *L2Consensus) Assemble(chain consensus.ChainHeaderReader,state *state.StateDB, header *types.Header, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
   // Set balance of bridge contract to 0 ( so we don't double count )
-  // state.SetBalance(common.HexToAddress("0x0"), big.NewInt(0)) //TODO: To finalize w/ receipt?
-  state.SetBalance(common.HexToAddress("0x505"), big.NewInt(0))
+  state.SetBalance(common.HexToAddress("0x505"), big.NewInt(0)) //TODO: Change to contract address?
 	// Assign the final state root to header.
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 	// Assemble and return the final block for sealing.

@@ -113,7 +113,7 @@ func NewSmartContractMetricExporter(l1Comms *l2utils.L1Comms, l2Comms *l2utils.L
 }
 
 func (p *SmartContractMetricExporter) CollectBatchMetrics() {
-  log.Println("Updating batch metrics from ", p.L1Comms.L1ContractAddressConfig.TxStorageContractAddress.String())
+  log.Println("Updating batch metrics from ", p.L1Comms.L1ContractAddressConfig.TxStorageContractAddress.String(), " and Sequencer", l2utils.GetSequencer().Hex())
   // Update metric values
   batchCount, err := p.L1Comms.L1Contracts.TxStorageContract.GetBatchCount(nil)
   if err != nil {
@@ -282,7 +282,7 @@ func (p *SmartContractMetricExporter) CollectTokenBridgeMetrics() {
     L2StableTokenAllowed.Set(0)
   }
   
-  l2StableTokenSupply, err := p.L2TokenContracts.ERC20Contract.TotalSupply(nil)
+  l2StableTokenSupply, err := p.L2TokenContracts.StableERC20Contract.TotalSupply(nil)
   if err != nil {
     log.Fatalf("Failed to get stable token supply: %v", err)
   }
@@ -306,7 +306,7 @@ func (p *SmartContractMetricExporter) CollectTokenBridgeMetrics() {
   }
   L2BasicTokenSequencerBalance.Set(float64(l2BasicTokenSequencerBalance.Int64()))
 
-  l2StableTokenSequencerBalance, err := p.L2TokenContracts.ERC20Contract.BalanceOf(nil, common.HexToAddress(l2utils.GetSequencer().Hex()))
+  l2StableTokenSequencerBalance, err := p.L2TokenContracts.StableERC20Contract.BalanceOf(nil, common.HexToAddress(l2utils.GetSequencer().Hex()))
   if err != nil {
     log.Fatalf("Failed to get stable token sequencer balance: %v", err)
   }
@@ -388,7 +388,7 @@ func (p *SmartContractMetricExporter) CollectTokenBridgeMetrics() {
 
   l2BasicNFTSequencerBalance, err := p.L2TokenContracts.ERC721Contract.BalanceOf(nil, l2utils.GetSequencer())
   if err != nil {
-    log.Fatalf("Failed to get basic NFT token sequencer balance: %v", err)
+    log.Fatalf("Failed to get l2 basic NFT token sequencer balance: %v", err)
   }
   L2BasicNFTSequencerBalance.Set(float64(l2BasicNFTSequencerBalance.Int64()))
 

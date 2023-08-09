@@ -21,7 +21,7 @@ display_help() {
   echo "Example: $0"
 }
 
-#TODO: Options including noclean launch, etc.
+#TODO: Options including noclean launch, docker launch, etc.
 while getopts ":h:o:bf" opt; do
   case ${opt} in
     h )
@@ -51,7 +51,7 @@ mkdir -p ${OUTPUT_DIR}
 echo "Launching L1"
 L1_MINER_LOGS=${OUTPUT_DIR}/l1-miner.logs
 touch $L1_MINER_LOGS
-cd ${WORK_DIR}/../../eth-private-network/ && OUTPUT_FILE=${L1_MINER_LOGS} make run-miner-local-daemon
+cd ${WORK_DIR}/../../eth-private-network/ && OUTPUT_FILE=${L1_MINER_LOGS} make run-miner-daemon
 
 # Wait for miner to be ready
 sleep 5
@@ -60,7 +60,7 @@ if [ "$FULL" = true ]; then
   echo "Launching L1 RPC"
   L1_RPC_SERVER_LOGS=${OUTPUT_DIR}/l1-rpc.logs
   touch $L1_RPC_SERVER_LOGS
-  cd ${WORK_DIR}/../../eth-private-network/ && OUTPUT_FILE=${L1_RPC_SERVER_LOGS} make launch-rpc-local-daemon
+  cd ${WORK_DIR}/../../eth-private-network/ && OUTPUT_FILE=${L1_RPC_SERVER_LOGS} make run-rpc-daemon
   
   # Wait for rpc to be ready
   sleep 5
@@ -70,39 +70,31 @@ if [ "$FULL" = true ]; then
 fi
 
 echo "Deploying Contracts to L1"
-cd ${WORK_DIR} && make deploy-private-l1
+cd ${WORK_DIR} && make deploy-l1-contracts
 
 echo "Launching L2"
 L2_SEQUENCER_LOGS=${OUTPUT_DIR}/l2-sequencer.logs
 touch $L2_SEQUENCER_LOGS
 
-while true; do
-  cd ${WORK_DIR} && OUTPUT_FILE=${L2_SEQUENCER_LOGS} make run-sequencer-daemon
-  sleep 20
-  if cat ${L2_SEQUENCER_LOGS} | grep Commit\ new\ sealing\ work | grep -q number=5; then
-    break
-  fi
-  echo "Sequencer failed to start, restarting..."
-  ps aux | grep scripts/../build/sequencer | awk '{print $2}' | xargs kill
-  sleep 5
-done
+SEQUENCER_OUTPUT_FILE=${L2_SEQUENCER_LOGS} ${SCRIPT_DIR}/start-sequencer-retry.sh
 
 if [ "$FULL" = true ]; then
   echo "Launching L2 RPC"
   L2_RPC_SERVER_LOGS=${OUTPUT_DIR}/l2-rpc.logs
   touch $L2_RPC_SERVER_LOGS
-  cd ${WORK_DIR} && OUTPUT_FILE=${L2_RPC_SERVER_LOGS} make run-rpc
+  cd ${WORK_DIR} && RPC_OUTPUT_FILE=${L2_RPC_SERVER_LOGS} make run-rpc
 fi
 
 echo "Deploying Contracts to L2"
-cd ${WORK_DIR} && make deploy-contracts-l2
+cd ${WORK_DIR} && make deploy-l2-contracts
 
 echo "Starting Prover"
 L2_PROVER_LOGS=${OUTPUT_DIR}/l2-prover.logs
-cd ${WORK_DIR} && OUTPUT_FILE=${L2_PROVER_LOGS} make run-prover-daemon
+cd ${WORK_DIR} && PROVER_OUTPUT_FILE=${L2_PROVER_LOGS} make run-prover
 
 echo "Starting metrics server"
-cd ${WORK_DIR} && make run-smart-contract-metrics-daemon
+METRICS_LOGS=${OUTPUT_DIR}/metrics.logs
+cd ${WORK_DIR} && METRICS_OUTPUT_FILE=${METRICS_LOGS} make run-smart-contract-metrics
 
 if [ "$BRIDGE" = true ]; then
   echo "Bridge things over..."
@@ -112,6 +104,8 @@ if [ "$BRIDGE" = true ]; then
   cd ${WORK_DIR} && make bridge-eth-to-l2
   cd ${WORK_DIR} && make bridge-eth-to-l2
   cd ${WORK_DIR} && make bridge-eth-to-l2
+
+  sleep 5
   
   echo "Bridge eth to l1"
   cd ${WORK_DIR} && make bridge-eth-to-l1
@@ -123,6 +117,8 @@ if [ "$BRIDGE" = true ]; then
   cd ${WORK_DIR} && make bridge-basic-erc20-to-l2
   cd ${WORK_DIR} && make bridge-basic-erc20-to-l2
   cd ${WORK_DIR} && make bridge-basic-erc20-to-l2
+
+  sleep 5
   
   echo "Bridge basic erc20 to l1"
   cd ${WORK_DIR} && make bridge-basic-erc20-to-l1
@@ -135,6 +131,8 @@ if [ "$BRIDGE" = true ]; then
   cd ${WORK_DIR} && make bridge-stable-erc20-to-l2
   cd ${WORK_DIR} && make bridge-stable-erc20-to-l2
   cd ${WORK_DIR} && make bridge-stable-erc20-to-l2
+
+  sleep 5
   
   echo "Bridge stable erc20 to l1"
   cd ${WORK_DIR} && make bridge-stable-erc20-to-l1
@@ -143,6 +141,8 @@ if [ "$BRIDGE" = true ]; then
 
   echo "Bridging basic erc721 to l2"
   cd ${WORK_DIR} && make bridge-basic-erc721-to-l2
+
+  sleep 5
 
   echo "Bridging basic erc721 to l1"
   cd ${WORK_DIR} && make bridge-basic-erc721-to-l1

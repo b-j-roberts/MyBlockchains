@@ -7,6 +7,7 @@ import fs from 'fs'
 
 (async () => {
   try {
+      console.log("Deploying L2 contracts w/ sequencer address: ", process.env.SEQUENCER_ADDRESS, " and IPC path: ", process.env.IPC_PATH)
       const result = await deploy('L2Bridge', [process.env.SEQUENCER_ADDRESS], process.env.IPC_PATH)
       console.log(result)
       console.log("Deployed L2Bridge contract to : ", result.address)
