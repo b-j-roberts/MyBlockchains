@@ -261,3 +261,5 @@ run-metrics-test:
 #
 #watch-l2-bridge-contract:
 #	./scripts/smart-contract-watch.sh -a $(shell cat contracts/builds/l2-bridge-address.txt | jq -r .address) -p 5055 -d /home/brandon/workspace/blockchain/tools/smart-contract-watch
+#
+#	TODO: Kube commands like private network
