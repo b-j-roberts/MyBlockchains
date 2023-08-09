@@ -55,6 +55,8 @@ if [ -z $SEQUENCER_ADDRESS} ]; then
     exit 1
 fi
 
+echo "Starting smart contract metrics exporter w/ config: ${CONFIG_FILE} and sequencer: ${SEQUENCER_ADDRESS}"
+
 if [ -z "${OUTPUT_FILE}" ]; then
   $WORK_DIR/build/smart-contract-metrics --config ${CONFIG_FILE} --sequencer ${SEQUENCER_ADDRESS}
 else

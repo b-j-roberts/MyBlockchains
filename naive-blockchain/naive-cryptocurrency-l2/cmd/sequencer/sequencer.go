@@ -19,6 +19,7 @@ import (
 func main() { os.Exit(mainImpl()) }
 
 
+//TODO: Fix color difference in terminal output between this and geth
 // l1 contract address, l1 bridge contract address, l2 bridge contract address, l1 token bridge contract address, l2 token bridge contract address
 func mainImpl() int {
   log.Println("Starting sequencer...")
@@ -34,6 +35,7 @@ func mainImpl() int {
   }
   defer naiveNode.Stop()
 
+  //TODO: Geth metrics being recorded as 0 ( around this commit : a35e6aa7a4d36509c2bbee705aeeb3a2b79a7bb6 )
   l2config.SetupMetrics(naiveNode.L2Node.Config)
 
   ////TODO: close dbs & stop blockchain defers

@@ -27,7 +27,7 @@ func NewSequencer(sequencerConfigFile string, posterAddress common.Address) (*Se
     return nil, fmt.Errorf("failed to create l2 node: %v", err)
   }
 
-  l2utils.SetSequencer(posterAddress) // TODO: Will this always be the sequencer? or just l1 address
+  l2utils.SetSequencer(posterAddress) // Set the sequencer address to L1 posting address
 
   batcherConfig := &BatcherConfig{
     PosterAddress: posterAddress,
@@ -38,7 +38,6 @@ func NewSequencer(sequencerConfigFile string, posterAddress common.Address) (*Se
 
   batcher := NewBatcher(l2Node.L2Blockchain, batcherConfig)
 
-  //TODO: APIs / RPC
   return &Sequencer{
     L2Node:   l2Node,
     Batcher:   batcher,

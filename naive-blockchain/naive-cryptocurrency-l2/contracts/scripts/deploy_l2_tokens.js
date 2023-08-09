@@ -7,7 +7,6 @@ import fs from 'fs'
 
 (async () => {
   try {
-      console.log("Deploying BasicL2ERC20... with L2 Token Bridge Address: ", process.env.L2_TOKEN_BRIDGE_ADDRESS)
       const result = await deploy('BasicL2ERC20', [0, process.env.L2_TOKEN_BRIDGE_ADDRESS], process.env.IPC_PATH)
       console.log(result)
       console.log("Deployed BasicL2ERC20 to : ", result.address)

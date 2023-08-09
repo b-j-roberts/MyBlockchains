@@ -7,7 +7,6 @@ COPY --from=abigen-builder /usr/local/bin/abigen /usr/local/bin/abigen
 RUN npm install -g solc@0.8.18
 
 COPY contracts/ /naive-l2/contracts
-#TODO: Make sure removed w/ dockerignore RUN rm -rf /naive-l2/contracts/node_modules
 COPY Makefile /naive-l2/Makefile
 
 RUN cd /naive-l2/contracts && npm install
@@ -66,8 +65,7 @@ WORKDIR /app
 
 COPY scripts/ scripts/
 
-ENV L1_CONTRACT_ADDRESS=
 ENV SEQUENCER_ADDRESS=
 ENV L2_IPC_PATH=
 
-ENTRYPOINT ["./scripts/start-smart-contract-metrics-exporter.sh"]
+ENTRYPOINT ["./scripts/start-smart-contract-metrics-exporter.sh", "-c", "/root/sequencer.config.json"]

@@ -17,7 +17,6 @@ import (
 
 func main() { os.Exit(mainImpl()) }
 
-//TODO: One over for error handling & logging
 func mainImpl() int {
   osHomeDir, err := os.UserHomeDir()
 

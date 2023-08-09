@@ -104,7 +104,6 @@ func (bw *BridgeWatcher) WatchL1() error {
 
       receipt_logs = l2utils.ReceiptLogsWithEvent(receipt, crypto.Keccak256Hash([]byte("TokensDeposited(uint256,address,address,uint256)")).Bytes())
       for _, receipt_log := range receipt_logs { 
-        //TODO: nonce check
         if common.HexToAddress(receipt_log.Address.Hex()) == bw.L1Comms.L1ContractAddressConfig.TokenBridgeContractAddress {
           tokenDep, err := bw.L1Comms.L1Contracts.TokenBridgeContract.ParseTokensDeposited(*receipt_log)
           if err != nil {

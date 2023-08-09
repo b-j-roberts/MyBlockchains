@@ -43,8 +43,8 @@ while getopts ":hf:c:p:g:xo:" opt; do
       exit 0
       ;;
     f|--config )
-      CONFIG_FILE=$OPTARG
-      NAIVE_SEQUENCER_DATA=$(jq '."data-dir"' -r $CONFIG_FILE)
+      SEQUENCER_CONFIG_FILE=$OPTARG
+      NAIVE_SEQUENCER_DATA=$(jq '."data-dir"' -r $SEQUENCER_CONFIG_FILE)
       ;;
     c|--chainid )
       CHAIN_ID=$OPTARG
@@ -60,7 +60,7 @@ while getopts ":hf:c:p:g:xo:" opt; do
       STATE_RESET=1
       ;;
     o|--output )
-      OUTPUT_FILE=$OPTARG
+      SEQUENCER_OUTPUT_FILE=$OPTARG
       ;;
     \? )
       echo "Invalid Option: -$OPTARG" 1>&2
@@ -120,17 +120,18 @@ if [ $STATE_RESET -eq 1 ]; then
   mkdir -p ${HOME}/.transactor
   for p in  ${NAIVE_SEQUENCER_DATA}/keystore/*; do cp $p ${HOME}/.transactor; break; done
 
-  # Copy over contracts
+  # Copy over contracts #TODO: This is not the best
   mkdir -p ${NAIVE_SEQUENCER_DATA}/contracts/
-  cp -r ${WORK_DIR}/contracts/builds/*-address.txt ${NAIVE_SEQUENCER_DATA}/contracts/
+  cp -r ${WORK_DIR}/contracts/builds/*-address.txt ${NAIVE_SEQUENCER_DATA}/contracts/ 2>/dev/null
+  cp -r /root/contracts/*-address.txt ${NAIVE_SEQUENCER_DATA}/contracts/ 2>/dev/null
 fi
 
 SEQUENCER_L1_ADDRESS=$(cat "${NAIVE_SEQUENCER_DATA}/sequencer-l1-address.txt" | jq -r '.address')
 
 echo "Starting sequencer with L1 contract address: ${L1_CONTRACT_ADDRESS} & L1 sequencer address: ${SEQUENCER_L1_ADDRESS}"
 
-if [ -z $OUTPUT_FILE ]; then
-  ACCOUNT_PASS=$(cat ${PASSWORD_FILE}) $WORK_DIR/build/sequencer --config ${CONFIG_FILE} --sequencer ${SEQUENCER_L1_ADDRESS}
+if [ -z $SEQUENCER_OUTPUT_FILE ]; then
+  ACCOUNT_PASS=$(cat ${PASSWORD_FILE}) $WORK_DIR/build/sequencer --config ${SEQUENCER_CONFIG_FILE} --sequencer ${SEQUENCER_L1_ADDRESS}
 else
-  ACCOUNT_PASS=$(cat ${PASSWORD_FILE}) $WORK_DIR/build/sequencer --config ${CONFIG_FILE} --sequencer ${SEQUENCER_L1_ADDRESS} > $OUTPUT_FILE 2>&1 &
+  ACCOUNT_PASS=$(cat ${PASSWORD_FILE}) $WORK_DIR/build/sequencer --config ${SEQUENCER_CONFIG_FILE} --sequencer ${SEQUENCER_L1_ADDRESS} > $SEQUENCER_OUTPUT_FILE 2>&1 &
 fi

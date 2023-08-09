@@ -7,6 +7,7 @@ import fs from 'fs'
 
 (async () => {
   try {
+      console.log("Deploying contracts... w/ sequencer address: ", process.env.SEQUENCER_ADDRESS)
       const result = await deploy('TransactionStorage', [process.env.SEQUENCER_ADDRESS], 'http://localhost:8545')
       console.log(result)
       console.log("Deployed TransactionStorage contract to : ", result.address)

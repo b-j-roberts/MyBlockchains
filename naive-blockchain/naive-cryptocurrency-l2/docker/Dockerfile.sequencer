@@ -1,17 +1,12 @@
 FROM ethereum/client-go:alltools-v1.11.6 as abigen-builder
 
-#FROM ethereum/solc:0.8.18-alpine as solc-builder
 FROM node:20.2 as solc-builder
 
 COPY --from=abigen-builder /usr/local/bin/abigen /usr/local/bin/abigen
 
 RUN npm install -g solc@0.8.18
 
-# add dependencies to compile contracts with npm
-#RUN apk add --no-cache make
-
 COPY contracts/ /naive-l2/contracts
-#TODO: Make sure removed w/ dockerignore RUN rm -rf /naive-l2/contracts/node_modules
 COPY Makefile /naive-l2/Makefile
 
 RUN cd /naive-l2/contracts && npm install
@@ -70,6 +65,5 @@ VOLUME /sequencer-data
 WORKDIR /app
 
 COPY scripts/ scripts/
-COPY configs/docker-sequencer.config.json /sequencer-data/sequencer.config.json
 
-ENTRYPOINT ["./scripts/start-sequencer.sh", "-f", "/sequencer-data/sequencer.config.json"]
+ENTRYPOINT ["./scripts/start-sequencer.sh", "-f", "/root/sequencer.config.json"]

@@ -8,7 +8,6 @@ The L2 Blockchain uses geth functionality to run the execution layer thru a Sequ
 
 Users can send transactions to RPC nodes or the seuqencer nodes to add them to the mempool.
 
-- TODO: List useful and cool things
 
 
 
@@ -57,64 +56,12 @@ Fork, Minimal, Local ref in other code
 ### Scripts
 Starting, Account gen, ....
 
+Note need to setup sequencer config
 
 
-TODO:  --txpool.globalslots
+## Future work
+      bake in testnet w/ 90% block space and incentivization to fill block on mainnet
+      naive stable coin fixup
+      think how to make debugging easier
+      grep todo ( commands here )
 
-
-
-
-
-Full clean:
-make clean
-./scripts/clean-all.sh
-cd ../../eth-private-network/ && make clean && cd ../naive-blockchain/naive-cryptocurrency-l2/
-
-
-Full Run:
-./scripts/start-l1-private-network.sh
-make all
-make deploy-private-l1
-./scripts/start-sequencer-overwrite.sh
-
-./scripts/start-prover.sh
-
-./scripts/start-rpc-overwrite.sh
-
-Watch UI / state :
-./scripts/smart-contract-watch.sh
-cd ~/workspace/blockchain/tools/explorer && npm start
-
-send txs
-cat ~/naive-sequencer-data/genesis.json
-geth attach ~/naive-sequencer-data/naive-sequencer.ipc
-eth.sendTransaction({from: "0x1afed87524e19ccae70f34517c328bac5f636e41", to: "06eba974246f46d6b8421fd5e0b1b5cafbeb0710", value: 100000})
-
-
-
-
-make launch-miner-local
-make clean
-make all
-make deploy-private-l1
-# COPY ADDR
-L1_CONTRACT_ADDRESS=<addr> make run-sequencer
-make watch-smart-contract
-L1_CONTRACT_ADDRESS=<addr> make run-prover
-
-
-make docker-build
-make docker-run-miner
-make docker-build
-make contracts
-make deploy-private-l1
-# COPY ADDR
-L1_CONTRACT_ADDRESS=<addr> make run-smart-contract-metrics
-L1_CONTRACT_ADDRESS=<addr> make docker-run-sequencer
-make watch-smart-contract
-L1_CONTRACT_ADDRESS=<addr> make docker-run-prover
-
-
-# Since eth stuff not enabled on rpc ( add option )
-geth attach --exec 'eth.sendTransaction({from: "46b823cd45ba0eb493ddcdf4591799994535c1bc", to: "06eba974246f46d6b8421fd5e0b1b5cafbeb0710", value: 100000})' ~/naive-sequencer-data/naive-sequencer.ipc
-docker exec -it naive-sequencer /app/go-ethereum/build/bin/geth attach --exec 'eth.sendTransaction({from: "0x693A08cC02422548624B8161Ae581DE27AfA8B4b", to: "06eba974246f46d6b8421fd5e0b1b5cafbeb0710", value: 100000})' /sequencer-data/naive-sequencer.ipc

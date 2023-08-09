@@ -135,13 +135,13 @@ func (l1Comms *L1Comms) L2GenesisOnL1(genesis *core.Genesis, posterAddress commo
     return err
   }
 
-  _, err = l1Comms.L1Contracts.TxStorageContract.StoreGenesisState(transactOpts, genesisHash)
+  tx, err := l1Comms.L1Contracts.TxStorageContract.StoreGenesisState(transactOpts, genesisHash)
   if err != nil {
     log.Fatalf("Failed to store genesis state on L1: %v", err)
     return err
   }
 
-  log.Println("Stored genesis state on L1")
+  log.Printf("Stored genesis state on L1 %v", tx.Hash().Hex())
   return nil
 }
 
@@ -167,6 +167,7 @@ func (l1Comms *L1Comms) PostBatch(transactionByteData []byte, id int64, hash [32
 func (l1Comms *L1Comms) SubmitProof(proof []byte, batchNumber int, proverAddress common.Address) error {
   log.Println("Submitting proof to L1...")
 
+  log.Printf("Proof opts: %v", proverAddress.Hex())
   transactOpts, err := l1Comms.CreateL1TransactionOpts(proverAddress, big.NewInt(0))
   if err != nil {
     log.Fatalf("Failed to create L1 transaction opts: %v", err)
