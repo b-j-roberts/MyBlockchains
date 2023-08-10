@@ -41,9 +41,8 @@ make
 
 The install may fail if missing dependencies : `go`, `make`, `node`, `npm`, `solc`, `abigen`, `jq`, ...
 
-
-*solc* - `npm install -g solc@0.8.18`
-*abigen* - `cd go-ethereum && make devtools`
+- *solc* - `npm install -g solc@0.8.18`
+- *abigen* - `cd go-ethereum && make devtools`
 
 **Prometheus Setup (optional)**
 Geth is setup to expose certain useful metrics in prometheus, and additional metrics can be obtained from the `smart-contract-metrics` metric exporter. Add the following to your `scrape_configs` in `/etc/prometheus/prometheus.yml`
@@ -66,7 +65,7 @@ Geth is setup to expose certain useful metrics in prometheus, and additional met
       - targets: ["localhost:6162"]
 ```
 
-THen reset or start prometheus using something like `sudo systemctl start prometheus.service`
+Then reset or start prometheus using something like `sudo systemctl start prometheus.service`
 
 **Grafana Setup (optional)**
 This repo contains a grafana dashboard with useful views of the running Sequencer & Prover nodes and smart contract values. That is contained at `../dashboards/grafana/`. See the instructions there for more info.
@@ -79,17 +78,19 @@ This repo contains a grafana dashboard with useful views of the running Sequence
 
 ### Running
 
-**Run L1 Node : **
+**Run L1 Node :**
+
 Firstly, you will need to either launch a private L1 Network or gain access to an L1 RPC endpoint. This will be used to provide data availability, interfaces for Provers, Bridging contracts and native currency, and provide finality.
 
-I recommend using the private network setup in this repo under `MyBlockchain/eth-private-network`, simply follow the instructions under the README.md there. However, if you wish to use your own private network provider or RPC node, that is fine.
+I recommend using the private network setup in this repo under `MyBlockchain/eth-private-network`, simply follow the instructions under the [README.md there](https://github.com/b-j-roberts/MyBlockchains/tree/master/eth-private-network). However, if you wish to use your own private network provider or RPC node, that is fine.
 
 NOTE: Most of the below interfaces expect the L1 Network to be at `http://localhost:8545`, so some configurations may need to be changed for you.
 
 
-**Deploy Contracts : **
+**Deploy Contracts :**
+
 Next is to deploy the smart contracts used for the L2 network onto the L1 chain. These include :
-- `TransactionStorage` - Stores batch transaction data posted from L2 Sequencer onto L1. Also provides interfaces to Provers to "prove" batch validity.
+- `TransactionStorage` - Stores batched transaction data posted from L2 Sequencer onto L1. Also provides interfaces to Provers to "prove" batch validity.
 - `L1Bridge` - L1 Eth Bridge contract used to lock & unlock bridged eth. Sends events to be watched for on L2.
 - `L1TokenBridge` - L1 ERC20 & ERC721 Token Bridge contract used to lock & unlock bridged tokens. Sends events to be watched for on L2.
 - Tokens - 4 ERC token contracts used for testing bridge. `BasicERC20`, `StableERC20`, `BasicERC721`, and `SpecialERC721`.
@@ -101,13 +102,15 @@ make deploy-l1-contracts
 ```
 
 
-**Setup Configurations : **
+**Setup Configurations :**
+
 The default configuration almost certainly wont work on your system. You will probably need to change the following configs : `sequencer.config.json`, `bridge.config.json`, and `rpc.config.json`, but feel free to look at and change other configs located at `./configs`.
 
-The fields `data-dir`, `genesis`, and `contracts` almost certainly need to be changed to match your FS and configs like `l1Url` or `metrics` may need to change based on your setup.
+The fields `data-dir`, `genesis`, and `contracts` almost certainly need to be changed to match your FS and configs like `l1Url` or `metrics` may need to changed based on your setup.
 
 
-**Run Sequencer : **
+**Run Sequencer :**
+
 Now's when things get more interesting. The sequencer node will be the main authority agent for the L2 network, and will build blocks, batch transactions, and run the bridge. To startup the L2 network and Sequencer, use the following commands:
 
 ```
@@ -122,7 +125,8 @@ make run-sequencer-noclean
 ```
 
 
-**Run L2 RPC Node ( optional ) : **
+**Run L2 RPC Node ( optional ) :**
+
 You can additionally run RPC nodes ( Don't participate in consensus ) and connect them as a peer to the Sequencer Node to load blocks from the L2 network. Run like :
 ```
 make rpc
@@ -132,7 +136,8 @@ make run-rpc
 Using the `run-rpc` command will launch the rpc node and connect it as a peer to the Sequencer using a script. ( RPC node always runs as a daemon due to this, so logs can be watched, however there is a noclean option `make run-rpc-noclean` )
 
 
-**Deploy L2 Contracts : **
+**Deploy L2 Contracts :**
+
 There are a few contracts that must be deployed on the L2 Network. These include :
 - `L2Bridge` - L2 Eth Bridge contract used to send events by Sequencer to mint Eth on L2. Also allows withdrawals to burn Eth on L2 to unlock on L1. Cross chain calls taken care of by Sequencer.
 - `L2TokenBridge` - L2 ERC20 & ERC721 Token Bridge contract. Similar to `L2Bridge` functionality but for Tokens.
@@ -145,7 +150,8 @@ make deploy-l2-contracts
 ```
 
 
-**Run Prover : **
+**Run Prover :**
+
 The last command needed to have a the full L2 network running to full capacity is to start the prover. Prover nodes will get posted batches at the L1 `TransactionStorage` contract, then submit proofs to L1 therefore finalizing L2 transactions.
 
 WARNING: The currently generated proofs are placeholders, since building an EVM prover would be very complex. Also open source and available options all require extremely heavy computational power ( ~ 1TB Ram )
@@ -155,14 +161,16 @@ make run-prover
 ```
 
 
-**Smart Contract Metric ( optional ) : **
+**Smart Contract Metric ( optional ) :**
+
 It can be very useful to run the Smart Contract Metric Exporter job to gain visibility into the running `TransactionStorage`, Bridge, and token contracts. This job will continually query your L1 and L2 nodes contracts / RPC endpoints to keep up to date useful metrics in Prometheus. Some examples of useful metrics:
 - `last_confirmed_batch` - Last batch number confirmed by prover on L1
 - `bridge_balance` - Total value locked in Eth Bridge on L1
 - `l2_stable_token_sequencer_balance` - Total stable token balance of sequencer on L2 ( test bridge )
 
 
-**Bridge things ( optional ) : **
+**Bridge things ( optional ) :**
+
 There are a series of make commands which make bridging easier aswell.
 ```
 make bridge-eth-to-l2
@@ -178,6 +186,7 @@ make bridge-special-erc721-to-l1
 ```
 
 **Quick Launch**
+
 To run all of the above steps with a single command to launch L1, L2, Prover, Deploy Contracts, Start smart contract metrics, and bridge a bunch of tokens and eth, you can use the `quick-launch` option. To do so use: `make quick-launch`.
 
 You can also use `quick-launch-full` to launch RPC nodes aswell. Also use `quick-clean` to kill things launched by `quick-launch`. Lastly, after waiting some time for bridge transactions to settle, you can use `make run-metrics-test` to see if all metrics match expected values after quick-launch
