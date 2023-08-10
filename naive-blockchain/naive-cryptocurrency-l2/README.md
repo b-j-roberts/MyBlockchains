@@ -15,7 +15,7 @@ This project serves as a learning exercise, practice, and a simple example of an
 The L2 Blockchain uses geth functionality to run the execution layer thru a Sequencer node, which in turn batches transaction data, compresses them, and posts them to L1 for the Prover node to get and verify.
 The L2 network uses a modified Clique POA consensus, where the sequencer node(s) act as the authority agents. The primary modification to Clique is baking bridging into the consensus layer.
 
-#TODO: Screenshot
+![Transaction Storage](https://github.com/b-j-roberts/MyBlockchains/blob/master/naive-blockchain/naive-cryptocurrency-l2/media/transaction-storage.png)
 
 ---
 
@@ -70,7 +70,11 @@ Then reset or start prometheus using something like `sudo systemctl start promet
 **Grafana Setup (optional)**
 This repo contains a grafana dashboard with useful views of the running Sequencer & Prover nodes and smart contract values. That is contained at `../dashboards/grafana/`. See the instructions there for more info.
 
-#TODO: Add screenshots
+![Transaction Storage](https://github.com/b-j-roberts/MyBlockchains/blob/master/naive-blockchain/naive-cryptocurrency-l2/media/transaction-storage.png)
+![Prover](https://github.com/b-j-roberts/MyBlockchains/blob/master/naive-blockchain/naive-cryptocurrency-l2/media/prover.png)
+![Eth Bridge](https://github.com/b-j-roberts/MyBlockchains/blob/master/naive-blockchain/naive-cryptocurrency-l2/media/eth-bridge.png)
+![Token Bridge 1](https://github.com/b-j-roberts/MyBlockchains/blob/master/naive-blockchain/naive-cryptocurrency-l2/media/token-bridge-1.png)
+![Token Bridge 2](https://github.com/b-j-roberts/MyBlockchains/blob/master/naive-blockchain/naive-cryptocurrency-l2/media/token-bridge-2.png)
 
 # How to Run
 
@@ -223,7 +227,7 @@ The most visual option for verifying stuff is working as expected is to use the 
 
 You'll want to check for green/red panels in each section to note that the piece is actively collecting metrics, and check the other panel values respectively. Here is an example of working metrics :
 
-TODO: Screencap
+![Prover](https://github.com/b-j-roberts/MyBlockchains/blob/master/naive-blockchain/naive-cryptocurrency-l2/media/prover.png)
 
 
 **metrics-test**
