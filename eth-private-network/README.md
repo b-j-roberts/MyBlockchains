@@ -61,6 +61,7 @@ This repo contains a grafana dashboard with useful views of the running Miner & 
 ### Local
 
 **Running**
+
 Normally, you will just build & run the miner ( PoA Agent ). This will build the geth client, generate a new account and genesis.json, then launch a new Clique PoA network.
 ```
 make build
@@ -84,6 +85,7 @@ make connect-peers
 RPC nodes contain similar daemon and noclean options : `run-rpc-daemon` and `run-rpc-noclean`
 
 **Verify**
+
 If using `make run-miner` or other commands, check output for new blocks being commited and finalized.
 ```
 INFO [08-05|18:06:16.001] Successfully sealed new block            number=10 sealhash=0949cf..0d1556 hash=dd556f..3c7b09 elapsed=999.557ms
@@ -108,6 +110,7 @@ This should indicate that things are working well, however there are some other 
     - `p2p_peers` : # of peers
 
 **Cleanup**
+
 The main artifacts from running locally include the data-dirs that store the chain state, and build files. Use these commands to clean up.
 ```
 rm -rf ~/l1-miner-data/
@@ -120,6 +123,7 @@ Running geth nodes also creates an account at `~/.eth-accounts`, which will be a
 ### Docker
 
 **Building**
+
 There is no need to build & push the docker image for a typical user, but if you are doing development, these make commands might be useful for building the used docker images.
 ```
 make docker-build
@@ -132,6 +136,7 @@ https://hub.docker.com/repositories/brandonjroberts
 - https://hub.docker.com/repository/docker/brandonjroberts/eth-private-node-setup/general
 
 **Running**
+
 You can also use docker images pushed to dockerhub ( or built locally ) to run the miner & rpc nodes :
 ```
 make docker-run-miner
@@ -151,6 +156,7 @@ Lastly, you can noclean the rpc node aswell: `make docker-run-rpc-noclean`
 Since docker logs to the console just like running locally, and since the network is set to host on the docker run commands, you can use the same validation steps as with a local setup.
 
 **Cleanup**
+
 Similarly, since volumes are used for the datadir and accounts, you can remove the docker volume datadirs to clear the state and cleanup artifacts.
 ```
 rm -rf ~/docker-l1-miner-data/
@@ -160,6 +166,7 @@ rm -rf ~/docker-l1-rpc-data/
 ### Kubernetes
 
 **Running**
+
 Lastly, there is an existing kubernetes statefulset setup using the above docker images to deploy nodes into your kube cluster. This will deploy a statefulset, which will manage & setup your node pod, and deploy a service to expose ports for peers and rpc calls.
 ```
 make kube-deploy-miner
@@ -172,11 +179,13 @@ make kube-connect-peers
 ```
 
 **Verify**
+
 I typically use `k9s` to inspect running containers / pods in kubernetes. This allows a similar set of visual verification tools. Otherwise, `kubectl logs` should work well.
 
 Using `make kube-connect-peers` also port-forwards the metrics and rpc ports, so you can also use other scripts and prometheus setup locally to view data in grafana...
 
 **Cleanup**
+
 The main options in kubernetes are to clean or reset.
 
 Reset clears pods / state, but sts remains
