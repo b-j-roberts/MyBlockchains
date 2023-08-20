@@ -105,6 +105,7 @@ cat <<EOF > $output
     "chainId": $chainId,
     "homesteadBlock": 0,
     "eip150Block": 0,
+    "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "eip155Block": 0,
     "eip158Block": 0,
     "byzantiumBlock": 0,
@@ -112,6 +113,7 @@ cat <<EOF > $output
     "petersburgBlock": 0,
     "istanbulBlock": 0,
     "berlinBlock": 0,
+    "londonBlock": 0,
     "clique": {
       "period": $period,
       "epoch": 30000
