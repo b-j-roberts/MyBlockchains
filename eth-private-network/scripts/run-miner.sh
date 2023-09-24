@@ -11,6 +11,7 @@ STATE_RESET=0
 CHAIN_ID=505
 PERIOD=1 # 1 second per block ( 12x faster than Ethereum mainnet )
 GAS_LIMIT=300000000 # 300M gas limit ( 10x Ethereum mainnet )
+FEES=false # Include london fork fees in network
 
 PEER_PORT=30303
 HTTP_PORT=8545
@@ -27,6 +28,7 @@ display_help() {
   echo "   -c, --chain-id             Chain ID"
   echo "   -p, --period               Block period ( in seconds )"
   echo "   -g, --gas-limit            Gas limit"
+  echo "   -f, --fees                 Include london fork fees in network ( default: false )"
 
   echo "   -m, --peer-port            Peer port ( default: 30303 )"
   echo "   -r, --rpc-port             RPC port ( default: 8545 )"
@@ -41,7 +43,7 @@ clear_data() {
 }
 
 # Parse command line arguments
-while getopts ":hd:xc:p:g:G:m:r:o:" opt; do
+while getopts ":hd:xc:p:g:fG:m:r:o:" opt; do
   case ${opt} in
     d|--data )
       DATA_DIR=$OPTARG
@@ -62,6 +64,9 @@ while getopts ":hd:xc:p:g:G:m:r:o:" opt; do
       ;;
     g|--gas-limit )
       GAS_LIMIT=$OPTARG
+      ;;
+    f|--fees )
+      FEES=true
       ;;
     G|--geth )
       GETH_BIN=$OPTARG
@@ -128,7 +133,11 @@ echo "Using account: $ACCOUNT1"
 if [ $STATE_RESET -eq 1 ]; then
   # Create Geth Genesis & Init Chain
   GENESIS_FILE=$DATA_DIR/genesis.json
-  $WORK_DIR/scripts/generate-genesis.sh -a $ACCOUNT1 -b 10000000000000000000 -o $GENESIS_FILE -p $PERIOD -c $CHAIN_ID -g $GAS_LIMIT
+  if [ "$FEES" = true ]; then
+    $WORK_DIR/scripts/generate-genesis.sh -a $ACCOUNT1 -b 10000000000000000000 -o $GENESIS_FILE -p $PERIOD -c $CHAIN_ID -g $GAS_LIMIT -f
+  else
+    $WORK_DIR/scripts/generate-genesis.sh -a $ACCOUNT1 -b 10000000000000000000 -o $GENESIS_FILE -p $PERIOD -c $CHAIN_ID -g $GAS_LIMIT
+  fi
   ${GETH_BIN} init --datadir $DATA_DIR $GENESIS_FILE
 fi
 

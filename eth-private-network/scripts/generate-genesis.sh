@@ -10,6 +10,7 @@ chainId=505
 period=1 # 1 second per block ( ~ 12x faster than mainnet )
 gasLimit=300000000 # 300M gas per block ( ~10x mainnet )
 output=${WORK_DIR}/genesis.json
+fees=false
 
 display_help() {
   echo "Usage: $0 [options...]" >&2
@@ -23,6 +24,8 @@ display_help() {
   echo "  -p, --period             The period - ie # of seconds per block - for the new private eth network (default: 1)"
   echo "  -g, --gas-limit          The gas - ie most gas per block  (default: 300000000)"
 
+  echo "  -f, --fees               Include london fork block fees (default: false)"
+
   echo "  -a, --addrs              A comma separated list of addresses to pre-fund"
   echo "  -b, --balances           A comma separated list of balances to pre-fund ( must match the number & order of addresses )"
 
@@ -33,7 +36,7 @@ display_help() {
 }
 
 # Parse the command line arguments
-while getopts ":hc:p:g:a:b:o:" opt; do
+while getopts ":hc:p:g:fa:b:o:" opt; do
   case ${opt} in
     h|--help)
       display_help
@@ -47,6 +50,9 @@ while getopts ":hc:p:g:a:b:o:" opt; do
       ;;
     g|--gas-limit)
       gasLimit=$OPTARG
+      ;;
+    f|--fees)
+      fees=true
       ;;
     a|--addrs)
       addrs=$OPTARG
@@ -103,6 +109,7 @@ for ((i=0;i<${#addrArray[@]};++i)); do
 done
 
 # Generate the genesis.json file with the variables
+#"londonBlock": 0,
 cat <<EOF > $output
 {
   "config": {
@@ -117,7 +124,13 @@ cat <<EOF > $output
     "petersburgBlock": 0,
     "istanbulBlock": 0,
     "berlinBlock": 0,
-    "londonBlock": 0,
+EOF
+
+if [ "$fees" = true ]; then
+  echo "    \"londonBlock\": 0," >> $output
+fi
+
+cat <<EOF >> $output
     "clique": {
       "period": $period,
       "epoch": 30000
