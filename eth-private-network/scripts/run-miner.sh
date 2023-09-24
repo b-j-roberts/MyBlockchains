@@ -2,6 +2,9 @@
 #
 # This script launches a miner node ( Clique POA agent )
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+WORK_DIR=$SCRIPT_DIR/..
+
 STATE_RESET=0
 
 # Defaults give theoretical max throughput of 1800 TPS = ~15 tx/sec ( mainnet ) X 12 X 10
@@ -11,6 +14,7 @@ GAS_LIMIT=300000000 # 300M gas limit ( 10x Ethereum mainnet )
 
 PEER_PORT=30303
 HTTP_PORT=8545
+GETH_BIN=$WORK_DIR/go-ethereum/build/bin/geth
 
 display_help() {
   echo "Usage: $0 -d <data_dir> [options]"
@@ -18,6 +22,7 @@ display_help() {
   echo "   -h, --help                 show help"
   echo "   -d, --data                 Geth node data dir (required)"
   echo "   -x, --clear                Clear & Reset data dir before starting"
+  echo "   -G, --geth                 Geth binary path ( default: $WORK_DIR/go-ethereum/build/bin/geth )"
 
   echo "   -c, --chain-id             Chain ID"
   echo "   -p, --period               Block period ( in seconds )"
@@ -36,7 +41,7 @@ clear_data() {
 }
 
 # Parse command line arguments
-while getopts ":hd:xc:p:g:m:r:o:" opt; do
+while getopts ":hd:xc:p:g:G:m:r:o:" opt; do
   case ${opt} in
     d|--data )
       DATA_DIR=$OPTARG
@@ -57,6 +62,9 @@ while getopts ":hd:xc:p:g:m:r:o:" opt; do
       ;;
     g|--gas-limit )
       GAS_LIMIT=$OPTARG
+      ;;
+    G|--geth )
+      GETH_BIN=$OPTARG
       ;;
     m|--peer-port )
       PEER_PORT=$OPTARG
@@ -101,8 +109,6 @@ if [ ! -d "$DATA_DIR/geth" ]; then
   STATE_RESET=1
 fi
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-WORK_DIR=$SCRIPT_DIR/..
 
 PASSWORD_FILE=$DATA_DIR/password.txt
 
@@ -123,13 +129,13 @@ if [ $STATE_RESET -eq 1 ]; then
   # Create Geth Genesis & Init Chain
   GENESIS_FILE=$DATA_DIR/genesis.json
   $WORK_DIR/scripts/generate-genesis.sh -a $ACCOUNT1 -b 10000000000000000000 -o $GENESIS_FILE -p $PERIOD -c $CHAIN_ID -g $GAS_LIMIT
-  ${WORK_DIR}/go-ethereum/build/bin/geth init --datadir $DATA_DIR $GENESIS_FILE
+  ${GETH_BIN} init --datadir $DATA_DIR $GENESIS_FILE
 fi
 
 if [ -z $OUTPUT_FILE ]; then
   echo "No output file specified, logging to console"
-  ${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool,debug,admin" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "*" --port $PEER_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6060
+  ${GETH_BIN} --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool,debug,admin" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "*" --port $PEER_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6060
 else
   echo "Logging to $OUTPUT_FILE"
-  ${WORK_DIR}/go-ethereum/build/bin/geth --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool,debug,admin" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "*" --port $PEER_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6060 > $OUTPUT_FILE 2>&1 &
+  ${GETH_BIN} --networkid $CHAIN_ID --datadir $DATA_DIR --http --http.api "eth,net,web3,personal,txpool,debug,admin" --http.port $HTTP_PORT --unlock "0x$ACCOUNT1" --mine --allow-insecure-unlock --password $PASSWORD_FILE --miner.etherbase "0x$ACCOUNT1" --miner.gaslimit $GAS_LIMIT --http.corsdomain "*" --port $PEER_PORT --metrics --metrics.addr 127.0.0.1 --metrics.expensive --metrics.port 6060 > $OUTPUT_FILE 2>&1 &
 fi
